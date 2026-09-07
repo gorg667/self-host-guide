@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaming: Game Servers, Retro Libraries, and Streaming — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li class="active"><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 24 · ~2,500 words · 11 min read</div>
+    <article class="prose">
+      <h1 id="gaming-game-servers-retro-libraries-and-streaming">Gaming: Game Servers, Retro Libraries, and Streaming<a class="headerlink" href="#gaming-game-servers-retro-libraries-and-streaming" title="Permanent link">#</a></h1>
+<p>Gaming is a category where a home lab pays off in a way everyone in the house understands: a Minecraft server for the kids and their friends that is always on and under your control; a Valheim or Palworld world for your group; a retro game library browsable from the couch; and a gaming PC in the closet streamed to any screen in the house. This chapter covers game server management panels (Pterodactyl and its fork Pelican, Crafty Controller, PufferPanel, AMP, and the container-per-game approach), the reality of exposing game servers to friends (and how to do it behind CGNAT with Playit.gg or a VPS), retro game libraries (RomM, Gaseous, EmulatorJS), game streaming from a home PC or VM (Sunshine and Moonlight, with GPU passthrough on Proxmox), and adjacent tools (LAN caches, Steam library management, save-game sync).</p>
+<h2 id="game-servers">Game servers<a class="headerlink" href="#game-servers" title="Permanent link">#</a></h2>
+<h3 id="the-container-per-game-approach">The container-per-game approach<a class="headerlink" href="#the-container-per-game-approach" title="Permanent link">#</a></h3>
+<p>The simplest way to run one game server is one Docker container with a well-maintained image:</p>
+<ul>
+<li><strong>itzg/minecraft-server</strong> — the gold standard: every server type (Vanilla, Paper, Purpur, Fabric, Forge, NeoForge, Spigot, Velocity proxy), automatic version handling, mod/plugin downloads from CurseForge/Modrinth via environment variables, RCON, world backups (companion <code>itzg/mc-backup</code>), auto-pause when empty (saves CPU), and exhaustive documentation. If you run one Minecraft server, use this.</li>
+<li><strong>itzg/minecraft-bedrock-server</strong> for Bedrock (console/phone players); <strong>GeyserMC</strong> (plugin) lets Bedrock clients join a Java server.</li>
+<li><strong>lloesche/valheim-server</strong>, <strong>thijsvanloef/palworld-server-docker</strong>, <strong>ich777/steamcmd</strong> images (Unraid favourites — hundreds of Steam games), <strong>CM2Network</strong> (Source games), <strong>wolveix/satisfactory-server</strong>, <strong>LinuxGSM</strong> (a script-based manager for 100+ games, also in Docker), <strong>factoriotools/factorio</strong>, <strong>Terraria</strong> (<code>ryshe/terraria</code>), <strong>Project Zomboid</strong>, <strong>Rust</strong>, <strong>ARK/ASA</strong>, <strong>Enshrouded</strong>, <strong>V Rising</strong>, <strong>7 Days to Die</strong>… nearly every popular dedicated server has a maintained image.</li>
+</ul>
+<p>Pros: no panel to maintain, everything in your Compose file, trivially backed up (the world directory). Cons: no web UI for non-technical co-admins, no console access without <code>docker attach</code>/RCON, manual per-game.</p>
+<h3 id="pterodactyl-and-pelican">Pterodactyl and Pelican<a class="headerlink" href="#pterodactyl-and-pelican" title="Permanent link">#</a></h3>
+<p><strong>Pterodactyl</strong> is the game-server management panel: a web UI (PHP/Laravel + MariaDB + Redis) where users create servers from "eggs" (templates for Minecraft, Rust, ARK, Valheim, Terraria, Discord bots, and hundreds more via the community egg repository), each server runs as an isolated Docker container managed by the <strong>Wings</strong> daemon on one or more nodes, with a web console, file manager, scheduled tasks, backups (local or S3), per-user permissions (give a friend admin over <em>their</em> server only), resource limits, and an API. It is what most game hosting companies run. <strong>Pelican Panel</strong> is the 2024 fork by former Pterodactyl maintainers after Pterodactyl's development stalled — same architecture, actively developed, modern UI (Filament), simpler installation, and rapid feature additions. <strong>Pelican is the recommendation</strong> for a new install in 2026; Pterodactyl still works but the momentum has moved.</p>
+<p>Watch out for: the panel and the Wings daemon are separate (Wings on the game host, panel anywhere; both must have valid TLS); the panel is a full LAMP-style stack (~1 GB with database); each game server is a container <em>inside</em> Wings' Docker, so nesting on a Docker host works but understand the layering; eggs vary in quality.</p>
+<h3 id="crafty-controller">Crafty Controller<a class="headerlink" href="#crafty-controller" title="Permanent link">#</a></h3>
+<p>A <strong>Minecraft-focused</strong> panel (Python): create and manage many Java/Bedrock servers, web console, scheduled backups and restarts, player management, scheduled commands, plugin/mod support, user roles. Simpler than Pelican, does Minecraft superbly, does nothing else. <strong>The recommendation for a Minecraft-only household</strong> — especially if a teenager will be the admin.</p>
+<h3 id="pufferpanel">PufferPanel<a class="headerlink" href="#pufferpanel" title="Permanent link">#</a></h3>
+<p>A lightweight Go panel supporting Minecraft, Source games, Terraria, and others via templates, with a clean UI, user permissions, OAuth2, and a small footprint (~100 MB). Less feature-rich than Pelican; faster to set up. A good middle option.</p>
+<h3 id="amp-application-management-panel">AMP (Application Management Panel)<a class="headerlink" href="#amp-application-management-panel" title="Permanent link">#</a></h3>
+<p><strong>CubeCoders AMP</strong> is the <strong>paid</strong> (USD 10–20 one-time per licence tier) commercial panel: polished, supports 100+ games with "generic" module support for others, one-click mod/plugin installs, scheduling, backups, and excellent Windows <em>and</em> Linux support. It is the closest thing to a consumer product in this space and worth the money for people who want it to just work. Runs in Docker or natively.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<p><strong>LinuxGSM</strong> (the CLI script manager — reliable, no UI), <strong>Gameyfin</strong> (library, not servers), <strong>Multicraft</strong> (commercial, dated), <strong>MCSManager</strong>, <strong>Cuberite</strong> (a lightweight C++ Minecraft-compatible server), <strong>Velocity/Waterfall</strong> (Minecraft proxies for networks of servers), <strong>Lazymc</strong> (puts a Minecraft server to sleep when empty and wakes it on connect — saves a lot of CPU/RAM; itzg's image has similar auto-pause).</p>
+<h3 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Container-per-game</th>
+<th>Pelican / Pterodactyl</th>
+<th>Crafty Controller</th>
+<th>PufferPanel</th>
+<th>AMP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Games</td>
+<td>Any with an image</td>
+<td>Hundreds (eggs)</td>
+<td>Minecraft only</td>
+<td>Dozens (templates)</td>
+<td>100+</td>
+</tr>
+<tr>
+<td>Web UI / console</td>
+<td>No</td>
+<td><strong>Yes, full</strong></td>
+<td>Yes</td>
+<td>Yes</td>
+<td><strong>Yes, polished</strong></td>
+</tr>
+<tr>
+<td>Multi-user with permissions</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Multi-node</td>
+<td>Compose per host</td>
+<td><strong>Yes (Wings)</strong></td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Footprint</td>
+<td>Just the game</td>
+<td>~1 GB panel + Wings</td>
+<td>~200 MB</td>
+<td>~100 MB</td>
+<td>~300 MB</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>Free</td>
+<td>Free</td>
+<td>Free</td>
+<td>Free</td>
+<td><strong>Paid</strong></td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>One or two servers, you as admin</td>
+<td>Many games, many users</td>
+<td>Minecraft households</td>
+<td>Light general panel</td>
+<td>Turnkey polish</td>
+</tr>
+</tbody>
+</table>
+<h2 id="resources-and-hardware-for-game-servers">Resources and hardware for game servers<a class="headerlink" href="#resources-and-hardware-for-game-servers" title="Permanent link">#</a></h2>
+<p>Game servers are unusual in a home lab: they are <strong>single-thread-heavy and RAM-hungry</strong> rather than idle. Minecraft Java wants a fast core and 4–8 GB for a modded server; Valheim/Palworld/ARK want 8–16 GB; most tick along at 5–30% of a core when players are idle and spike when they are active. An N100 runs a vanilla Minecraft server for a few players; a modded server or several concurrent games wants a real desktop CPU (Ryzen 5/7, Core i5/i7) with high single-core clocks — the same used SFF workstation that makes a good Proxmox node. Give game servers <strong>local SSD</strong> for worlds (chunk loading is I/O-sensitive) and <strong>auto-pause/sleep</strong> when empty. Back up worlds nightly (<code>mc-backup</code>, Pelican's backups, or snapshots) — a corrupted world is a family crisis.</p>
+<h2 id="exposing-servers-to-friends">Exposing servers to friends<a class="headerlink" href="#exposing-servers-to-friends" title="Permanent link">#</a></h2>
+<p>Friends outside your house need to connect. Options in order of preference:</p>
+<ol>
+<li><strong>Mesh VPN for your friend group.</strong> Tailscale's free tier allows sharing individual devices/subnets with other tailnets, and friends can install Tailscale in two minutes. Nothing exposed; works behind CGNAT; the server is reachable at a stable tailnet IP or MagicDNS name. <strong>The best option when friends are willing</strong> — and gamers usually are.</li>
+<li><strong>Playit.gg</strong> — a free (with paid tiers) tunnelling service designed for game servers: a small agent at home makes an outbound connection; Playit gives you a public address (TCP/UDP) that forwards to your server. Works behind CGNAT, no port forwarding, supports Minecraft/Valheim/Terraria/etc. natively, no client install for friends. Traffic passes through Playit's relays (latency adds 10–40 ms). <strong>The best option when friends will not install anything.</strong></li>
+<li><strong>Pangolin or a VPS with WireGuard + DNAT</strong> (<a href="../08-remote-access-vpn/">Chapter 8</a>) for raw TCP/UDP forwarding through your own relay — full control, ~USD 4/month, works behind CGNAT.</li>
+<li><strong>Port forwarding</strong> the game's port (Minecraft 25565/TCP, Valheim 2456–2458/UDP, etc.) directly, with a DDNS name. Simple if you have a public IP; exposes the game server binary to the internet — keep it updated, use a whitelist (Minecraft <code>white-list=true</code>), enable online-mode, and consider a non-default port to reduce scanner noise. Game servers are generally hardened against random connections, but a Minecraft server with <code>online-mode=false</code> and no whitelist <em>will</em> be griefed within days.</li>
+<li><strong>Cloudflare Tunnel</strong> — HTTP-only on free plans (TCP via <code>cloudflared access</code> needs the client installed, and Spectrum for raw UDP is enterprise); not suitable for most games.</li>
+</ol>
+<p>For <strong>voice</strong>, run <strong>Mumble</strong> (<a href="../20-communication/">Chapter 20</a>) alongside — light, low-latency, exposed the same way.</p>
+<h2 id="retro-game-libraries">Retro game libraries<a class="headerlink" href="#retro-game-libraries" title="Permanent link">#</a></h2>
+<p>The other half of gaming in a home lab: your collection of ROMs and disc images (from cartridges and discs you own — <a href="../30-legal-ethical/">Chapter 30</a>), organised with box art and metadata, playable in a browser or streamed to a handheld.</p>
+<ul>
+<li><strong>RomM</strong> — the modern ROM manager: scans a folder tree organised by platform, fetches metadata and artwork from IGDB/ScreenScraper/MobyGames/Hasheous, shows a beautiful library UI, supports 400+ platforms, has <strong>in-browser play via EmulatorJS</strong> for supported systems (NES through PS1/N64/DS), <strong>save states and saves synced across devices</strong>, multi-user with per-user libraries, collections, and integration with <strong>Playnite</strong> and <strong>muOS/OnionOS/KNULLI</strong> handheld firmware via its API and the community sync apps. Python + Postgres, ~500 MB. <strong>The recommendation</strong> — it has become the Jellyfin of ROMs.</li>
+<li><strong>Gaseous Server</strong> — the .NET alternative with similar goals: library, metadata from IGDB, EmulatorJS in-browser play, ROM hash verification against No-Intro/TOSEC DATs (excellent for verifying a collection), user management. Slightly more archivist-oriented; a solid alternative.</li>
+<li><strong>EmulatorJS</strong> (the standalone project) — the browser emulation engine (RetroArch cores compiled to WebAssembly) that RomM and Gaseous embed; can be self-hosted alone as a simple "put ROMs in a folder, play in browser" site.</li>
+<li><strong>RetroArch</strong> on the client (any device: Steam Deck, Android, Raspberry Pi with RetroPie/Batocera/RecalBox, an old laptop) reading from an SMB/NFS share of your library — the traditional approach; RomM adds the pretty library and the sync.</li>
+<li><strong>Playnite</strong> (Windows launcher aggregating Steam/GOG/Epic/emulators — with a RomM plugin), <strong>Pegasus</strong>, <strong>ES-DE (EmulationStation Desktop Edition)</strong> on the couch PC/Steam Deck pointed at the share.</li>
+<li><strong>Gameyfin</strong> — a library manager for <em>PC</em> game installers (GOG offline installers and the like), with download links for the household. Different niche.</li>
+<li><strong>Steam ROM Manager</strong>, <strong>Skyscraper</strong> (metadata scrapers for handheld frontends).</li>
+<li>Handheld sync: <strong>RomM's muOS/KNULLI apps</strong>, <strong>Syncthing</strong> for save files, <strong>Ludusavi</strong> for PC save-game backups.</li>
+</ul>
+<h2 id="game-streaming-from-a-home-pc-or-vm">Game streaming from a home PC or VM<a class="headerlink" href="#game-streaming-from-a-home-pc-or-vm" title="Permanent link">#</a></h2>
+<p>Play a full gaming PC on a TV, laptop, tablet, phone, or Steam Deck anywhere in the house (or, over a good connection, anywhere) — the machine stays in the closet with the GPU, the client shows a low-latency stream.</p>
+<ul>
+<li><strong>Sunshine</strong> (host) + <strong>Moonlight</strong> (client) — the open-source pair that replaced NVIDIA GameStream when NVIDIA discontinued it: Sunshine runs on the gaming machine (Windows or Linux; NVIDIA, AMD, or Intel encoders — NVENC/AMF/QSV/VAAPI), Moonlight runs on everything (Windows, macOS, Linux, iOS, Android, Android TV, Apple TV, Steam Deck, Raspberry Pi, Nintendo Switch homebrew, Xbox, web). 4K 120 Hz HDR with ~5–15 ms added latency on a wired LAN, gamepad/mouse/keyboard passthrough, multi-monitor, virtual displays (via <strong>Virtual Display Driver</strong> on Windows, so the host needs no monitor plugged in). <strong>The standard.</strong> Pair with <strong>Apollo</strong> (a Sunshine fork with per-client virtual displays and a few conveniences) if you like.</li>
+<li><strong>Steam Remote Play / Steam Link</strong> — built into Steam; simpler; slightly higher latency and less control; fine for a TV in the same house.</li>
+<li><strong>Parsec</strong> — proprietary, hosted brokering, excellent low-latency; free for personal use, requires an account; good over the internet.</li>
+<li><strong>Wolf</strong> (Games on Whales) — a Linux-native streaming host that runs each session in a container with its own virtual display and GPU access — multiple simultaneous users on one GPU, Moonlight-compatible; the multi-tenant/Linux-first alternative for people who want a "cloud gaming" box at home.</li>
+<li><strong>Remote desktop tools</strong> (RustDesk, Apache Guacamole, NoMachine) for non-gaming remote use; too laggy for games.</li>
+</ul>
+<p><strong>GPU passthrough on Proxmox</strong> is how many people build the host: a Windows (or Linux/Bazzite) VM with a discrete GPU passed through via VFIO (IOMMU enabled in BIOS; the GPU's IDs bound to <code>vfio-pci</code>; the VM set to <code>q35</code>/OVMF with the PCIe device added; a dummy HDMI plug or virtual display so the GPU has an output), Sunshine inside the VM, the VM started on demand (Wake-on-LAN-style via the Proxmox API or a Home Assistant button). This gives you a gaming PC that is also a Proxmox node and, when the VM is off, the GPU can be reassigned to an LLM container or a Linux VM. Caveats: consumer NVIDIA passthrough works without the old Code 43 workaround since 2021; AMD cards have a "reset bug" on some models that prevents re-use without a host reboot (the <code>vendor-reset</code> module helps); anti-cheat in some games blocks VMs (detectable virtualisation — mitigations exist but games like Valorant refuse). A bare-metal Windows box with Sunshine is simpler if gaming is the primary purpose.</p>
+<h2 id="adjacent-tools">Adjacent tools<a class="headerlink" href="#adjacent-tools" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>LAN cache</strong>: <strong>LanCache</strong> (<code>lancachenet</code>) — a caching proxy for Steam, Epic, Blizzard, Origin, Windows Update, and more: the first download of a 100 GB game from the internet is cached; every other PC in the house pulls it at LAN speed. Needs a DNS override (point the CDN hostnames at the cache via Pi-hole/AdGuard) and lots of disk. Superb for households with several gaming PCs or a slow connection.</li>
+<li><strong>Save-game sync</strong>: <strong>Ludusavi</strong> (backs up PC game saves to any folder — then Syncthing/Nextcloud carries them; also restores), <strong>Syncthing</strong> for emulator saves, <strong>GameVault</strong> (a self-hosted "Steam for your own game files" — library, downloads, metadata, save sync; for DRM-free collections), <strong>Gameyfin</strong>.</li>
+<li><strong>Discord bots</strong> and <strong>game-server status pages</strong>: <strong>Uptime Kuma</strong> has game-server monitors (Steam query); <strong>Gamedig</strong>-based bots post player counts.</li>
+<li><strong>Voice</strong>: Mumble (<a href="../20-communication/">Chapter 20</a>).</li>
+<li><strong>Mod management</strong>: Modrinth/CurseForge via itzg's image variables; <strong>Pelican's</strong> egg-level mod installers; <strong>r2modman</strong>/<strong>Thunderstore</strong> for client-side.</li>
+<li><strong>Windows game servers</strong> (some games have no Linux server): a Windows VM on Proxmox, or <strong>Wine/Proton in Docker</strong> (many Steam dedicated servers run under Wine — images exist for ARK, Palworld, etc.).</li>
+</ul>
+<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>One Minecraft server for the family:</strong> <code>itzg/minecraft-server</code> with auto-pause and <code>mc-backup</code>, exposed to friends via Tailscale or Playit.gg, whitelist on.</li>
+<li><strong>Several games, several admins:</strong> Pelican Panel with Wings on a decent-CPU host; Crafty if it is only Minecraft and a teenager runs it.</li>
+<li><strong>Retro library:</strong> RomM with EmulatorJS in the browser and RetroArch/ES-DE on the couch device reading the same share; verify hashes with Gaseous or the DATs if you care about archival quality.</li>
+<li><strong>Streaming:</strong> Sunshine + Moonlight from a Windows VM with GPU passthrough on Proxmox (or a bare-metal box), with a Home Assistant button to power it on.</li>
+<li><strong>Households with several gaming PCs:</strong> LanCache.</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Game servers on a host with fast single-core performance and local SSD; RAM allocated per game; auto-pause/sleep when empty.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> World/save directories in nightly backups (and snapshots); a restore tested once.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Friends' access via Tailscale (preferred) or Playit.gg/relay; if port-forwarding, whitelist + online-mode + non-default port + updates.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Panel (if used) behind the reverse proxy with TLS; Wings/agent daemons only reachable from the panel; admin accounts with MFA.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> ROM library organised per platform; RomM (or Gaseous) scanned with metadata; saves synced; hashes verified if desired.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Streaming host reachable via Moonlight on the LAN with sub-20 ms latency; a wake/power-on mechanism for the gaming VM/PC.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Mumble (or chosen voice) alongside for the group.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../23-ai-llm/">← 23. Local AI: LLMs, Image Generation, Speech, and Search</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/24-gaming.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#game-servers">Game servers</a><ul>
+<li><a href="#the-container-per-game-approach">The container-per-game approach</a></li>
+<li><a href="#pterodactyl-and-pelican">Pterodactyl and Pelican</a></li>
+<li><a href="#crafty-controller">Crafty Controller</a></li>
+<li><a href="#pufferpanel">PufferPanel</a></li>
+<li><a href="#amp-application-management-panel">AMP (Application Management Panel)</a></li>
+<li><a href="#others">Others</a></li>
+<li><a href="#comparison">Comparison</a></li>
+</ul>
+</li>
+<li><a href="#resources-and-hardware-for-game-servers">Resources and hardware for game servers</a></li>
+<li><a href="#exposing-servers-to-friends">Exposing servers to friends</a></li>
+<li><a href="#retro-game-libraries">Retro game libraries</a></li>
+<li><a href="#game-streaming-from-a-home-pc-or-vm">Game streaming from a home PC or VM</a></li>
+<li><a href="#adjacent-tools">Adjacent tools</a></li>
+<li><a href="#recommendations">Recommendations</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

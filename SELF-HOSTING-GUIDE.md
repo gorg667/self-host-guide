@@ -2,7 +2,7 @@
 
 > A comprehensive, opinionated, in-depth guide to services worth self-hosting — and everything around them.
 
-*Generated 2026-09-07 from the chapter sources in `guide/`. 23 chapters, ~82,566 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
+*Generated 2026-09-07 from the chapter sources in `guide/`. 25 chapters, ~88,393 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
 
 
 ## Table of contents
@@ -39,6 +39,8 @@
 - [20. Communication: Chat, Video Calls, and Email](#communication-chat-video-calls-and-email)
 - [21. Passwords, Secrets, and Two-Factor Codes](#passwords-secrets-and-two-factor-codes)
 - [22. Developer Tools, Git Hosting, and Automation](#developer-tools-git-hosting-and-automation)
+- [23. Local AI: LLMs, Image Generation, Speech, and Search](#local-ai-llms-image-generation-speech-and-search)
+- [24. Gaming: Game Servers, Retro Libraries, and Streaming](#gaming-game-servers-retro-libraries-and-streaming)
 
 ---
 
@@ -192,7 +194,7 @@ The landscape has matured remarkably. A few observations that inform the recomme
 - **Docker Compose is the lingua franca.** Nearly every self-hostable project ships a `docker-compose.yml`. Kubernetes has a place in home labs for people who want to learn it, but it is not necessary and usually not advisable for running a household's services. [Chapter 5](#containers-docker-compose-podman-and-kubernetes) discusses when it makes sense.
 - **Mini PCs have displaced both Raspberry Pis and enterprise servers** for most people. An Intel N100/N150 or a used business desktop draws 6–15 W idle, costs USD 120–300, and comfortably runs twenty containers. [Chapter 2](#hardware-choosing-what-to-run-it-on) is largely about this shift.
 - **Mesh VPNs solved remote access.** Tailscale (and its self-hosted coordinator Headscale), NetBird, and similar tools made "access my home lab from anywhere without port forwarding" a fifteen-minute task even behind CGNAT. Most people no longer need to expose anything to the internet. [Chapter 8](#remote-access-and-vpns) covers them.
-- **Local AI became a legitimate self-hosting category.** Running capable language models, image generation, speech-to-text, and text-to-speech on consumer GPUs is now practical and is one of the strongest reasons to add a GPU to a home lab. [Chapter 23](23-ai-llm.md) is new territory for many.
+- **Local AI became a legitimate self-hosting category.** Running capable language models, image generation, speech-to-text, and text-to-speech on consumer GPUs is now practical and is one of the strongest reasons to add a GPU to a home lab. [Chapter 23](#local-ai-llms-image-generation-speech-and-search) is new territory for many.
 - **Immich made self-hosted photos viable for normal people.** For years the honest advice was "keep using Google Photos." That is no longer true. [Chapter 16](#photos-replacing-google-photos-and-icloud) explains why.
 - **Licensing is a live issue.** Several popular projects have moved from open source to source-available or "fair" licences, and a few have been acquired or have added paywalled tiers. This guide notes the licence of each service reviewed and [Chapter 30](30-legal-ethical.md) explains what the distinctions mean for you.
 - **The community is enormous and generous.** r/selfhosted, r/homelab, the awesome-selfhosted list, and countless blogs and Discord servers mean that whatever problem you hit, someone has hit it before. [Chapter 33](33-resources-community.md) points to the best of them.
@@ -660,9 +662,9 @@ For most self-hosters, the integrated GPU in an Intel CPU is the only GPU needed
 
 **Transcoding at scale.** An Intel Arc A310/A380 (USD 90–130, single-slot, low-profile options exist, ~5–20 W) adds AV1 encode and a second Quick Sync engine to any machine, including AMD-based ones. This is the best transcoding upgrade available.
 
-**Local AI.** Large language models, image generation, speech models, and photo ML (Immich's smart search, Frigate's detection) benefit enormously from a GPU. Here VRAM is the constraint that matters: LLM size in parameters × bytes per parameter at your quantisation ≈ VRAM needed. A 7–8 B parameter model at 4-bit fits in 6 GB; a 14 B model needs 10–12 GB; 32 B needs 20–24 GB; 70 B needs 40+ GB or two cards. NVIDIA has the most mature software stack (CUDA is what everything targets first); the used RTX 3090 (24 GB, USD 600–800) and RTX 3060 12 GB (USD 200–250) are perennial value picks, and the RTX 4060 Ti 16 GB and 5060 Ti 16 GB are efficient mid-range choices. AMD's ROCm works for many workloads (Ollama, llama.cpp, Stable Diffusion) and the RX 7900 XTX at 24 GB is cheaper than NVIDIA equivalents; Intel Arc works via IPEX/SYCL for llama.cpp and Ollama with less polish. Apple Silicon Macs with unified memory (a Mac Mini/Studio with 64–192 GB) are an unconventional but effective LLM server. [Chapter 23](23-ai-llm.md) covers all of this in depth.
+**Local AI.** Large language models, image generation, speech models, and photo ML (Immich's smart search, Frigate's detection) benefit enormously from a GPU. Here VRAM is the constraint that matters: LLM size in parameters × bytes per parameter at your quantisation ≈ VRAM needed. A 7–8 B parameter model at 4-bit fits in 6 GB; a 14 B model needs 10–12 GB; 32 B needs 20–24 GB; 70 B needs 40+ GB or two cards. NVIDIA has the most mature software stack (CUDA is what everything targets first); the used RTX 3090 (24 GB, USD 600–800) and RTX 3060 12 GB (USD 200–250) are perennial value picks, and the RTX 4060 Ti 16 GB and 5060 Ti 16 GB are efficient mid-range choices. AMD's ROCm works for many workloads (Ollama, llama.cpp, Stable Diffusion) and the RX 7900 XTX at 24 GB is cheaper than NVIDIA equivalents; Intel Arc works via IPEX/SYCL for llama.cpp and Ollama with less polish. Apple Silicon Macs with unified memory (a Mac Mini/Studio with 64–192 GB) are an unconventional but effective LLM server. [Chapter 23](#local-ai-llms-image-generation-speech-and-search) covers all of this in depth.
 
-**Passing through to a VM or game-streaming.** A GPU passed to a Windows VM for a Sunshine/Moonlight streaming setup ([Chapter 24](24-gaming.md)), or to a Linux desktop VM. Requires IOMMU support (nearly universal now) and some Proxmox configuration.
+**Passing through to a VM or game-streaming.** A GPU passed to a Windows VM for a Sunshine/Moonlight streaming setup ([Chapter 24](#gaming-game-servers-retro-libraries-and-streaming)), or to a Linux desktop VM. Requires IOMMU support (nearly universal now) and some Proxmox configuration.
 
 **Power and PCIe.** A discrete GPU adds 10–30 W at idle and hundreds under load, and needs a real PCIe slot and often a PSU upgrade. Older NVIDIA cards (pre-Turing) idle poorly under Linux without `nvidia-persistenced` and tuning. Decide whether a GPU belongs in the always-on server or in a separate machine that sleeps when not in use.
 
@@ -2292,7 +2294,7 @@ The manual version of Pangolin, which many people ran for years: a VPS with Wire
    - Public IP, comfortable managing exposure → forward 443 to your reverse proxy with forward-auth, CrowdSec, and everything in [Chapter 13](#security-for-the-home-lab).
    - CGNAT, or you refuse inbound exposure → Pangolin on a VPS (full control), or Cloudflare Tunnel + Access (zero cost, accept their terms and TLS termination).
 
-4. **Do you need to expose non-HTTP services** (game servers, SSH, Minecraft, a mail server)? → Public IP: forward the specific port with the strongest auth the service supports. CGNAT: Pangolin raw TCP/UDP resources, a VPS with WireGuard + DNAT, or Playit.gg for game servers ([Chapter 24](24-gaming.md)).
+4. **Do you need to expose non-HTTP services** (game servers, SSH, Minecraft, a mail server)? → Public IP: forward the specific port with the strongest auth the service supports. CGNAT: Pangolin raw TCP/UDP resources, a VPS with WireGuard + DNAT, or Playit.gg for game servers ([Chapter 24](#gaming-game-servers-retro-libraries-and-streaming)).
 
 5. **Layer 2 required, or MikroTik native?** → ZeroTier.
 
@@ -3641,7 +3643,7 @@ An older, different beast: a **tabbed iframe container** that loads your service
 - **Icons matter.** The Dashboard Icons project has nearly everything; consistent iconography makes a page scannable.
 - **Status, not noise.** A green/red dot per service is useful. Twelve live graphs are not, on the family page.
 - **Set it as the browser home page** on family devices and as the new-tab page on yours. A dashboard nobody opens is decoration.
-- **Search.** Homepage, Homarr, Dashy, and Glance all support a search bar with provider shortcuts (`!g` for Google, `!yt`) — configure it to hit your **SearXNG** ([Chapter 23](23-ai-llm.md)) and it becomes a genuinely useful start page.
+- **Search.** Homepage, Homarr, Dashy, and Glance all support a search bar with provider shortcuts (`!g` for Google, `!yt`) — configure it to hit your **SearXNG** ([Chapter 23](#local-ai-llms-image-generation-speech-and-search)) and it becomes a genuinely useful start page.
 - **Protect it.** The dashboard reveals your entire service inventory and often holds API keys. Behind the reverse proxy, forward-auth or at least LAN/VPN-only, never public.
 - **Socket proxy for Docker integration.** Every dashboard that reads container status wants the Docker socket. Give it a read-only socket proxy ([Chapter 13](#security-for-the-home-lab)).
 - **Keep it in Git** if it is YAML. The dashboard is documentation of what you run.
@@ -5175,5 +5177,309 @@ Typical lab automations: "when Sonarr imports an episode, post to the family Mat
 - [ ] Docker management UI (Dockge/Komodo/Portainer) restricted to LAN/VPN with auth; socket access via a proxy where possible.
 - [ ] n8n/Activepieces/Windmill credentials stored in its encrypted credential store; its database backed up (workflows are precious).
 - [ ] Every scheduled automation reports to Healthchecks/Uptime Kuma.
+
+---
+
+# Local AI: LLMs, Image Generation, Speech, and Search
+
+Running AI models on your own hardware went from a curiosity to a legitimate self-hosting category between 2023 and 2026. Open-weight language models now rival the hosted giants for everyday tasks; image generation runs on a mid-range GPU; speech-to-text and text-to-speech are fast and free; and the tooling to serve all of it — Ollama, Open WebUI, llama.cpp, vLLM, ComfyUI, Whisper — is mature. This chapter explains how to size hardware for models (the VRAM arithmetic that decides everything), compares the inference servers and chat front-ends, covers image generation, speech, retrieval-augmented generation over your own documents, coding assistants, private search with SearXNG, and the practical integrations with the rest of the lab — Home Assistant, Paperless, Immich, Frigate — that make a local model genuinely useful rather than a toy.
+
+## Why run models locally
+
+- **Privacy**: your documents, photos, conversations, and code never leave the house. For a household's medical letters, finances, and personal notes, this is the whole argument.
+- **Cost**: zero per-token; a GPU pays for itself against API bills quickly if you use models heavily — and is free to experiment with.
+- **Control**: no content filters you did not choose, no model deprecations, no rate limits, no terms-of-service changes, works offline.
+- **Integration**: local models can be wired into Home Assistant, Paperless, Immich, n8n, and your editor without sending anything to a third party.
+
+The honest counterpoint: the very largest hosted frontier models remain more capable than anything that fits on consumer hardware, and for hard reasoning or the newest capabilities a hosted API may still be the right tool. Local models in the 8–70 B parameter range are excellent at summarisation, drafting, translation, Q&A over documents, classification, coding assistance, and home-automation intent — which covers most of what most people do.
+
+## Hardware and the VRAM arithmetic
+
+The single number that determines what you can run is **GPU memory (VRAM)**. Models are measured in parameters (B = billions); each parameter takes space depending on **quantisation** — the precision it is stored at:
+
+| Precision | Bytes per parameter | 8B model | 14B | 32B | 70B |
+|---|---|---|---|---|---|
+| FP16/BF16 (full) | 2 | 16 GB | 28 GB | 64 GB | 140 GB |
+| Q8 (8-bit) | ~1.1 | 9 GB | 15 GB | 34 GB | 75 GB |
+| **Q4_K_M / Q4 (4-bit)** — the sweet spot | ~0.6 | **5 GB** | **9 GB** | **20 GB** | **40 GB** |
+| Q2–Q3 | ~0.4 | 3.5 GB | 6 GB | 13 GB | 28 GB (degraded) |
+
+Add **context** (the conversation and documents in the prompt): the KV cache for a long context can add several GB — 8K tokens is modest, 32K+ meaningful, 128K substantial. Rule of thumb: **model size at Q4 + 2–4 GB for context and overhead** must fit in VRAM for full-speed generation. Models that do not fit spill to system RAM (Ollama/llama.cpp do this automatically) and slow down by an order of magnitude — usable for batch jobs, painful for chat.
+
+**Quality at 4-bit** is remarkably close to full precision for models above ~7 B; below Q4 degradation becomes noticeable. Q4_K_M or Q5_K_M GGUF quants are the community default; Q6/Q8 if you have the room.
+
+**Practical tiers (2026):**
+
+| Hardware | VRAM | Comfortable models | Notes |
+|---|---|---|---|
+| CPU only (mini PC, 16–32 GB RAM) | — | 1–8 B at Q4, slowly (2–10 tokens/s) | Fine for HA intents, tagging, small summaries. Memory bandwidth is the limit; dual-channel DDR5 helps. |
+| Intel Arc A770 16 GB / B580 12 GB | 12–16 GB | 8–14 B | Works via IPEX-LLM/SYCL/Vulkan with less polish than CUDA; improving. |
+| RTX 3060 12 GB / 4060 Ti 16 GB / 5060 Ti 16 GB | 12–16 GB | 8–14 B comfortably; 24–32 B tightly at Q3–Q4 | The value entry points. 16 GB is meaningfully better than 12. |
+| RTX 3090 / 4090 / 5090 (24–32 GB) | 24–32 GB | **32 B at Q4 with room**; 70 B at Q2–Q3 | The used 3090 (~USD 600–800) is the perennial home-lab pick. |
+| 2× 24 GB cards | 48 GB | 70 B at Q4 | Tensor parallel via vLLM/exllama, or layer split via llama.cpp. |
+| AMD RX 7900 XTX 24 GB | 24 GB | Same as 3090 | ROCm works for Ollama/llama.cpp/vLLM/ComfyUI; more friction than CUDA; cheaper. |
+| Apple Silicon Mac (Mini/Studio) | Unified 32–192 GB | Up to 70–120 B at Q4 on high-memory configs | Excellent tokens/s for the power; the unconventional but very effective LLM server. MLX and llama.cpp. |
+| Strix Halo mini PCs (Ryzen AI Max+ 395, 64–128 GB unified) | Up to ~96 GB for GPU | 70 B at Q4 | 2025's interesting x86 alternative to a Mac for big models; ROCm/Vulkan. |
+| NVIDIA DGX Spark / GB10 boxes | 128 GB unified | 70–120 B | Expensive; purpose-built. |
+
+**Other considerations:** PCIe bandwidth barely matters for single-card inference (x4 is fine — a card in an SFF's second slot works); **power** — a 3090 idles at ~20 W and pulls 350 W generating (undervolt/power-limit to ~250 W loses little); **cooling** in a case that was not designed for it; **the GPU can be in a separate machine** that other services call over the network, and that machine can suspend when idle; **Frigate, Immich ML, and Jellyfin transcoding** can share the same GPU with the LLM if VRAM allows (NVIDIA only via the container toolkit; Intel via `/dev/dri` — one GPU, many containers).
+
+## Inference servers
+
+The server loads the model and exposes an API (almost always **OpenAI-compatible** — `/v1/chat/completions` — which every client speaks).
+
+### Ollama
+
+The **default** for home use: a single binary/container that downloads models from its library by name (`ollama pull llama3.3`, `qwen3:32b`, `gemma3`, `mistral-small`, `deepseek-r1`, `phi4`, and hundreds more, plus any GGUF from Hugging Face), manages them, loads/unloads on demand, runs multiple models, serves an OpenAI-compatible API, supports NVIDIA (CUDA), AMD (ROCm), Apple (Metal), Intel (via a fork/Vulkan), and CPU, handles vision models, embeddings, tool calling, structured outputs, and automatic GPU/CPU layer split. Built on llama.cpp. It made local LLMs a one-command affair and nearly every self-hosted app that integrates with a local model integrates with Ollama first.
+
+**Watch out for:** default context window is small (2K–4K) unless you set `num_ctx` or create a Modelfile — many "the model forgot what I said" complaints are this; it is slightly slower and less tunable than raw llama.cpp or vLLM; model library tags are sometimes ambiguous about quantisation (check the tag's details); keep-alive defaults unload models after 5 minutes (set `OLLAMA_KEEP_ALIVE=-1` or a longer time for latency).
+
+```yaml
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    volumes: ["/mnt/fast/ollama:/root/.ollama"]     # models are large (5–40 GB each); fast SSD
+    environment:
+      OLLAMA_KEEP_ALIVE: 30m
+      OLLAMA_NUM_PARALLEL: "2"
+      OLLAMA_FLASH_ATTENTION: "1"
+    ports: ["127.0.0.1:11434:11434"]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: all, capabilities: [gpu] }]
+    # AMD: image: ollama/ollama:rocm  + devices: ["/dev/kfd", "/dev/dri"]
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    depends_on: [ollama]
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_URL: https://chat.example.com
+      ENABLE_SIGNUP: "false"
+    volumes: ["./open-webui:/app/backend/data"]
+    networks: [proxy, default]
+```
+
+### llama.cpp (llama-server)
+
+The C/C++ inference engine underneath Ollama, LM Studio, and much else. Its own `llama-server` exposes an OpenAI-compatible API with **full control** over every parameter (context, batch, threads, GPU layers, KV cache quantisation, speculative decoding, grammar-constrained output), supports every GGUF model the day it appears, runs on CUDA/ROCm/Metal/Vulkan/SYCL/CPU, and is often 10–30% faster than Ollama for the same model. No model library or management — you download GGUFs yourself. **Pick it if** you want maximum performance and control from one model at a time; **llama-swap** adds on-demand model switching in front of it.
+
+### vLLM
+
+The production inference server: **PagedAttention**, continuous batching, tensor parallelism across GPUs, and very high throughput for many simultaneous requests. It runs Hugging Face safetensors models (FP16, AWQ, GPTQ, FP8 quants — GGUF support is secondary) and wants the whole model in VRAM. For a single user chatting, it offers little over llama.cpp; for serving a household plus automations plus a coding assistant concurrently, or running two GPUs as one, it is the right tool. Heavier to set up; NVIDIA-first with AMD support.
+
+### Others
+
+**LocalAI** (an all-in-one OpenAI-compatible server for LLMs, embeddings, image generation, TTS, STT, with a model gallery — the "everything behind one API" option, somewhat heavier and less polished than the specialists), **LM Studio** (desktop app with a server mode — excellent on a Mac or Windows PC, not a headless service), **Text Generation WebUI (oobabooga)** (the Swiss Army knife with every backend and a dense UI; for tinkerers), **TabbyAPI/ExLlamaV2** and **exllamav3** (the fastest NVIDIA-only engines for EXL2/EXL3 quants — power users), **SGLang** (vLLM competitor), **MLX-LM** (Apple Silicon native), **Aphrodite**, **KoboldCpp** (llama.cpp with a story/roleplay UI), **Jan** (desktop), **GPT4All** (desktop), **Xinference**, **TGI** (Hugging Face's server). For most home labs: **Ollama**, with llama.cpp when you want to tune.
+
+## Chat front-ends
+
+- **Open WebUI** — the ChatGPT-like interface for local models and the community standard: multi-user with roles, model switching, conversation history, **RAG over uploaded documents and web pages**, web search integration (SearXNG, others), image generation hooks (ComfyUI/Automatic1111), voice input/output (Whisper/TTS), tool/function calling, "pipelines" and plugins, prompt library, OIDC login, and connections to any OpenAI-compatible API alongside Ollama (so one UI fronts local *and* hosted models). Actively developed to a fault — features arrive weekly. ~500 MB–1 GB RAM. **The recommendation.** Note the licence moved from MIT to a custom licence with a branding clause in 2025; free for self-hosting.
+- **LibreChat** — a polished multi-provider chat UI (OpenAI, Anthropic, Google, Ollama, any OpenAI-compatible) with agents, RAG, plugins, conversation search, and a strong multi-user story; MIT. Slightly more "many providers, one UI" than "local-first." Excellent; a close second.
+- **AnythingLLM** — RAG-centric: workspaces of documents with chat over them, agents, many vector DBs and providers, a desktop app too. Good for "chat with my document collection" as the primary use.
+- **Lobe Chat**, **Chatbot UI**, **Hollama** (minimal), **Enchanted** (iOS/macOS native for Ollama), **Msty** (desktop), **Reins** (mobile for Ollama), **Ollama's own app** (2025, desktop), **SillyTavern** (roleplay-oriented), **Hoarder/Karakeep**, **Perplexica** (below).
+
+## Retrieval-augmented generation (RAG) over your own data
+
+RAG lets a model answer questions from *your* documents: chunk them, embed them into a vector store, retrieve relevant chunks for each question, and give them to the model as context. In practice at home:
+
+- **Open WebUI's built-in RAG** (upload documents or point at a folder; uses a local embedding model via Ollama — `nomic-embed-text`, `bge-m3`, `mxbai-embed-large`) covers most needs without any extra service.
+- **AnythingLLM** for a more document-centric workflow.
+- **Paperless-AI / Paperless-GPT** for asking questions of your Paperless archive ([Chapter 17](#files-sync-and-documents)).
+- **Khoj** (a personal AI over your notes — Obsidian/Markdown/PDF/Notion — with chat, search, and an agent framework; self-hostable), **Danswer/Onyx** (enterprise-grade search-and-chat over many connectors — heavy), **Dify** and **Flowise** and **Langflow** (visual builders for LLM apps and RAG pipelines — for people building rather than just using), **n8n's AI nodes** ([Chapter 22](#developer-tools-git-hosting-and-automation)).
+- Vector stores if you build your own: **Qdrant**, **Chroma**, **Weaviate**, **Milvus**, **pgvector** in Postgres ([Chapter 26](26-databases-backing-services.md)) — pgvector is the pragmatic home choice.
+
+Realistic expectations: RAG over a few thousand well-formatted documents with a 14–32 B model is genuinely useful; over a messy 200 GB archive it needs tuning (chunking, hybrid search with a keyword index, reranking) and patience.
+
+## Coding assistants
+
+- **Editor integration**: **Continue** (VS Code/JetBrains — open source, points at Ollama/llama.cpp/vLLM for chat, autocomplete, and edits), **Cline / Roo Code** (agentic coding in VS Code; local models work but the 8–32 B ones lag hosted frontier models at agentic tasks), **Tabby** (a self-hosted GitHub-Copilot-style server with its own IDE extensions and code indexing — the most complete self-hosted Copilot replacement), **llama.vscode**, **Aider** (terminal pair-programmer; any model), **OpenCode**/**Crush** and other terminal agents.
+- **Models**: Qwen2.5-Coder / Qwen3-Coder, DeepSeek-Coder-V2, Codestral, StarCoder2, and the general models (Llama 3.x, Gemma 3, Mistral) all code competently at 14–32 B. Autocomplete wants a *small fast* model (1.5–7 B); chat/edit wants the biggest you can fit.
+
+## Image generation
+
+**Stable Diffusion** (1.5, SDXL, SD 3.5), **FLUX.1** (dev/schnell — the 2024–2025 quality leader among open weights), **Qwen-Image**, **HiDream**, and video models (**Wan**, **HunyuanVideo**, **LTX**) run locally on a GPU with 8–24 GB VRAM (FLUX dev wants 12+ GB at FP8; quantised GGUF variants run on less).
+
+- **ComfyUI** — the node-graph workflow tool that has become the standard: every model, every technique (ControlNet, LoRA, inpainting, upscaling, IP-Adapter, video), workflows shared as JSON/embedded in images, an enormous custom-node ecosystem, and a learning curve. Run as a container with the GPU; **ComfyUI-Manager** for nodes; keep it LAN/VPN-only (arbitrary custom nodes execute code).
+- **Stable Diffusion WebUI (Automatic1111)** — the original tabbed UI, still widely used, less actively developed; **Forge** and **reForge** are faster forks; **SD.Next** is the most actively maintained fork with broad model support; **Fooocus** is the "Midjourney-simple" UI (less updated); **InvokeAI** is the polished professional-style app with a unified canvas; **SwarmUI** wraps ComfyUI in a friendlier front-end.
+- Integrations: Open WebUI can call ComfyUI/A1111 for image generation from chat; Immich uses CLIP (not generation); **Stable Diffusion in Home Assistant** for generated dashboard art is a thing people do.
+
+## Speech
+
+- **Speech-to-text**: **Whisper** (OpenAI's open model) via **faster-whisper** (CTranslate2, 4× faster), **whisper.cpp** (CPU/Metal), **WhisperX** (word timestamps, diarisation), **Speaches** (formerly faster-whisper-server — an OpenAI-compatible API for STT *and* TTS, the clean way to serve it), **Wyoming faster-whisper** (Home Assistant add-on), **Vosk** (tiny, offline, lower accuracy), **NVIDIA Parakeet/Canary** (very fast, English-strong), **Moonshine**. Use cases: HA voice, meeting transcription (**Scriberr** and **Whishper** are self-hosted transcription apps with UIs), subtitles (**Bazarr** can use Whisper via **whisper-asr-webservice**; **Subgen**), voice notes.
+- **Text-to-speech**: **Piper** (fast, light, many voices, the HA default), **Kokoro** (2025 — remarkably natural for 82 M parameters, runs on CPU; **Kokoro-FastAPI** serves it OpenAI-style), **XTTS-v2**/**Coqui** (voice cloning; heavier), **F5-TTS**, **Chatterbox**, **OpenedAI-Speech** (OpenAI-compatible TTS wrapper), **Mimic 3**, **Orpheus**. For HA announcements and audiobook generation, Piper or Kokoro.
+- **Full voice pipelines**: HA Assist ([Chapter 19](#home-automation)); Open WebUI's voice mode with Whisper + Kokoro; **LocalAI** bundling both.
+
+## Private search: SearXNG
+
+**SearXNG** is a self-hosted **metasearch engine**: it queries Google, Bing, DuckDuckGo, Brave, Wikipedia, and 200+ other engines on your behalf, aggregates and deduplicates results, and returns them with no tracking, no ads, and no profile — the engines see your server's IP, not your identity. Fast, light (~100 MB), configurable per-engine, with a JSON API that **Open WebUI, Perplexica, LibreChat, and n8n** use for web-augmented answers. Set it as your browser's default search; run it LAN/VPN-only or rate-limited if public (public instances attract bot traffic and get your IP blocked by Google). **Whoogle** (a Google-only proxy) and **4get** are alternatives; **Perplexica** and **Morphic** are self-hosted Perplexity-style "answer engines" that combine SearXNG with a local LLM for cited answers — Perplexica + Ollama + SearXNG is a genuinely useful stack.
+
+## Integrations across the lab
+
+Where a local model earns its keep:
+
+- **Home Assistant**: the Ollama integration as a conversation agent for Assist — natural-language control ("make it cosy in here"), with **exposed entities** as tools; also summarising camera events (LLM Vision), writing notifications, and generating dashboard text. A 7–14 B model is enough.
+- **Paperless-ngx**: **Paperless-AI**/**Paperless-GPT** auto-title, tag, and extract correspondents; ask questions of your archive.
+- **Immich**: not an LLM, but its CLIP and face models run on the same GPU; larger CLIP models (ViT-L, ViT-H) improve search noticeably if you have the VRAM.
+- **Frigate**: **GenAI** integration describes detected objects/events in natural language via Ollama; semantic search embeddings.
+- **Karakeep/Linkwarden**: auto-tagging and summaries of saved links.
+- **Nextcloud Assistant**: local LLM via the Ollama/OpenAI-compatible backend for summaries, translations, and text generation inside Nextcloud.
+- **n8n / Windmill**: LLM nodes for classification, extraction, and summarisation in workflows — morning briefings from RSS, invoice parsing, ticket triage.
+- **Obsidian** (Copilot/Smart Connections plugins pointed at Ollama), **Joplin**, **Trilium** — note-taking with local AI.
+- **Jellyfin/Plex**: subtitle generation via Whisper; **Recommendarr** for recommendations.
+- **Email**: local spam/priority classification, drafting replies (via n8n or Stalwart hooks).
+
+## Operational notes
+
+- **Models are large** — 5–40 GB each; a 1 TB NVMe fills quickly. Keep them on fast local storage and prune.
+- **GPU sharing**: NVIDIA lets many containers use one GPU (VRAM permitting); Ollama unloads idle models to make room. Set `OLLAMA_MAX_LOADED_MODELS` and keep-alive deliberately. Intel iGPUs share `/dev/dri` among containers naturally.
+- **Power**: an idle 3090 is 20 W; add a "suspend the GPU box when idle, wake-on-LAN on request" automation if the machine is separate ([Chapter 29](29-power-cost-environment.md)).
+- **Security**: never expose Ollama's API (no auth by default) or ComfyUI (arbitrary code via custom nodes) beyond LAN/VPN; put Open WebUI behind forward-auth/OIDC; treat prompt injection via RAG'd documents as real if the model has tools.
+- **Model choice changes monthly.** As of 2026 the dependable families for general use are Llama 3.x/4, Qwen 3, Gemma 3, Mistral Small/Medium, DeepSeek (R1/V3 distils), Phi-4, GLM; for vision, Qwen-VL, Gemma 3, Llama 3.2 Vision, Pixtral; for embeddings, bge-m3, nomic-embed, Qwen3-Embedding. Check r/LocalLLaMA and the Open LLM Leaderboard rather than trusting any static list.
+- **Licences**: most open-weight models have permissive or "open with acceptable-use" licences (Llama's has a 700 M-user clause irrelevant to you; Gemma's has usage terms; Qwen and Mistral Small are Apache 2.0). Fine for personal use; read them if you build a product.
+
+## Recommendations
+
+- **Hardware**: an RTX 3090/4090 (24 GB) if you are serious; a 16 GB card (4060 Ti/5060 Ti) for a solid start; a Mac Mini/Studio with 64 GB+ if you want big models at low power; CPU-only on a mini PC is fine for HA intents and tagging with 3–8 B models.
+- **Stack**: Ollama + Open WebUI + SearXNG, behind the proxy with OIDC; llama.cpp when you want to squeeze more out of one model; vLLM for concurrency.
+- **Models**: a 14–32 B general model at Q4 for chat, a 7–8 B for HA and automations, `bge-m3`/`nomic-embed-text` for embeddings, Whisper (via Speaches) + Kokoro/Piper for voice.
+- **Images**: ComfyUI with FLUX.1-dev or SDXL; SwarmUI or InvokeAI if you want friendlier.
+- **Integrate**: HA Assist, Paperless-AI, Frigate GenAI, n8n. That is where "I run an LLM" becomes "my house is smarter."
+
+## Checklist
+
+- [ ] GPU (or Mac/CPU plan) sized against the models you actually want to run; VRAM arithmetic done.
+- [ ] Ollama (or llama.cpp/vLLM) running with the GPU visible inside the container (`nvidia-smi`/`rocm-smi`/`intel_gpu_top` from the host shows load when generating).
+- [ ] Open WebUI behind the reverse proxy with OIDC/forward-auth; signups disabled; API endpoints not exposed publicly.
+- [ ] Context length set appropriately (`num_ctx`/Modelfile); keep-alive tuned; models on fast storage with a pruning habit.
+- [ ] SearXNG running and wired into Open WebUI (and your browser).
+- [ ] At least one integration live (HA conversation agent, Paperless-AI, or an n8n workflow).
+- [ ] Whisper + a TTS engine serving HA Assist if you use voice.
+- [ ] ComfyUI (if run) reachable only via LAN/VPN; custom nodes reviewed before install.
+- [ ] Power behaviour of the GPU box understood and, if separate, suspended when idle.
+
+---
+
+# Gaming: Game Servers, Retro Libraries, and Streaming
+
+Gaming is a category where a home lab pays off in a way everyone in the house understands: a Minecraft server for the kids and their friends that is always on and under your control; a Valheim or Palworld world for your group; a retro game library browsable from the couch; and a gaming PC in the closet streamed to any screen in the house. This chapter covers game server management panels (Pterodactyl and its fork Pelican, Crafty Controller, PufferPanel, AMP, and the container-per-game approach), the reality of exposing game servers to friends (and how to do it behind CGNAT with Playit.gg or a VPS), retro game libraries (RomM, Gaseous, EmulatorJS), game streaming from a home PC or VM (Sunshine and Moonlight, with GPU passthrough on Proxmox), and adjacent tools (LAN caches, Steam library management, save-game sync).
+
+## Game servers
+
+### The container-per-game approach
+
+The simplest way to run one game server is one Docker container with a well-maintained image:
+
+- **itzg/minecraft-server** — the gold standard: every server type (Vanilla, Paper, Purpur, Fabric, Forge, NeoForge, Spigot, Velocity proxy), automatic version handling, mod/plugin downloads from CurseForge/Modrinth via environment variables, RCON, world backups (companion `itzg/mc-backup`), auto-pause when empty (saves CPU), and exhaustive documentation. If you run one Minecraft server, use this.
+- **itzg/minecraft-bedrock-server** for Bedrock (console/phone players); **GeyserMC** (plugin) lets Bedrock clients join a Java server.
+- **lloesche/valheim-server**, **thijsvanloef/palworld-server-docker**, **ich777/steamcmd** images (Unraid favourites — hundreds of Steam games), **CM2Network** (Source games), **wolveix/satisfactory-server**, **LinuxGSM** (a script-based manager for 100+ games, also in Docker), **factoriotools/factorio**, **Terraria** (`ryshe/terraria`), **Project Zomboid**, **Rust**, **ARK/ASA**, **Enshrouded**, **V Rising**, **7 Days to Die**… nearly every popular dedicated server has a maintained image.
+
+Pros: no panel to maintain, everything in your Compose file, trivially backed up (the world directory). Cons: no web UI for non-technical co-admins, no console access without `docker attach`/RCON, manual per-game.
+
+### Pterodactyl and Pelican
+
+**Pterodactyl** is the game-server management panel: a web UI (PHP/Laravel + MariaDB + Redis) where users create servers from "eggs" (templates for Minecraft, Rust, ARK, Valheim, Terraria, Discord bots, and hundreds more via the community egg repository), each server runs as an isolated Docker container managed by the **Wings** daemon on one or more nodes, with a web console, file manager, scheduled tasks, backups (local or S3), per-user permissions (give a friend admin over *their* server only), resource limits, and an API. It is what most game hosting companies run. **Pelican Panel** is the 2024 fork by former Pterodactyl maintainers after Pterodactyl's development stalled — same architecture, actively developed, modern UI (Filament), simpler installation, and rapid feature additions. **Pelican is the recommendation** for a new install in 2026; Pterodactyl still works but the momentum has moved.
+
+Watch out for: the panel and the Wings daemon are separate (Wings on the game host, panel anywhere; both must have valid TLS); the panel is a full LAMP-style stack (~1 GB with database); each game server is a container *inside* Wings' Docker, so nesting on a Docker host works but understand the layering; eggs vary in quality.
+
+### Crafty Controller
+
+A **Minecraft-focused** panel (Python): create and manage many Java/Bedrock servers, web console, scheduled backups and restarts, player management, scheduled commands, plugin/mod support, user roles. Simpler than Pelican, does Minecraft superbly, does nothing else. **The recommendation for a Minecraft-only household** — especially if a teenager will be the admin.
+
+### PufferPanel
+
+A lightweight Go panel supporting Minecraft, Source games, Terraria, and others via templates, with a clean UI, user permissions, OAuth2, and a small footprint (~100 MB). Less feature-rich than Pelican; faster to set up. A good middle option.
+
+### AMP (Application Management Panel)
+
+**CubeCoders AMP** is the **paid** (USD 10–20 one-time per licence tier) commercial panel: polished, supports 100+ games with "generic" module support for others, one-click mod/plugin installs, scheduling, backups, and excellent Windows *and* Linux support. It is the closest thing to a consumer product in this space and worth the money for people who want it to just work. Runs in Docker or natively.
+
+### Others
+
+**LinuxGSM** (the CLI script manager — reliable, no UI), **Gameyfin** (library, not servers), **Multicraft** (commercial, dated), **MCSManager**, **Cuberite** (a lightweight C++ Minecraft-compatible server), **Velocity/Waterfall** (Minecraft proxies for networks of servers), **Lazymc** (puts a Minecraft server to sleep when empty and wakes it on connect — saves a lot of CPU/RAM; itzg's image has similar auto-pause).
+
+### Comparison
+
+| | Container-per-game | Pelican / Pterodactyl | Crafty Controller | PufferPanel | AMP |
+|---|---|---|---|---|---|
+| Games | Any with an image | Hundreds (eggs) | Minecraft only | Dozens (templates) | 100+ |
+| Web UI / console | No | **Yes, full** | Yes | Yes | **Yes, polished** |
+| Multi-user with permissions | No | **Yes** | Yes | Yes | Yes |
+| Multi-node | Compose per host | **Yes (Wings)** | No | Yes | Yes |
+| Footprint | Just the game | ~1 GB panel + Wings | ~200 MB | ~100 MB | ~300 MB |
+| Cost | Free | Free | Free | Free | **Paid** |
+| Best for | One or two servers, you as admin | Many games, many users | Minecraft households | Light general panel | Turnkey polish |
+
+## Resources and hardware for game servers
+
+Game servers are unusual in a home lab: they are **single-thread-heavy and RAM-hungry** rather than idle. Minecraft Java wants a fast core and 4–8 GB for a modded server; Valheim/Palworld/ARK want 8–16 GB; most tick along at 5–30% of a core when players are idle and spike when they are active. An N100 runs a vanilla Minecraft server for a few players; a modded server or several concurrent games wants a real desktop CPU (Ryzen 5/7, Core i5/i7) with high single-core clocks — the same used SFF workstation that makes a good Proxmox node. Give game servers **local SSD** for worlds (chunk loading is I/O-sensitive) and **auto-pause/sleep** when empty. Back up worlds nightly (`mc-backup`, Pelican's backups, or snapshots) — a corrupted world is a family crisis.
+
+## Exposing servers to friends
+
+Friends outside your house need to connect. Options in order of preference:
+
+1. **Mesh VPN for your friend group.** Tailscale's free tier allows sharing individual devices/subnets with other tailnets, and friends can install Tailscale in two minutes. Nothing exposed; works behind CGNAT; the server is reachable at a stable tailnet IP or MagicDNS name. **The best option when friends are willing** — and gamers usually are.
+2. **Playit.gg** — a free (with paid tiers) tunnelling service designed for game servers: a small agent at home makes an outbound connection; Playit gives you a public address (TCP/UDP) that forwards to your server. Works behind CGNAT, no port forwarding, supports Minecraft/Valheim/Terraria/etc. natively, no client install for friends. Traffic passes through Playit's relays (latency adds 10–40 ms). **The best option when friends will not install anything.**
+3. **Pangolin or a VPS with WireGuard + DNAT** ([Chapter 8](#remote-access-and-vpns)) for raw TCP/UDP forwarding through your own relay — full control, ~USD 4/month, works behind CGNAT.
+4. **Port forwarding** the game's port (Minecraft 25565/TCP, Valheim 2456–2458/UDP, etc.) directly, with a DDNS name. Simple if you have a public IP; exposes the game server binary to the internet — keep it updated, use a whitelist (Minecraft `white-list=true`), enable online-mode, and consider a non-default port to reduce scanner noise. Game servers are generally hardened against random connections, but a Minecraft server with `online-mode=false` and no whitelist *will* be griefed within days.
+5. **Cloudflare Tunnel** — HTTP-only on free plans (TCP via `cloudflared access` needs the client installed, and Spectrum for raw UDP is enterprise); not suitable for most games.
+
+For **voice**, run **Mumble** ([Chapter 20](#communication-chat-video-calls-and-email)) alongside — light, low-latency, exposed the same way.
+
+## Retro game libraries
+
+The other half of gaming in a home lab: your collection of ROMs and disc images (from cartridges and discs you own — [Chapter 30](30-legal-ethical.md)), organised with box art and metadata, playable in a browser or streamed to a handheld.
+
+- **RomM** — the modern ROM manager: scans a folder tree organised by platform, fetches metadata and artwork from IGDB/ScreenScraper/MobyGames/Hasheous, shows a beautiful library UI, supports 400+ platforms, has **in-browser play via EmulatorJS** for supported systems (NES through PS1/N64/DS), **save states and saves synced across devices**, multi-user with per-user libraries, collections, and integration with **Playnite** and **muOS/OnionOS/KNULLI** handheld firmware via its API and the community sync apps. Python + Postgres, ~500 MB. **The recommendation** — it has become the Jellyfin of ROMs.
+- **Gaseous Server** — the .NET alternative with similar goals: library, metadata from IGDB, EmulatorJS in-browser play, ROM hash verification against No-Intro/TOSEC DATs (excellent for verifying a collection), user management. Slightly more archivist-oriented; a solid alternative.
+- **EmulatorJS** (the standalone project) — the browser emulation engine (RetroArch cores compiled to WebAssembly) that RomM and Gaseous embed; can be self-hosted alone as a simple "put ROMs in a folder, play in browser" site.
+- **RetroArch** on the client (any device: Steam Deck, Android, Raspberry Pi with RetroPie/Batocera/RecalBox, an old laptop) reading from an SMB/NFS share of your library — the traditional approach; RomM adds the pretty library and the sync.
+- **Playnite** (Windows launcher aggregating Steam/GOG/Epic/emulators — with a RomM plugin), **Pegasus**, **ES-DE (EmulationStation Desktop Edition)** on the couch PC/Steam Deck pointed at the share.
+- **Gameyfin** — a library manager for *PC* game installers (GOG offline installers and the like), with download links for the household. Different niche.
+- **Steam ROM Manager**, **Skyscraper** (metadata scrapers for handheld frontends).
+- Handheld sync: **RomM's muOS/KNULLI apps**, **Syncthing** for save files, **Ludusavi** for PC save-game backups.
+
+## Game streaming from a home PC or VM
+
+Play a full gaming PC on a TV, laptop, tablet, phone, or Steam Deck anywhere in the house (or, over a good connection, anywhere) — the machine stays in the closet with the GPU, the client shows a low-latency stream.
+
+- **Sunshine** (host) + **Moonlight** (client) — the open-source pair that replaced NVIDIA GameStream when NVIDIA discontinued it: Sunshine runs on the gaming machine (Windows or Linux; NVIDIA, AMD, or Intel encoders — NVENC/AMF/QSV/VAAPI), Moonlight runs on everything (Windows, macOS, Linux, iOS, Android, Android TV, Apple TV, Steam Deck, Raspberry Pi, Nintendo Switch homebrew, Xbox, web). 4K 120 Hz HDR with ~5–15 ms added latency on a wired LAN, gamepad/mouse/keyboard passthrough, multi-monitor, virtual displays (via **Virtual Display Driver** on Windows, so the host needs no monitor plugged in). **The standard.** Pair with **Apollo** (a Sunshine fork with per-client virtual displays and a few conveniences) if you like.
+- **Steam Remote Play / Steam Link** — built into Steam; simpler; slightly higher latency and less control; fine for a TV in the same house.
+- **Parsec** — proprietary, hosted brokering, excellent low-latency; free for personal use, requires an account; good over the internet.
+- **Wolf** (Games on Whales) — a Linux-native streaming host that runs each session in a container with its own virtual display and GPU access — multiple simultaneous users on one GPU, Moonlight-compatible; the multi-tenant/Linux-first alternative for people who want a "cloud gaming" box at home.
+- **Remote desktop tools** (RustDesk, Apache Guacamole, NoMachine) for non-gaming remote use; too laggy for games.
+
+**GPU passthrough on Proxmox** is how many people build the host: a Windows (or Linux/Bazzite) VM with a discrete GPU passed through via VFIO (IOMMU enabled in BIOS; the GPU's IDs bound to `vfio-pci`; the VM set to `q35`/OVMF with the PCIe device added; a dummy HDMI plug or virtual display so the GPU has an output), Sunshine inside the VM, the VM started on demand (Wake-on-LAN-style via the Proxmox API or a Home Assistant button). This gives you a gaming PC that is also a Proxmox node and, when the VM is off, the GPU can be reassigned to an LLM container or a Linux VM. Caveats: consumer NVIDIA passthrough works without the old Code 43 workaround since 2021; AMD cards have a "reset bug" on some models that prevents re-use without a host reboot (the `vendor-reset` module helps); anti-cheat in some games blocks VMs (detectable virtualisation — mitigations exist but games like Valorant refuse). A bare-metal Windows box with Sunshine is simpler if gaming is the primary purpose.
+
+## Adjacent tools
+
+- **LAN cache**: **LanCache** (`lancachenet`) — a caching proxy for Steam, Epic, Blizzard, Origin, Windows Update, and more: the first download of a 100 GB game from the internet is cached; every other PC in the house pulls it at LAN speed. Needs a DNS override (point the CDN hostnames at the cache via Pi-hole/AdGuard) and lots of disk. Superb for households with several gaming PCs or a slow connection.
+- **Save-game sync**: **Ludusavi** (backs up PC game saves to any folder — then Syncthing/Nextcloud carries them; also restores), **Syncthing** for emulator saves, **GameVault** (a self-hosted "Steam for your own game files" — library, downloads, metadata, save sync; for DRM-free collections), **Gameyfin**.
+- **Discord bots** and **game-server status pages**: **Uptime Kuma** has game-server monitors (Steam query); **Gamedig**-based bots post player counts.
+- **Voice**: Mumble ([Chapter 20](#communication-chat-video-calls-and-email)).
+- **Mod management**: Modrinth/CurseForge via itzg's image variables; **Pelican's** egg-level mod installers; **r2modman**/**Thunderstore** for client-side.
+- **Windows game servers** (some games have no Linux server): a Windows VM on Proxmox, or **Wine/Proton in Docker** (many Steam dedicated servers run under Wine — images exist for ARK, Palworld, etc.).
+
+## Recommendations
+
+- **One Minecraft server for the family:** `itzg/minecraft-server` with auto-pause and `mc-backup`, exposed to friends via Tailscale or Playit.gg, whitelist on.
+- **Several games, several admins:** Pelican Panel with Wings on a decent-CPU host; Crafty if it is only Minecraft and a teenager runs it.
+- **Retro library:** RomM with EmulatorJS in the browser and RetroArch/ES-DE on the couch device reading the same share; verify hashes with Gaseous or the DATs if you care about archival quality.
+- **Streaming:** Sunshine + Moonlight from a Windows VM with GPU passthrough on Proxmox (or a bare-metal box), with a Home Assistant button to power it on.
+- **Households with several gaming PCs:** LanCache.
+
+## Checklist
+
+- [ ] Game servers on a host with fast single-core performance and local SSD; RAM allocated per game; auto-pause/sleep when empty.
+- [ ] World/save directories in nightly backups (and snapshots); a restore tested once.
+- [ ] Friends' access via Tailscale (preferred) or Playit.gg/relay; if port-forwarding, whitelist + online-mode + non-default port + updates.
+- [ ] Panel (if used) behind the reverse proxy with TLS; Wings/agent daemons only reachable from the panel; admin accounts with MFA.
+- [ ] ROM library organised per platform; RomM (or Gaseous) scanned with metadata; saves synced; hashes verified if desired.
+- [ ] Streaming host reachable via Moonlight on the LAN with sub-20 ms latency; a wake/power-on mechanism for the gaming VM/PC.
+- [ ] Mumble (or chosen voice) alongside for the group.
 
 ---

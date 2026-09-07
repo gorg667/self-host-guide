@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local AI: LLMs, Image Generation, Speech, and Search — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li class="active"><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 23 · ~3,327 words · 15 min read</div>
+    <article class="prose">
+      <h1 id="local-ai-llms-image-generation-speech-and-search">Local AI: LLMs, Image Generation, Speech, and Search<a class="headerlink" href="#local-ai-llms-image-generation-speech-and-search" title="Permanent link">#</a></h1>
+<p>Running AI models on your own hardware went from a curiosity to a legitimate self-hosting category between 2023 and 2026. Open-weight language models now rival the hosted giants for everyday tasks; image generation runs on a mid-range GPU; speech-to-text and text-to-speech are fast and free; and the tooling to serve all of it — Ollama, Open WebUI, llama.cpp, vLLM, ComfyUI, Whisper — is mature. This chapter explains how to size hardware for models (the VRAM arithmetic that decides everything), compares the inference servers and chat front-ends, covers image generation, speech, retrieval-augmented generation over your own documents, coding assistants, private search with SearXNG, and the practical integrations with the rest of the lab — Home Assistant, Paperless, Immich, Frigate — that make a local model genuinely useful rather than a toy.</p>
+<h2 id="why-run-models-locally">Why run models locally<a class="headerlink" href="#why-run-models-locally" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Privacy</strong>: your documents, photos, conversations, and code never leave the house. For a household's medical letters, finances, and personal notes, this is the whole argument.</li>
+<li><strong>Cost</strong>: zero per-token; a GPU pays for itself against API bills quickly if you use models heavily — and is free to experiment with.</li>
+<li><strong>Control</strong>: no content filters you did not choose, no model deprecations, no rate limits, no terms-of-service changes, works offline.</li>
+<li><strong>Integration</strong>: local models can be wired into Home Assistant, Paperless, Immich, n8n, and your editor without sending anything to a third party.</li>
+</ul>
+<p>The honest counterpoint: the very largest hosted frontier models remain more capable than anything that fits on consumer hardware, and for hard reasoning or the newest capabilities a hosted API may still be the right tool. Local models in the 8–70 B parameter range are excellent at summarisation, drafting, translation, Q&amp;A over documents, classification, coding assistance, and home-automation intent — which covers most of what most people do.</p>
+<h2 id="hardware-and-the-vram-arithmetic">Hardware and the VRAM arithmetic<a class="headerlink" href="#hardware-and-the-vram-arithmetic" title="Permanent link">#</a></h2>
+<p>The single number that determines what you can run is <strong>GPU memory (VRAM)</strong>. Models are measured in parameters (B = billions); each parameter takes space depending on <strong>quantisation</strong> — the precision it is stored at:</p>
+<table>
+<thead>
+<tr>
+<th>Precision</th>
+<th>Bytes per parameter</th>
+<th>8B model</th>
+<th>14B</th>
+<th>32B</th>
+<th>70B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FP16/BF16 (full)</td>
+<td>2</td>
+<td>16 GB</td>
+<td>28 GB</td>
+<td>64 GB</td>
+<td>140 GB</td>
+</tr>
+<tr>
+<td>Q8 (8-bit)</td>
+<td>~1.1</td>
+<td>9 GB</td>
+<td>15 GB</td>
+<td>34 GB</td>
+<td>75 GB</td>
+</tr>
+<tr>
+<td><strong>Q4_K_M / Q4 (4-bit)</strong> — the sweet spot</td>
+<td>~0.6</td>
+<td><strong>5 GB</strong></td>
+<td><strong>9 GB</strong></td>
+<td><strong>20 GB</strong></td>
+<td><strong>40 GB</strong></td>
+</tr>
+<tr>
+<td>Q2–Q3</td>
+<td>~0.4</td>
+<td>3.5 GB</td>
+<td>6 GB</td>
+<td>13 GB</td>
+<td>28 GB (degraded)</td>
+</tr>
+</tbody>
+</table>
+<p>Add <strong>context</strong> (the conversation and documents in the prompt): the KV cache for a long context can add several GB — 8K tokens is modest, 32K+ meaningful, 128K substantial. Rule of thumb: <strong>model size at Q4 + 2–4 GB for context and overhead</strong> must fit in VRAM for full-speed generation. Models that do not fit spill to system RAM (Ollama/llama.cpp do this automatically) and slow down by an order of magnitude — usable for batch jobs, painful for chat.</p>
+<p><strong>Quality at 4-bit</strong> is remarkably close to full precision for models above ~7 B; below Q4 degradation becomes noticeable. Q4_K_M or Q5_K_M GGUF quants are the community default; Q6/Q8 if you have the room.</p>
+<p><strong>Practical tiers (2026):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Hardware</th>
+<th>VRAM</th>
+<th>Comfortable models</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPU only (mini PC, 16–32 GB RAM)</td>
+<td>—</td>
+<td>1–8 B at Q4, slowly (2–10 tokens/s)</td>
+<td>Fine for HA intents, tagging, small summaries. Memory bandwidth is the limit; dual-channel DDR5 helps.</td>
+</tr>
+<tr>
+<td>Intel Arc A770 16 GB / B580 12 GB</td>
+<td>12–16 GB</td>
+<td>8–14 B</td>
+<td>Works via IPEX-LLM/SYCL/Vulkan with less polish than CUDA; improving.</td>
+</tr>
+<tr>
+<td>RTX 3060 12 GB / 4060 Ti 16 GB / 5060 Ti 16 GB</td>
+<td>12–16 GB</td>
+<td>8–14 B comfortably; 24–32 B tightly at Q3–Q4</td>
+<td>The value entry points. 16 GB is meaningfully better than 12.</td>
+</tr>
+<tr>
+<td>RTX 3090 / 4090 / 5090 (24–32 GB)</td>
+<td>24–32 GB</td>
+<td><strong>32 B at Q4 with room</strong>; 70 B at Q2–Q3</td>
+<td>The used 3090 (~USD 600–800) is the perennial home-lab pick.</td>
+</tr>
+<tr>
+<td>2× 24 GB cards</td>
+<td>48 GB</td>
+<td>70 B at Q4</td>
+<td>Tensor parallel via vLLM/exllama, or layer split via llama.cpp.</td>
+</tr>
+<tr>
+<td>AMD RX 7900 XTX 24 GB</td>
+<td>24 GB</td>
+<td>Same as 3090</td>
+<td>ROCm works for Ollama/llama.cpp/vLLM/ComfyUI; more friction than CUDA; cheaper.</td>
+</tr>
+<tr>
+<td>Apple Silicon Mac (Mini/Studio)</td>
+<td>Unified 32–192 GB</td>
+<td>Up to 70–120 B at Q4 on high-memory configs</td>
+<td>Excellent tokens/s for the power; the unconventional but very effective LLM server. MLX and llama.cpp.</td>
+</tr>
+<tr>
+<td>Strix Halo mini PCs (Ryzen AI Max+ 395, 64–128 GB unified)</td>
+<td>Up to ~96 GB for GPU</td>
+<td>70 B at Q4</td>
+<td>2025's interesting x86 alternative to a Mac for big models; ROCm/Vulkan.</td>
+</tr>
+<tr>
+<td>NVIDIA DGX Spark / GB10 boxes</td>
+<td>128 GB unified</td>
+<td>70–120 B</td>
+<td>Expensive; purpose-built.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Other considerations:</strong> PCIe bandwidth barely matters for single-card inference (x4 is fine — a card in an SFF's second slot works); <strong>power</strong> — a 3090 idles at ~20 W and pulls 350 W generating (undervolt/power-limit to ~250 W loses little); <strong>cooling</strong> in a case that was not designed for it; <strong>the GPU can be in a separate machine</strong> that other services call over the network, and that machine can suspend when idle; <strong>Frigate, Immich ML, and Jellyfin transcoding</strong> can share the same GPU with the LLM if VRAM allows (NVIDIA only via the container toolkit; Intel via <code>/dev/dri</code> — one GPU, many containers).</p>
+<h2 id="inference-servers">Inference servers<a class="headerlink" href="#inference-servers" title="Permanent link">#</a></h2>
+<p>The server loads the model and exposes an API (almost always <strong>OpenAI-compatible</strong> — <code>/v1/chat/completions</code> — which every client speaks).</p>
+<h3 id="ollama">Ollama<a class="headerlink" href="#ollama" title="Permanent link">#</a></h3>
+<p>The <strong>default</strong> for home use: a single binary/container that downloads models from its library by name (<code>ollama pull llama3.3</code>, <code>qwen3:32b</code>, <code>gemma3</code>, <code>mistral-small</code>, <code>deepseek-r1</code>, <code>phi4</code>, and hundreds more, plus any GGUF from Hugging Face), manages them, loads/unloads on demand, runs multiple models, serves an OpenAI-compatible API, supports NVIDIA (CUDA), AMD (ROCm), Apple (Metal), Intel (via a fork/Vulkan), and CPU, handles vision models, embeddings, tool calling, structured outputs, and automatic GPU/CPU layer split. Built on llama.cpp. It made local LLMs a one-command affair and nearly every self-hosted app that integrates with a local model integrates with Ollama first.</p>
+<p><strong>Watch out for:</strong> default context window is small (2K–4K) unless you set <code>num_ctx</code> or create a Modelfile — many "the model forgot what I said" complaints are this; it is slightly slower and less tunable than raw llama.cpp or vLLM; model library tags are sometimes ambiguous about quantisation (check the tag's details); keep-alive defaults unload models after 5 minutes (set <code>OLLAMA_KEEP_ALIVE=-1</code> or a longer time for latency).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ollama</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama/ollama:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/mnt/fast/ollama:/root/.ollama&quot;</span><span class="p p-Indicator">]</span><span class="w">     </span><span class="c1"># models are large (5–40 GB each); fast SSD</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">OLLAMA_KEEP_ALIVE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30m</span>
+<span class="w">      </span><span class="nt">OLLAMA_NUM_PARALLEL</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2&quot;</span>
+<span class="w">      </span><span class="nt">OLLAMA_FLASH_ATTENTION</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;127.0.0.1:11434:11434&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">deploy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">reservations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">devices</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="nt"> driver</span><span class="p">:</span><span class="w"> </span><span class="nv">nvidia</span><span class="p p-Indicator">,</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">all</span><span class="p p-Indicator">,</span><span class="nt"> capabilities</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gpu</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}]</span>
+<span class="w">    </span><span class="c1"># AMD: image: ollama/ollama:rocm  + devices: [&quot;/dev/kfd&quot;, &quot;/dev/dri&quot;]</span>
+<span class="w">  </span><span class="nt">open-webui</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/open-webui/open-webui:main</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">open-webui</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">ollama</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">OLLAMA_BASE_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://ollama:11434</span>
+<span class="w">      </span><span class="nt">WEBUI_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://chat.example.com</span>
+<span class="w">      </span><span class="nt">ENABLE_SIGNUP</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./open-webui:/app/backend/data&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">default</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<h3 id="llamacpp-llama-server">llama.cpp (llama-server)<a class="headerlink" href="#llamacpp-llama-server" title="Permanent link">#</a></h3>
+<p>The C/C++ inference engine underneath Ollama, LM Studio, and much else. Its own <code>llama-server</code> exposes an OpenAI-compatible API with <strong>full control</strong> over every parameter (context, batch, threads, GPU layers, KV cache quantisation, speculative decoding, grammar-constrained output), supports every GGUF model the day it appears, runs on CUDA/ROCm/Metal/Vulkan/SYCL/CPU, and is often 10–30% faster than Ollama for the same model. No model library or management — you download GGUFs yourself. <strong>Pick it if</strong> you want maximum performance and control from one model at a time; <strong>llama-swap</strong> adds on-demand model switching in front of it.</p>
+<h3 id="vllm">vLLM<a class="headerlink" href="#vllm" title="Permanent link">#</a></h3>
+<p>The production inference server: <strong>PagedAttention</strong>, continuous batching, tensor parallelism across GPUs, and very high throughput for many simultaneous requests. It runs Hugging Face safetensors models (FP16, AWQ, GPTQ, FP8 quants — GGUF support is secondary) and wants the whole model in VRAM. For a single user chatting, it offers little over llama.cpp; for serving a household plus automations plus a coding assistant concurrently, or running two GPUs as one, it is the right tool. Heavier to set up; NVIDIA-first with AMD support.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<p><strong>LocalAI</strong> (an all-in-one OpenAI-compatible server for LLMs, embeddings, image generation, TTS, STT, with a model gallery — the "everything behind one API" option, somewhat heavier and less polished than the specialists), <strong>LM Studio</strong> (desktop app with a server mode — excellent on a Mac or Windows PC, not a headless service), <strong>Text Generation WebUI (oobabooga)</strong> (the Swiss Army knife with every backend and a dense UI; for tinkerers), <strong>TabbyAPI/ExLlamaV2</strong> and <strong>exllamav3</strong> (the fastest NVIDIA-only engines for EXL2/EXL3 quants — power users), <strong>SGLang</strong> (vLLM competitor), <strong>MLX-LM</strong> (Apple Silicon native), <strong>Aphrodite</strong>, <strong>KoboldCpp</strong> (llama.cpp with a story/roleplay UI), <strong>Jan</strong> (desktop), <strong>GPT4All</strong> (desktop), <strong>Xinference</strong>, <strong>TGI</strong> (Hugging Face's server). For most home labs: <strong>Ollama</strong>, with llama.cpp when you want to tune.</p>
+<h2 id="chat-front-ends">Chat front-ends<a class="headerlink" href="#chat-front-ends" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Open WebUI</strong> — the ChatGPT-like interface for local models and the community standard: multi-user with roles, model switching, conversation history, <strong>RAG over uploaded documents and web pages</strong>, web search integration (SearXNG, others), image generation hooks (ComfyUI/Automatic1111), voice input/output (Whisper/TTS), tool/function calling, "pipelines" and plugins, prompt library, OIDC login, and connections to any OpenAI-compatible API alongside Ollama (so one UI fronts local <em>and</em> hosted models). Actively developed to a fault — features arrive weekly. ~500 MB–1 GB RAM. <strong>The recommendation.</strong> Note the licence moved from MIT to a custom licence with a branding clause in 2025; free for self-hosting.</li>
+<li><strong>LibreChat</strong> — a polished multi-provider chat UI (OpenAI, Anthropic, Google, Ollama, any OpenAI-compatible) with agents, RAG, plugins, conversation search, and a strong multi-user story; MIT. Slightly more "many providers, one UI" than "local-first." Excellent; a close second.</li>
+<li><strong>AnythingLLM</strong> — RAG-centric: workspaces of documents with chat over them, agents, many vector DBs and providers, a desktop app too. Good for "chat with my document collection" as the primary use.</li>
+<li><strong>Lobe Chat</strong>, <strong>Chatbot UI</strong>, <strong>Hollama</strong> (minimal), <strong>Enchanted</strong> (iOS/macOS native for Ollama), <strong>Msty</strong> (desktop), <strong>Reins</strong> (mobile for Ollama), <strong>Ollama's own app</strong> (2025, desktop), <strong>SillyTavern</strong> (roleplay-oriented), <strong>Hoarder/Karakeep</strong>, <strong>Perplexica</strong> (below).</li>
+</ul>
+<h2 id="retrieval-augmented-generation-rag-over-your-own-data">Retrieval-augmented generation (RAG) over your own data<a class="headerlink" href="#retrieval-augmented-generation-rag-over-your-own-data" title="Permanent link">#</a></h2>
+<p>RAG lets a model answer questions from <em>your</em> documents: chunk them, embed them into a vector store, retrieve relevant chunks for each question, and give them to the model as context. In practice at home:</p>
+<ul>
+<li><strong>Open WebUI's built-in RAG</strong> (upload documents or point at a folder; uses a local embedding model via Ollama — <code>nomic-embed-text</code>, <code>bge-m3</code>, <code>mxbai-embed-large</code>) covers most needs without any extra service.</li>
+<li><strong>AnythingLLM</strong> for a more document-centric workflow.</li>
+<li><strong>Paperless-AI / Paperless-GPT</strong> for asking questions of your Paperless archive (<a href="../17-files-sync-documents/">Chapter 17</a>).</li>
+<li><strong>Khoj</strong> (a personal AI over your notes — Obsidian/Markdown/PDF/Notion — with chat, search, and an agent framework; self-hostable), <strong>Danswer/Onyx</strong> (enterprise-grade search-and-chat over many connectors — heavy), <strong>Dify</strong> and <strong>Flowise</strong> and <strong>Langflow</strong> (visual builders for LLM apps and RAG pipelines — for people building rather than just using), <strong>n8n's AI nodes</strong> (<a href="../22-dev-git-automation/">Chapter 22</a>).</li>
+<li>Vector stores if you build your own: <strong>Qdrant</strong>, <strong>Chroma</strong>, <strong>Weaviate</strong>, <strong>Milvus</strong>, <strong>pgvector</strong> in Postgres (<a href="../26-databases-backing-services/">Chapter 26</a>) — pgvector is the pragmatic home choice.</li>
+</ul>
+<p>Realistic expectations: RAG over a few thousand well-formatted documents with a 14–32 B model is genuinely useful; over a messy 200 GB archive it needs tuning (chunking, hybrid search with a keyword index, reranking) and patience.</p>
+<h2 id="coding-assistants">Coding assistants<a class="headerlink" href="#coding-assistants" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Editor integration</strong>: <strong>Continue</strong> (VS Code/JetBrains — open source, points at Ollama/llama.cpp/vLLM for chat, autocomplete, and edits), <strong>Cline / Roo Code</strong> (agentic coding in VS Code; local models work but the 8–32 B ones lag hosted frontier models at agentic tasks), <strong>Tabby</strong> (a self-hosted GitHub-Copilot-style server with its own IDE extensions and code indexing — the most complete self-hosted Copilot replacement), <strong>llama.vscode</strong>, <strong>Aider</strong> (terminal pair-programmer; any model), <strong>OpenCode</strong>/<strong>Crush</strong> and other terminal agents.</li>
+<li><strong>Models</strong>: Qwen2.5-Coder / Qwen3-Coder, DeepSeek-Coder-V2, Codestral, StarCoder2, and the general models (Llama 3.x, Gemma 3, Mistral) all code competently at 14–32 B. Autocomplete wants a <em>small fast</em> model (1.5–7 B); chat/edit wants the biggest you can fit.</li>
+</ul>
+<h2 id="image-generation">Image generation<a class="headerlink" href="#image-generation" title="Permanent link">#</a></h2>
+<p><strong>Stable Diffusion</strong> (1.5, SDXL, SD 3.5), <strong>FLUX.1</strong> (dev/schnell — the 2024–2025 quality leader among open weights), <strong>Qwen-Image</strong>, <strong>HiDream</strong>, and video models (<strong>Wan</strong>, <strong>HunyuanVideo</strong>, <strong>LTX</strong>) run locally on a GPU with 8–24 GB VRAM (FLUX dev wants 12+ GB at FP8; quantised GGUF variants run on less).</p>
+<ul>
+<li><strong>ComfyUI</strong> — the node-graph workflow tool that has become the standard: every model, every technique (ControlNet, LoRA, inpainting, upscaling, IP-Adapter, video), workflows shared as JSON/embedded in images, an enormous custom-node ecosystem, and a learning curve. Run as a container with the GPU; <strong>ComfyUI-Manager</strong> for nodes; keep it LAN/VPN-only (arbitrary custom nodes execute code).</li>
+<li><strong>Stable Diffusion WebUI (Automatic1111)</strong> — the original tabbed UI, still widely used, less actively developed; <strong>Forge</strong> and <strong>reForge</strong> are faster forks; <strong>SD.Next</strong> is the most actively maintained fork with broad model support; <strong>Fooocus</strong> is the "Midjourney-simple" UI (less updated); <strong>InvokeAI</strong> is the polished professional-style app with a unified canvas; <strong>SwarmUI</strong> wraps ComfyUI in a friendlier front-end.</li>
+<li>Integrations: Open WebUI can call ComfyUI/A1111 for image generation from chat; Immich uses CLIP (not generation); <strong>Stable Diffusion in Home Assistant</strong> for generated dashboard art is a thing people do.</li>
+</ul>
+<h2 id="speech">Speech<a class="headerlink" href="#speech" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Speech-to-text</strong>: <strong>Whisper</strong> (OpenAI's open model) via <strong>faster-whisper</strong> (CTranslate2, 4× faster), <strong>whisper.cpp</strong> (CPU/Metal), <strong>WhisperX</strong> (word timestamps, diarisation), <strong>Speaches</strong> (formerly faster-whisper-server — an OpenAI-compatible API for STT <em>and</em> TTS, the clean way to serve it), <strong>Wyoming faster-whisper</strong> (Home Assistant add-on), <strong>Vosk</strong> (tiny, offline, lower accuracy), <strong>NVIDIA Parakeet/Canary</strong> (very fast, English-strong), <strong>Moonshine</strong>. Use cases: HA voice, meeting transcription (<strong>Scriberr</strong> and <strong>Whishper</strong> are self-hosted transcription apps with UIs), subtitles (<strong>Bazarr</strong> can use Whisper via <strong>whisper-asr-webservice</strong>; <strong>Subgen</strong>), voice notes.</li>
+<li><strong>Text-to-speech</strong>: <strong>Piper</strong> (fast, light, many voices, the HA default), <strong>Kokoro</strong> (2025 — remarkably natural for 82 M parameters, runs on CPU; <strong>Kokoro-FastAPI</strong> serves it OpenAI-style), <strong>XTTS-v2</strong>/<strong>Coqui</strong> (voice cloning; heavier), <strong>F5-TTS</strong>, <strong>Chatterbox</strong>, <strong>OpenedAI-Speech</strong> (OpenAI-compatible TTS wrapper), <strong>Mimic 3</strong>, <strong>Orpheus</strong>. For HA announcements and audiobook generation, Piper or Kokoro.</li>
+<li><strong>Full voice pipelines</strong>: HA Assist (<a href="../19-home-automation/">Chapter 19</a>); Open WebUI's voice mode with Whisper + Kokoro; <strong>LocalAI</strong> bundling both.</li>
+</ul>
+<h2 id="private-search-searxng">Private search: SearXNG<a class="headerlink" href="#private-search-searxng" title="Permanent link">#</a></h2>
+<p><strong>SearXNG</strong> is a self-hosted <strong>metasearch engine</strong>: it queries Google, Bing, DuckDuckGo, Brave, Wikipedia, and 200+ other engines on your behalf, aggregates and deduplicates results, and returns them with no tracking, no ads, and no profile — the engines see your server's IP, not your identity. Fast, light (~100 MB), configurable per-engine, with a JSON API that <strong>Open WebUI, Perplexica, LibreChat, and n8n</strong> use for web-augmented answers. Set it as your browser's default search; run it LAN/VPN-only or rate-limited if public (public instances attract bot traffic and get your IP blocked by Google). <strong>Whoogle</strong> (a Google-only proxy) and <strong>4get</strong> are alternatives; <strong>Perplexica</strong> and <strong>Morphic</strong> are self-hosted Perplexity-style "answer engines" that combine SearXNG with a local LLM for cited answers — Perplexica + Ollama + SearXNG is a genuinely useful stack.</p>
+<h2 id="integrations-across-the-lab">Integrations across the lab<a class="headerlink" href="#integrations-across-the-lab" title="Permanent link">#</a></h2>
+<p>Where a local model earns its keep:</p>
+<ul>
+<li><strong>Home Assistant</strong>: the Ollama integration as a conversation agent for Assist — natural-language control ("make it cosy in here"), with <strong>exposed entities</strong> as tools; also summarising camera events (LLM Vision), writing notifications, and generating dashboard text. A 7–14 B model is enough.</li>
+<li><strong>Paperless-ngx</strong>: <strong>Paperless-AI</strong>/<strong>Paperless-GPT</strong> auto-title, tag, and extract correspondents; ask questions of your archive.</li>
+<li><strong>Immich</strong>: not an LLM, but its CLIP and face models run on the same GPU; larger CLIP models (ViT-L, ViT-H) improve search noticeably if you have the VRAM.</li>
+<li><strong>Frigate</strong>: <strong>GenAI</strong> integration describes detected objects/events in natural language via Ollama; semantic search embeddings.</li>
+<li><strong>Karakeep/Linkwarden</strong>: auto-tagging and summaries of saved links.</li>
+<li><strong>Nextcloud Assistant</strong>: local LLM via the Ollama/OpenAI-compatible backend for summaries, translations, and text generation inside Nextcloud.</li>
+<li><strong>n8n / Windmill</strong>: LLM nodes for classification, extraction, and summarisation in workflows — morning briefings from RSS, invoice parsing, ticket triage.</li>
+<li><strong>Obsidian</strong> (Copilot/Smart Connections plugins pointed at Ollama), <strong>Joplin</strong>, <strong>Trilium</strong> — note-taking with local AI.</li>
+<li><strong>Jellyfin/Plex</strong>: subtitle generation via Whisper; <strong>Recommendarr</strong> for recommendations.</li>
+<li><strong>Email</strong>: local spam/priority classification, drafting replies (via n8n or Stalwart hooks).</li>
+</ul>
+<h2 id="operational-notes">Operational notes<a class="headerlink" href="#operational-notes" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Models are large</strong> — 5–40 GB each; a 1 TB NVMe fills quickly. Keep them on fast local storage and prune.</li>
+<li><strong>GPU sharing</strong>: NVIDIA lets many containers use one GPU (VRAM permitting); Ollama unloads idle models to make room. Set <code>OLLAMA_MAX_LOADED_MODELS</code> and keep-alive deliberately. Intel iGPUs share <code>/dev/dri</code> among containers naturally.</li>
+<li><strong>Power</strong>: an idle 3090 is 20 W; add a "suspend the GPU box when idle, wake-on-LAN on request" automation if the machine is separate (<a href="../29-power-cost-environment/">Chapter 29</a>).</li>
+<li><strong>Security</strong>: never expose Ollama's API (no auth by default) or ComfyUI (arbitrary code via custom nodes) beyond LAN/VPN; put Open WebUI behind forward-auth/OIDC; treat prompt injection via RAG'd documents as real if the model has tools.</li>
+<li><strong>Model choice changes monthly.</strong> As of 2026 the dependable families for general use are Llama 3.x/4, Qwen 3, Gemma 3, Mistral Small/Medium, DeepSeek (R1/V3 distils), Phi-4, GLM; for vision, Qwen-VL, Gemma 3, Llama 3.2 Vision, Pixtral; for embeddings, bge-m3, nomic-embed, Qwen3-Embedding. Check r/LocalLLaMA and the Open LLM Leaderboard rather than trusting any static list.</li>
+<li><strong>Licences</strong>: most open-weight models have permissive or "open with acceptable-use" licences (Llama's has a 700 M-user clause irrelevant to you; Gemma's has usage terms; Qwen and Mistral Small are Apache 2.0). Fine for personal use; read them if you build a product.</li>
+</ul>
+<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Hardware</strong>: an RTX 3090/4090 (24 GB) if you are serious; a 16 GB card (4060 Ti/5060 Ti) for a solid start; a Mac Mini/Studio with 64 GB+ if you want big models at low power; CPU-only on a mini PC is fine for HA intents and tagging with 3–8 B models.</li>
+<li><strong>Stack</strong>: Ollama + Open WebUI + SearXNG, behind the proxy with OIDC; llama.cpp when you want to squeeze more out of one model; vLLM for concurrency.</li>
+<li><strong>Models</strong>: a 14–32 B general model at Q4 for chat, a 7–8 B for HA and automations, <code>bge-m3</code>/<code>nomic-embed-text</code> for embeddings, Whisper (via Speaches) + Kokoro/Piper for voice.</li>
+<li><strong>Images</strong>: ComfyUI with FLUX.1-dev or SDXL; SwarmUI or InvokeAI if you want friendlier.</li>
+<li><strong>Integrate</strong>: HA Assist, Paperless-AI, Frigate GenAI, n8n. That is where "I run an LLM" becomes "my house is smarter."</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> GPU (or Mac/CPU plan) sized against the models you actually want to run; VRAM arithmetic done.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Ollama (or llama.cpp/vLLM) running with the GPU visible inside the container (<code>nvidia-smi</code>/<code>rocm-smi</code>/<code>intel_gpu_top</code> from the host shows load when generating).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Open WebUI behind the reverse proxy with OIDC/forward-auth; signups disabled; API endpoints not exposed publicly.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Context length set appropriately (<code>num_ctx</code>/Modelfile); keep-alive tuned; models on fast storage with a pruning habit.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> SearXNG running and wired into Open WebUI (and your browser).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> At least one integration live (HA conversation agent, Paperless-AI, or an n8n workflow).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Whisper + a TTS engine serving HA Assist if you use voice.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> ComfyUI (if run) reachable only via LAN/VPN; custom nodes reviewed before install.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Power behaviour of the GPU box understood and, if separate, suspended when idle.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../22-dev-git-automation/">← 22. Developer Tools, Git Hosting, and Automation</a><a class="next" href="../24-gaming/">24. Gaming: Game Servers, Retro Libraries, and Streaming →</a></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/23-ai-llm.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#why-run-models-locally">Why run models locally</a></li>
+<li><a href="#hardware-and-the-vram-arithmetic">Hardware and the VRAM arithmetic</a></li>
+<li><a href="#inference-servers">Inference servers</a><ul>
+<li><a href="#ollama">Ollama</a></li>
+<li><a href="#llamacpp-llama-server">llama.cpp (llama-server)</a></li>
+<li><a href="#vllm">vLLM</a></li>
+<li><a href="#others">Others</a></li>
+</ul>
+</li>
+<li><a href="#chat-front-ends">Chat front-ends</a></li>
+<li><a href="#retrieval-augmented-generation-rag-over-your-own-data">Retrieval-augmented generation (RAG) over your own data</a></li>
+<li><a href="#coding-assistants">Coding assistants</a></li>
+<li><a href="#image-generation">Image generation</a></li>
+<li><a href="#speech">Speech</a></li>
+<li><a href="#private-search-searxng">Private search: SearXNG</a></li>
+<li><a href="#integrations-across-the-lab">Integrations across the lab</a></li>
+<li><a href="#operational-notes">Operational notes</a></li>
+<li><a href="#recommendations">Recommendations</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
