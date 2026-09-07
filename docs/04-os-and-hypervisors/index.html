@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operating Systems and Hypervisors — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li class="active"><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 04 · ~4,485 words · 20 min read</div>
+    <article class="prose">
+      <h1 id="operating-systems-and-hypervisors">Operating Systems and Hypervisors<a class="headerlink" href="#operating-systems-and-hypervisors" title="Permanent link">#</a></h1>
+<p>The operating system is the layer between your hardware and your services, and the choice shapes everything above it: how you install software, how you isolate workloads, how you back up, how you recover. This chapter compares the realistic options — bare Linux distributions, the Proxmox hypervisor, NAS-oriented systems like TrueNAS and Unraid, turnkey self-hosting distributions, and the declarative outlier NixOS — and explains the fundamental question underneath: virtual machines, containers, or both.</p>
+<h2 id="the-fundamental-choice-what-runs-where">The fundamental choice: what runs where<a class="headerlink" href="#the-fundamental-choice-what-runs-where" title="Permanent link">#</a></h2>
+<p>There are three ways to run a service on a machine:</p>
+<p><strong>Directly on the host OS</strong> — install the package, run the daemon. Simple, efficient, and how servers were run for decades. The downside is entanglement: every service shares the same library versions, the same filesystem, the same failure domain. Upgrading one thing can break another. Reinstalling the OS means reinstalling everything.</p>
+<p><strong>In a container</strong> — a process (or a few) running on the host's kernel but with its own isolated filesystem, network namespace, and resource limits. Containers share the kernel, so they start in milliseconds and cost almost no overhead. Docker/Podman <em>application containers</em> package one service with its exact dependencies; LXC <em>system containers</em> look like a lightweight VM with a full init system. <a href="../05-containers/">Chapter 5</a> is entirely about application containers.</p>
+<p><strong>In a virtual machine</strong> — a complete emulated computer with its own kernel, booted from its own disk image. Strong isolation, any OS (Windows, BSD, another Linux), hardware passthrough of GPUs and disks, live migration between hosts. The cost is overhead: a VM reserves RAM up front, boots in seconds not milliseconds, and adds a virtualisation layer between the service and the hardware.</p>
+<p>The 2026 home-lab consensus is a <strong>layered approach</strong>: a hypervisor (usually Proxmox) on the bare metal, a small number of VMs or LXC containers as "Docker hosts," and Docker Compose stacks inside those. Alternatively — and equally valid for Tier 1 — skip the hypervisor entirely: plain Debian on bare metal, Docker on top. The hypervisor earns its place when you want to run more than one OS, snapshot the whole machine, or separate concerns (a storage VM, a home-automation VM, a "things I am experimenting with" VM that can be destroyed without ceremony).</p>
+<pre class="mermaid">flowchart TB
+    subgraph baremetal[&quot;Option A: Bare metal Linux (Tier 1)&quot;]
+        A1[Debian / Ubuntu] --&gt; A2[Docker Engine] --&gt; A3[Compose stacks]
+    end
+    subgraph hyper[&quot;Option B: Hypervisor (Tier 2+)&quot;]
+        B1[Proxmox VE] --&gt; B2[VM: Docker host] --&gt; B3[Compose stacks]
+        B1 --&gt; B4[LXC: Pi-hole]
+        B1 --&gt; B5[VM: Home Assistant OS]
+        B1 --&gt; B6[VM: TrueNAS w/ HBA passthrough]
+    end</pre>
+<h2 id="bare-linux-distributions">Bare Linux distributions<a class="headerlink" href="#bare-linux-distributions" title="Permanent link">#</a></h2>
+<h3 id="debian">Debian<a class="headerlink" href="#debian" title="Permanent link">#</a></h3>
+<p>The reference server distribution. Stable releases every two years, five years of security support (with LTS/ELTS beyond), conservative package versions, no surprises. It is what Proxmox, TrueNAS SCALE, Raspberry Pi OS, Ubuntu, and half the Docker images in the world are built on. A minimal Debian install uses about 100 MB of RAM and 1 GB of disk.</p>
+<p><strong>Pick it if:</strong> you want the most boring, most documented, most predictable base. This is the guide's recommendation for a Docker host, whether bare metal or as a VM.</p>
+<p><strong>Watch out for:</strong> package versions are old by design. You will install Docker from Docker's own repository, not Debian's. The installer asks more questions than Ubuntu's. Non-free firmware for some Wi-Fi and GPU hardware was historically a separate step (since Debian 12 it is included in the installer).</p>
+<h3 id="ubuntu-server">Ubuntu Server<a class="headerlink" href="#ubuntu-server" title="Permanent link">#</a></h3>
+<p>Debian's derivative with a six-month release cadence and LTS releases every two years (24.04 "Noble", 26.04 "Resolute" as of this writing) that get five years of standard support. More current kernels and packages than Debian stable, a slicker installer with cloud-init baked in, and the largest body of "how do I..." tutorials on the internet.</p>
+<p><strong>Pick it if:</strong> you want newer hardware support (the HWE kernel track), or you are following tutorials that assume Ubuntu, or you want <code>cloud-init</code> for automated VM provisioning.</p>
+<p><strong>Watch out for:</strong> Canonical's <strong>snap</strong> packaging is forced on some packages (including, notably, the <code>docker</code> snap if you <code>apt install docker.io</code> on some releases — always use Docker's official apt repo instead). Snaps auto-update on their own schedule, mount loop devices that clutter <code>df</code>, and have caused enough friction that many self-hosters strip snapd entirely. Ubuntu Pro nagging in <code>apt</code> output and <code>motd</code> is a minor irritant, disable-able. Ubuntu is otherwise excellent.</p>
+<h3 id="fedora-server-coreos-rocky-alma">Fedora Server / CoreOS / Rocky / Alma<a class="headerlink" href="#fedora-server-coreos-rocky-alma" title="Permanent link">#</a></h3>
+<p><strong>Fedora Server</strong> is bleeding-edge with a thirteen-month support window; fine for a lab you enjoy re-installing, poor for one you want to forget about. <strong>Fedora CoreOS</strong> is an immutable, auto-updating container host provisioned via Ignition files — a genuinely good fit for "a Docker/Podman host that maintains itself," with a steeper learning curve. <strong>Rocky Linux</strong> and <strong>AlmaLinux</strong> are the RHEL rebuilds: ten-year support, enterprise conventions (SELinux enforcing, firewalld, <code>dnf</code>), Podman as the default container runtime. Pick them if you work with RHEL professionally and want your lab to match.</p>
+<h3 id="arch-alpine-and-others">Arch, Alpine, and others<a class="headerlink" href="#arch-alpine-and-others" title="Permanent link">#</a></h3>
+<p><strong>Arch</strong> is rolling-release and requires attention; a fine desktop, a poor unattended server. <strong>Alpine</strong> is a 5 MB musl-based distribution that powers most container images and makes a superb minimal host for a single-purpose box (a Pi-hole, a WireGuard endpoint) — its <code>apk</code> package manager and OpenRC init are simple, and it idles at 40 MB of RAM. <strong>openSUSE MicroOS/Leap Micro</strong> is an immutable container host with transactional updates; niche but well-regarded.</p>
+<h3 id="which-linux">Which Linux?<a class="headerlink" href="#which-linux" title="Permanent link">#</a></h3>
+<p>For a Docker host: <strong>Debian stable</strong>. For a Docker host where you want the newest kernel or plan to use cloud-init heavily: <strong>Ubuntu Server LTS</strong>. Everything else is a specific-purpose or personal-preference choice. The differences matter far less than the community loves to argue; you will spend your time in Docker, not in the distribution.</p>
+<h2 id="proxmox-virtual-environment">Proxmox Virtual Environment<a class="headerlink" href="#proxmox-virtual-environment" title="Permanent link">#</a></h2>
+<p>Proxmox VE is a Debian-based hypervisor platform combining KVM/QEMU virtual machines, LXC system containers, ZFS and Ceph storage, software-defined networking, a built-in backup system, clustering, and a comprehensive web UI. It is free and open source (AGPL); Proxmox GmbH sells optional enterprise repository access and support subscriptions. It has become the default hypervisor of the home-lab community, and for good reason.</p>
+<h3 id="why-it-dominates">Why it dominates<a class="headerlink" href="#why-it-dominates" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>VMs and LXC in one UI.</strong> Spin up a full Windows VM, a Home Assistant OS VM, and a dozen tiny Debian LXCs for individual services, all managed identically.</li>
+<li><strong>ZFS native.</strong> Install the OS onto a ZFS mirror; create ZFS pools for VM storage; snapshot and replicate them. Proxmox exposes ZFS features in the UI.</li>
+<li><strong>Snapshots and backups.</strong> Snapshot a VM before an upgrade; roll back in seconds if it goes wrong. Scheduled backups to local storage, NFS/SMB, or <strong>Proxmox Backup Server</strong> (PBS — a separate, free product that does deduplicated, incremental, encrypted, verified backups of VMs and containers; see <a href="../11-backups/">Chapter 11</a>).</li>
+<li><strong>Hardware passthrough.</strong> Pass a GPU to a VM for transcoding or AI; pass an HBA to a TrueNAS VM so it owns the disks directly; pass a USB Zigbee stick to Home Assistant.</li>
+<li><strong>Clustering.</strong> Two or more nodes form a cluster with shared management, live migration (with shared or replicated storage), and high availability. A third "vote" (a Raspberry Pi running the tiny <code>qdevice</code>) lets a two-node cluster maintain quorum.</li>
+<li><strong>Community.</strong> Enormous. The Proxmox forum, r/Proxmox, and the unofficial community scripts (originally by tteck, now community-maintained at <code>community-scripts.github.io/ProxmoxVE</code>) that one-line-install dozens of services into LXCs.</li>
+</ul>
+<h3 id="realities-and-gotchas">Realities and gotchas<a class="headerlink" href="#realities-and-gotchas" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Hardware requirements</strong> are modest: any 64-bit CPU with VT-x/AMD-V (all of them since ~2010), 8 GB RAM minimum in practice, an SSD. ZFS root wants two SSDs for a mirror; it will run on one.</li>
+<li><strong>Consumer SSDs and ZFS write amplification.</strong> Proxmox's cluster services and logs write constantly; on a ZFS root this can burn through a cheap consumer SSD's endurance in a couple of years. Mitigations: use an enterprise SSD with PLP for the boot pool (used Intel/Samsung SATA enterprise drives are USD 30–60), or accept ext4 root on a single drive with regular config backups, or reduce the logging. Community threads on "Proxmox SSD wearout" are extensive.</li>
+<li><strong>The enterprise repo nag.</strong> Without a subscription the UI shows a dialog at login and <code>apt</code> needs the no-subscription repository configured. Both are trivially handled (the community scripts do it) and the software is not crippled.</li>
+<li><strong>Networking model.</strong> Proxmox creates a Linux bridge (<code>vmbr0</code>) on your NIC; VMs attach to it. VLAN-aware bridges let you tag per-VM. It is flexible and it is a place beginners get lost — the UI is fine, but understanding what a bridge is helps.</li>
+<li><strong>LXC vs VM for Docker.</strong> Running Docker <em>inside an LXC</em> works (with <code>nesting=1</code> and <code>keyctl=1</code> features enabled) and is lighter than a VM, but Proxmox officially recommends a VM for Docker, and edge cases (some storage drivers, AppArmor profiles, kernel-module-dependent containers like Tailscale in kernel mode or anything needing <code>/dev/net/tun</code>) are smoother in a VM. Common practice: <strong>a Debian VM with 4–8 GB RAM as the primary Docker host; LXCs for individual light services</strong> that benefit from being separately snapshot-able (Pi-hole, a reverse proxy, Vaultwarden).</li>
+<li><strong>Storage layout.</strong> <code>local</code> (directory, for ISOs/templates/backups) and <code>local-zfs</code> or <code>local-lvm</code> (block storage for VM disks) by default. Add NFS/SMB shares from a NAS for bulk data; add PBS for backups. Do not fill a ZFS pool past ~80%.</li>
+<li><strong>Memory ballooning and overcommit</strong> work for VMs; ZFS's ARC will use half the host RAM by default and can be limited (<code>/etc/modprobe.d/zfs.conf</code>, <code>options zfs zfs_arc_max=...</code>).</li>
+</ul>
+<h3 id="a-quick-installation-walkthrough">A quick installation walkthrough<a class="headerlink" href="#a-quick-installation-walkthrough" title="Permanent link">#</a></h3>
+<ol>
+<li>Download the ISO, write it to USB (<code>dd</code> or Ventoy/Rufus/balenaEtcher), boot it. Choose the graphical installer.</li>
+<li><strong>Target disk</strong>: choose ZFS (RAID1 if two SSDs, RAID0/single otherwise) or ext4/LVM. Advanced options: for ZFS on consumer SSDs consider <code>ashift=12</code> (default), compression <code>lz4</code> (default), and leave a little unpartitioned space.</li>
+<li>Set country/timezone/keyboard, root password and email (for alerts), a hostname FQDN (<code>pve.home.arpa</code>), and a <strong>static IP</strong> with gateway and DNS.</li>
+<li>Reboot; browse to <code>https://&lt;ip&gt;:8006</code>; log in as <code>root</code> with realm <code>Linux PAM</code>.</li>
+<li><strong>Post-install</strong>: run the community post-install script (disables the enterprise repo, adds the no-subscription repo, removes the nag, updates) or do the same by hand. <code>apt update &amp;&amp; apt full-upgrade</code>. Reboot.</li>
+<li><strong>Storage</strong>: if you have additional disks, Datacenter → Storage or node → Disks → ZFS to create a pool.</li>
+<li><strong>Templates</strong>: node → local → CT Templates → download <code>debian-12-standard</code> (or 13). Upload OS ISOs to local for VMs.</li>
+<li><strong>First VM</strong>: Create VM → Debian ISO → System: <code>q35</code>, <code>OVMF (UEFI)</code>, add EFI disk, enable QEMU Agent → Disks: <code>VirtIO SCSI single</code>, discard on, SSD emulation on → CPU: type <code>host</code>, 2–4 cores → Memory: 4096–8192 → Network: <code>vmbr0</code>, VirtIO. Install Debian, install <code>qemu-guest-agent</code>, install Docker.</li>
+<li><strong>First LXC</strong>: Create CT → Debian template → unprivileged, 512 MB RAM, 4 GB disk, DHCP or static → start → <code>apt update &amp;&amp; apt install -y ...</code>.</li>
+<li><strong>Backups</strong>: Datacenter → Backup → Add: schedule nightly, mode snapshot, retention (e.g., keep-daily 7, keep-weekly 4), storage local or PBS. Test a restore.</li>
+</ol>
+<h3 id="proxmox-backup-server">Proxmox Backup Server<a class="headerlink" href="#proxmox-backup-server" title="Permanent link">#</a></h3>
+<p>A companion product that deserves its own mention. PBS runs on its own machine (or a VM elsewhere — <em>not</em> on the host it backs up) and receives incremental, chunk-deduplicated, optionally client-side-encrypted backups from Proxmox VE hosts. Verification jobs check chunk integrity; sync jobs replicate to a second PBS (off-site); prune and garbage-collect jobs manage retention. Restoring a single file from inside a VM disk image via the web UI is a killer feature. It also has a <code>proxmox-backup-client</code> for backing up arbitrary directories from any Linux host. If you run Proxmox, run PBS — a used mini PC with a few terabytes of disk is enough.</p>
+<h2 id="truenas">TrueNAS<a class="headerlink" href="#truenas" title="Permanent link">#</a></h2>
+<p>TrueNAS is iXsystems' storage-focused platform built around ZFS. Historically two flavours: <strong>TrueNAS CORE</strong> (FreeBSD-based, the FreeNAS lineage, now in maintenance-only mode as of 2024–2025) and <strong>TrueNAS SCALE</strong> (Debian-based, the actively developed line, renamed simply <strong>TrueNAS Community Edition</strong> in the 25.x releases). This guide means the Linux-based version when it says TrueNAS.</p>
+<h3 id="what-it-does-well">What it does well<a class="headerlink" href="#what-it-does-well" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>ZFS storage management</strong> through a polished web UI: pools, vdevs, datasets, snapshots with schedules, replication to another TrueNAS or any SSH host, scrubs, SMART tests, alerts. If you want ZFS without learning every <code>zpool</code>/<code>zfs</code> command, this is the best UI for it.</li>
+<li><strong>Sharing</strong>: SMB (with Active Directory or standalone users, shadow copies from ZFS snapshots), NFS, iSCSI, S3-compatible (via MinIO app — though its bundled status has shifted), WebDAV historically. Fine-grained ACLs.</li>
+<li><strong>Apps</strong>: since the 24.10 "Electric Eel" release, TrueNAS apps are plain <strong>Docker Compose</strong> under the hood (replacing the previous Kubernetes/Helm-based system that was widely disliked for its complexity and resource overhead). The app catalogue installs common services with a form-based UI, and you can also paste custom Compose YAML. This made TrueNAS a viable all-in-one for Tier 1–2.</li>
+<li><strong>VMs</strong> via KVM, for the occasional Windows or Home Assistant OS VM alongside storage. Less full-featured than Proxmox but present. (The 25.x releases moved VM management to an Incus-based backend, adding LXC containers as well.)</li>
+</ul>
+<h3 id="where-it-is-weaker">Where it is weaker<a class="headerlink" href="#where-it-is-weaker" title="Permanent link">#</a></h3>
+<ul>
+<li>It is a storage appliance first. If you want a general-purpose hypervisor with fine control, Proxmox is better. The common Tier 2 pattern is <strong>TrueNAS as a VM on Proxmox with an HBA passed through</strong>, or TrueNAS on its own hardware with Proxmox on another box mounting its NFS/iSCSI.</li>
+<li>The apps system, while now Compose-based, still abstracts things in ways that occasionally frustrate people who know Docker well (path conventions, the "ix-applications"/<code>ix-apps</code> dataset, user/group ID mapping). Many run a single "Dockge" or "Portainer" app and manage stacks from there instead.</li>
+<li>iXsystems' direction is enterprise-first; free-tier features have occasionally been reshuffled. The community is large and helpful but the forums can be dogmatic (ECC, RAIDZ1, USB drives).</li>
+<li>Do not put the boot drive on a USB stick, do not use hardware RAID, do not use SMR drives, and give it 16 GB of RAM if you can. These are the perennial TrueNAS forum greetings for a reason.</li>
+</ul>
+<p><strong>Pick it if:</strong> storage is the centre of your lab, you want ZFS with a UI, and you want SMB/NFS shares done properly. It is the best free NAS OS.</p>
+<h2 id="unraid">Unraid<a class="headerlink" href="#unraid" title="Permanent link">#</a></h2>
+<p>Unraid is a paid (one-time licence, USD 49–249 by drive count as of 2026; a subscription tier was introduced in 2024 for the lower tiers, with the lifetime "Unleashed"/"Lifetime" option remaining) Slackware-based NAS OS with a unique storage model and a superb app ecosystem.</p>
+<h3 id="the-storage-model">The storage model<a class="headerlink" href="#the-storage-model" title="Permanent link">#</a></h3>
+<p>Unraid's <strong>array</strong> is not RAID: each data drive holds a complete, independent filesystem (XFS or Btrfs, and ZFS as of 6.12), and one or two <strong>parity drives</strong> protect against one or two drive failures. Files are written whole to a single drive, chosen by allocation policy; a <strong>user share</strong> presents the union of all drives as one folder tree. Consequences:</p>
+<ul>
+<li><strong>Mix any drive sizes</strong>; parity just has to be at least as large as the largest data drive. Add one drive at a time. This is the killer feature for people who accumulate drives gradually.</li>
+<li><strong>Drives spin down independently</strong>; reading a file spins up only the drive holding it. Idle power is very low for a multi-drive box.</li>
+<li><strong>Losing more drives than you have parity loses only the data on those drives</strong>, not the whole array — each surviving drive is still a readable filesystem.</li>
+<li><strong>Write performance is limited</strong> to single-drive speed (with parity calculation overhead) unless you use a <strong>cache pool</strong> (SSDs, usually a Btrfs or ZFS mirror) that receives writes and a nightly "mover" migrates them to the array. Reads are single-drive speed.</li>
+<li>No bit-rot protection at the array level with XFS (Btrfs or ZFS per-disk gives checksumming but not self-healing without redundancy at that layer).</li>
+</ul>
+<h3 id="apps-and-vms">Apps and VMs<a class="headerlink" href="#apps-and-vms" title="Permanent link">#</a></h3>
+<p>Unraid's <strong>Community Applications</strong> plugin is the friendliest Docker experience available anywhere: a searchable catalogue of thousands of templates, each a form with the ports, paths, and variables filled in, with sensible defaults for the <code>appdata</code> and media paths. It hides Compose behind a UI (a Compose plugin exists for people who prefer YAML). The KVM-based VM manager is good, with straightforward GPU/USB passthrough and a well-trodden path for a gaming VM.</p>
+<h3 id="verdict">Verdict<a class="headerlink" href="#verdict" title="Permanent link">#</a></h3>
+<p><strong>Pick it if:</strong> you want the easiest possible all-in-one NAS-plus-Docker-plus-VM box, you have (or will accumulate) mismatched drives, you value low idle power from spun-down disks, and you are fine paying for software. Unraid has a devoted community and a wealth of video tutorials (SpaceInvader One is the canonical channel).</p>
+<p><strong>Watch out for:</strong> the parity-array model is slower than RAID/ZFS for large sequential writes and has no self-healing; take backups seriously. The OS runs from a USB stick (licensed to its GUID) and loads into RAM — the stick's reliability matters, and replacing it requires a licence transfer. Reliance on a single small company.</p>
+<h2 id="other-hypervisors-and-nas-systems">Other hypervisors and NAS systems<a class="headerlink" href="#other-hypervisors-and-nas-systems" title="Permanent link">#</a></h2>
+<p><strong>XCP-ng</strong> (with the Xen Orchestra management UI) is the open-source Xen-based alternative to Proxmox with a strong enterprise pedigree (it is the fork of Citrix XenServer). Excellent for learning Xen, solid clustering and backup story via XO, less community traction for home labs than Proxmox and no LXC-style containers. Vates (its maintainer) has been friendly to the community.</p>
+<p><strong>Harvester</strong> (SUSE/Rancher) is a Kubernetes-native hyperconverged platform — VMs on KubeVirt, storage on Longhorn. Interesting if you are all-in on Kubernetes; heavy (16 GB RAM minimum per node, realistically 32) and overkill for a home.</p>
+<p><strong>VMware ESXi</strong> was a home-lab staple for years via the free licence. Broadcom's acquisition (2023) ended the free tier, then partially reinstated a free ESXi 8 for personal use in 2025; the ecosystem's trust is damaged and the community has largely moved to Proxmox. Not recommended for new labs.</p>
+<p><strong>Microsoft Hyper-V</strong> (on Windows Server or Windows 10/11 Pro) is fine if you are a Windows shop; almost nobody in the self-hosting community runs it as the base layer.</p>
+<p><strong>OpenMediaVault (OMV)</strong> is a Debian-based NAS distribution with a web UI for shares, users, and disks, plugins for MergerFS/SnapRAID and Docker (via the <code>openmediavault-compose</code> plugin). Lighter and less opinionated than TrueNAS; supports any filesystem. Popular on Raspberry Pi and low-end hardware as a "Debian with a NAS UI." Solid choice for a MergerFS+SnapRAID media box (<a href="../06-storage/">Chapter 6</a>).</p>
+<p><strong>Synology DSM / QNAP QTS / UGREEN UGOS</strong> — the commercial NAS operating systems, discussed in <a href="../02-hardware/">Chapter 2</a>. They run Docker (Synology's "Container Manager" is Docker with a UI; you can also SSH in and use Compose). Excellent appliance experience; limited as hypervisors.</p>
+<p><strong>HexOS</strong> — a commercial (Eshtek, 2024–) consumer-friendly frontend built on TrueNAS, aimed at people who find TrueNAS intimidating. Early days.</p>
+<p><strong>Rockstor</strong>, <strong>ZimaOS</strong>, <strong>CasaOS</strong>, <strong>Cosmos Cloud</strong>, <strong>Umbrel</strong>, <strong>YunoHost</strong>, <strong>Runtipi</strong>, <strong>Tipi</strong>, <strong>DietPi</strong> — turnkey or semi-turnkey systems that put a friendly app-store layer over Docker on a Linux base. Covered in the next section.</p>
+<h2 id="turnkey-self-hosting-distributions">Turnkey self-hosting distributions<a class="headerlink" href="#turnkey-self-hosting-distributions" title="Permanent link">#</a></h2>
+<p>These are for people who want the appliance experience on their own hardware without a commercial NAS.</p>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>Base</th>
+<th>Model</th>
+<th>Strengths</th>
+<th>Limits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CasaOS</strong></td>
+<td>Any Debian/Ubuntu (installs on top)</td>
+<td>Docker with an app store</td>
+<td>Beautiful UI, one-click apps, file manager</td>
+<td>Thin abstraction; when it breaks you are in Docker anyway. Owned by IceWhale (ZimaBoard maker)</td>
+</tr>
+<tr>
+<td><strong>ZimaOS</strong></td>
+<td>Own image</td>
+<td>CasaOS as a full OS with storage management</td>
+<td>Polished, ZimaCube hardware integration</td>
+<td>Younger, less flexible</td>
+</tr>
+<tr>
+<td><strong>Cosmos Cloud</strong></td>
+<td>Any Linux (Docker)</td>
+<td>Reverse proxy + auth + app store + container manager in one</td>
+<td>Built-in SSO, TLS, and security features; genuinely thoughtful</td>
+<td>Single developer; opinionated</td>
+</tr>
+<tr>
+<td><strong>Umbrel</strong></td>
+<td>Own image or on top of Debian</td>
+<td>App store, originally Bitcoin-node-focused</td>
+<td>Slick, easy</td>
+<td>Limited control, curated catalogue</td>
+</tr>
+<tr>
+<td><strong>YunoHost</strong></td>
+<td>Debian (installs on top)</td>
+<td>Apps installed natively, not Docker; built-in SSO, mail, DNS</td>
+<td>Mature, privacy-focused, great for email and federated services</td>
+<td>Its own packaging format; fewer apps than Docker catalogues</td>
+</tr>
+<tr>
+<td><strong>Runtipi</strong></td>
+<td>Any Linux (Docker)</td>
+<td>App store over Compose</td>
+<td>Simple, transparent, easy to eject from</td>
+<td>Smaller catalogue</td>
+</tr>
+<tr>
+<td><strong>DietPi</strong></td>
+<td>Debian (own image, mainly for SBCs)</td>
+<td>Menu-driven installer for many services</td>
+<td>Very light, great on Pis</td>
+<td>Not a container platform</td>
+</tr>
+<tr>
+<td><strong>Cloudron</strong></td>
+<td>Ubuntu</td>
+<td>Commercial platform (free tier limited to two apps)</td>
+<td>Best-in-class managed self-hosting: updates, backups, SSO, email all handled</td>
+<td>Subscription for more than a couple of apps</td>
+</tr>
+</tbody>
+</table>
+<p>The honest assessment: these are excellent on-ramps and legitimate long-term homes for people who want an appliance. Their weakness is the moment something breaks or you want to do something outside the catalogue — then you are dropped into the underlying Docker with less understanding than if you had started there. Cosmos and Cloudron are the most complete as platforms; CasaOS is the most popular; YunoHost is the most philosophically distinct (no Docker, native packages, first-class email and federation).</p>
+<h2 id="nixos-the-declarative-outlier">NixOS: the declarative outlier<a class="headerlink" href="#nixos-the-declarative-outlier" title="Permanent link">#</a></h2>
+<p>NixOS is a Linux distribution where the entire system — packages, services, users, firewall, mounts, everything — is described in a set of declarative configuration files (the Nix language) and built atomically. <code>nixos-rebuild switch</code> makes the machine match the config; if it does not work, boot the previous generation from the GRUB menu. The config lives in Git; rebuilding an identical machine on new hardware is <code>git clone</code> and one command.</p>
+<p>For a home lab this is compelling: no configuration drift, no "what did I change six months ago," trivially reproducible hosts, and native declarative support for hundreds of services (<code>services.jellyfin.enable = true;</code>) as well as declarative Docker/Podman containers (<code>virtualisation.oci-containers</code>). Many experienced self-hosters have converged on NixOS as their host OS with a mix of native services and containers.</p>
+<p>The cost is a steep learning curve: the Nix language is unusual, error messages are opaque, documentation is fragmented across the manual, the wiki, and blog posts, and doing anything the "Nix way" takes longer the first time. Flakes (the modern project structure) are still technically experimental after years. It is the best choice for someone who enjoys that kind of rigour and the worst for someone who wants to follow a random tutorial. <a href="../27-automation-iac/">Chapter 27</a> covers it as an infrastructure-as-code approach.</p>
+<h2 id="lxc-versus-vm-versus-docker-a-decision-guide">LXC versus VM versus Docker: a decision guide<a class="headerlink" href="#lxc-versus-vm-versus-docker-a-decision-guide" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Docker container</th>
+<th>LXC container (Proxmox)</th>
+<th>VM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Startup</td>
+<td>milliseconds</td>
+<td>~1 s</td>
+<td>10–60 s</td>
+</tr>
+<tr>
+<td>RAM overhead</td>
+<td>~0</td>
+<td>~20–50 MB</td>
+<td>200 MB–1 GB+ (guest kernel, reserved RAM)</td>
+</tr>
+<tr>
+<td>Isolation</td>
+<td>process-level (shared kernel)</td>
+<td>OS-level (shared kernel, own init)</td>
+<td>full (own kernel)</td>
+</tr>
+<tr>
+<td>Runs a different kernel/OS</td>
+<td>no</td>
+<td>no (Linux only, host kernel)</td>
+<td>yes (Windows, BSD, any Linux)</td>
+</tr>
+<tr>
+<td>Hardware passthrough</td>
+<td>device files (<code>/dev/dri</code>), not PCIe</td>
+<td>device files, bind mounts</td>
+<td>PCIe (GPU, HBA, NIC), USB</td>
+</tr>
+<tr>
+<td>Snapshot/rollback</td>
+<td>image layers; volumes are your problem</td>
+<td>Proxmox snapshots (ZFS/LVM-thin)</td>
+<td>Proxmox snapshots incl. RAM state</td>
+</tr>
+<tr>
+<td>Live migration</td>
+<td>no (stateless redeploy instead)</td>
+<td>restart-migration</td>
+<td>yes, with shared/replicated storage</td>
+</tr>
+<tr>
+<td>Update model</td>
+<td>pull new image, recreate</td>
+<td>apt inside, like a server</td>
+<td>apt inside, like a server</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>90% of self-hosted apps</td>
+<td>single light services on Proxmox; Docker host when RAM is tight</td>
+<td>Docker host; anything needing a GPU/HBA; non-Linux; untrusted workloads</td>
+</tr>
+</tbody>
+</table>
+<p>Rules of thumb:</p>
+<ul>
+<li><strong>Application services</strong>: Docker, always, unless the project explicitly recommends otherwise (Home Assistant strongly prefers its own OS image in a VM for the full add-on experience).</li>
+<li><strong>Docker hosts on Proxmox</strong>: a VM. An LXC works and saves RAM; a VM avoids the edge cases.</li>
+<li><strong>Storage</strong>: never virtualise the storage layer unless you pass the disk controller through wholesale. A TrueNAS VM with an HBA passed through is fine; a TrueNAS VM on virtual disks is a recipe for confusion and data loss.</li>
+<li><strong>Firewalls</strong> (OPNsense as a VM): works well with dedicated NICs passed through or VirtIO bridges, and is popular; the risk is that your whole network goes down when you reboot the hypervisor. A dedicated box is more robust; a VM is acceptable if you understand the dependency.</li>
+<li><strong>Home Assistant</strong>: HAOS in a VM (Proxmox community script) for the full experience with add-ons; Docker for people who manage their own MQTT/Zigbee2MQTT anyway and want Compose everywhere.</li>
+</ul>
+<h2 id="comparison-matrix">Comparison matrix<a class="headerlink" href="#comparison-matrix" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Debian + Docker</th>
+<th>Proxmox VE</th>
+<th>TrueNAS</th>
+<th>Unraid</th>
+<th>OMV</th>
+<th>NixOS</th>
+<th>CasaOS/Cosmos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Licence</td>
+<td>Free</td>
+<td>Free (AGPL) + optional sub</td>
+<td>Free</td>
+<td>Paid (USD 49–249 / sub)</td>
+<td>Free</td>
+<td>Free</td>
+<td>Free (Cosmos has paid tier)</td>
+</tr>
+<tr>
+<td>Primary role</td>
+<td>Container host</td>
+<td>Hypervisor</td>
+<td>NAS + apps</td>
+<td>NAS + apps + VMs</td>
+<td>NAS</td>
+<td>Declarative host</td>
+<td>App-store host</td>
+</tr>
+<tr>
+<td>Storage tech</td>
+<td>Any (you manage)</td>
+<td>ZFS, LVM, Ceph, dir</td>
+<td>ZFS</td>
+<td>Parity array + cache pools; ZFS</td>
+<td>Any + MergerFS/SnapRAID</td>
+<td>Any</td>
+<td>Any (basic)</td>
+</tr>
+<tr>
+<td>VMs</td>
+<td>via libvirt/KVM manually</td>
+<td>Yes (excellent)</td>
+<td>Yes (basic)</td>
+<td>Yes (good)</td>
+<td>Via plugin</td>
+<td>Yes (libvirt)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Containers</td>
+<td>Docker/Podman</td>
+<td>LXC; Docker in a VM/LXC</td>
+<td>Docker (Compose-based apps)</td>
+<td>Docker (best UI)</td>
+<td>Docker via plugin</td>
+<td>Docker/Podman/native</td>
+<td>Docker</td>
+</tr>
+<tr>
+<td>Web UI</td>
+<td>None (add Portainer/Dockge)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>None</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Learning curve</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Low</td>
+<td>Low–Medium</td>
+<td>High</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Min RAM (practical)</td>
+<td>2 GB</td>
+<td>8 GB</td>
+<td>16 GB</td>
+<td>4 GB</td>
+<td>2 GB</td>
+<td>2 GB</td>
+<td>2 GB</td>
+</tr>
+<tr>
+<td>Best tier</td>
+<td>1</td>
+<td>2–3</td>
+<td>2</td>
+<td>1–2</td>
+<td>1</td>
+<td>2–3 (for enthusiasts)</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">#</a></h2>
+<p><strong>Tier 1, one machine:</strong> Debian (or Ubuntu LTS) with Docker Compose. Add Dockge or Portainer if you want a UI. If you want ZFS or Btrfs for your data drives, both are available natively. This is the simplest thing that works and it teaches you the most transferable skills.</p>
+<p><strong>Tier 1, "I want an appliance":</strong> Unraid if you have mixed drives and want VMs too; TrueNAS if you want ZFS and a first-class NAS; CasaOS or Cosmos on Debian if you mainly want an app store.</p>
+<p><strong>Tier 2, compute + storage:</strong> Proxmox on the compute box (Debian VM as Docker host, LXCs for light services, PBS for backups). TrueNAS on the storage box, or TrueNAS as a Proxmox VM with an HBA passed through if you consolidate.</p>
+<p><strong>Tier 3:</strong> Proxmox cluster (three nodes or two plus a qdevice) with ZFS replication or Ceph; PBS on separate hardware; TrueNAS or a bare-Debian ZFS box for bulk storage; NixOS or Ansible-managed Debian for the VMs if you want reproducibility (<a href="../27-automation-iac/">Chapter 27</a>).</p>
+<p>Whatever you choose: install it, then immediately set up backups of its configuration, and <em>write down</em> how you installed it. The OS is the one layer you cannot restore from a backup of itself.</p>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../03-networking/">← 03. Networking Fundamentals for the Home Lab</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/04-os-and-hypervisors.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#the-fundamental-choice-what-runs-where">The fundamental choice: what runs where</a></li>
+<li><a href="#bare-linux-distributions">Bare Linux distributions</a><ul>
+<li><a href="#debian">Debian</a></li>
+<li><a href="#ubuntu-server">Ubuntu Server</a></li>
+<li><a href="#fedora-server-coreos-rocky-alma">Fedora Server / CoreOS / Rocky / Alma</a></li>
+<li><a href="#arch-alpine-and-others">Arch, Alpine, and others</a></li>
+<li><a href="#which-linux">Which Linux?</a></li>
+</ul>
+</li>
+<li><a href="#proxmox-virtual-environment">Proxmox Virtual Environment</a><ul>
+<li><a href="#why-it-dominates">Why it dominates</a></li>
+<li><a href="#realities-and-gotchas">Realities and gotchas</a></li>
+<li><a href="#a-quick-installation-walkthrough">A quick installation walkthrough</a></li>
+<li><a href="#proxmox-backup-server">Proxmox Backup Server</a></li>
+</ul>
+</li>
+<li><a href="#truenas">TrueNAS</a><ul>
+<li><a href="#what-it-does-well">What it does well</a></li>
+<li><a href="#where-it-is-weaker">Where it is weaker</a></li>
+</ul>
+</li>
+<li><a href="#unraid">Unraid</a><ul>
+<li><a href="#the-storage-model">The storage model</a></li>
+<li><a href="#apps-and-vms">Apps and VMs</a></li>
+<li><a href="#verdict">Verdict</a></li>
+</ul>
+</li>
+<li><a href="#other-hypervisors-and-nas-systems">Other hypervisors and NAS systems</a></li>
+<li><a href="#turnkey-self-hosting-distributions">Turnkey self-hosting distributions</a></li>
+<li><a href="#nixos-the-declarative-outlier">NixOS: the declarative outlier</a></li>
+<li><a href="#lxc-versus-vm-versus-docker-a-decision-guide">LXC versus VM versus Docker: a decision guide</a></li>
+<li><a href="#comparison-matrix">Comparison matrix</a></li>
+<li><a href="#recommendations">Recommendations</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

@@ -73,7 +73,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 01-planning.md — Goals, tiers (starter/intermediate/advanced), budget, power/noise/space, requirements, 3-2-1 mindset
 - [x] 02-hardware.md — Mini PCs, used enterprise, SBCs, NAS, DIY builds, drives (CMR/SMR, NAS drives), RAM/ECC, NICs, switches, UPS, racks, GPUs
 - [x] 03-networking.md — IP/subnets, VLANs, DHCP/DNS, NAT/port forwarding, CGNAT, IPv6, firewalls, router OS (OPNsense/pfSense/OpenWrt/UniFi/MikroTik), segmentation
-- [ ] 04-os-and-hypervisors.md — Proxmox VE, TrueNAS SCALE, Unraid, Debian/Ubuntu, NixOS, XCP-ng, Harvester; LXC vs VM; comparison matrix; Proxmox install walkthrough
+- [x] 04-os-and-hypervisors.md — Proxmox VE, TrueNAS SCALE, Unraid, Debian/Ubuntu, NixOS, XCP-ng, Harvester; LXC vs VM; comparison matrix; Proxmox install walkthrough
 - [ ] 05-containers.md — Docker, Compose, Podman, k3s/Talos/microk8s; best practices; updates (Watchtower/Diun/Renovate); patterns
 - [ ] 06-storage.md — ZFS deep dive, Btrfs, mdadm/LVM, MergerFS+SnapRAID, Ceph, NFS/SMB/iSCSI, SMART, capacity planning
 
