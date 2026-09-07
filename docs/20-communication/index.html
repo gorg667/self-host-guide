@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Communication: Chat, Video Calls, and Email — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li class="active"><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 20 · ~3,188 words · 14 min read</div>
+    <article class="prose">
+      <h1 id="communication-chat-video-calls-and-email">Communication: Chat, Video Calls, and Email<a class="headerlink" href="#communication-chat-video-calls-and-email" title="Permanent link">#</a></h1>
+<p>Communication is the category where self-hosting is hardest to justify — and, for the people who do it, the most satisfying. Chat and video have strong self-hosted options that work well within a household or community. Email is the notorious exception: possible, well-tooled, and burdened with deliverability problems that no amount of local competence fully solves. This chapter covers team and household chat (Matrix and its servers Synapse, Conduit/Conduwuit/Tuwunel, and Dendrite; Rocket.Chat; Mattermost; Zulip; XMPP), voice and video (Jitsi Meet, Mumble, Nextcloud Talk, Element Call, LiveKit), and self-hosted email in full honesty (Mailcow, Mailu, Stalwart, docker-mailserver, Maddy, and the outbound-relay compromise).</p>
+<h2 id="chat">Chat<a class="headerlink" href="#chat" title="Permanent link">#</a></h2>
+<h3 id="matrix">Matrix<a class="headerlink" href="#matrix" title="Permanent link">#</a></h3>
+<p><strong>Matrix</strong> is an open, <strong>federated</strong>, end-to-end-encrypted messaging protocol — the closest thing to "email for chat." You run a <strong>homeserver</strong> for your domain; your users have IDs like <code>@alice:example.com</code>; they can talk to users on any other Matrix server (matrix.org, a friend's server, communities) in rooms that are replicated across participating servers; <strong>bridges</strong> connect to other networks (Telegram, Discord, WhatsApp, Signal, Slack, IRC — via the mautrix family), so one client can aggregate everything. Clients: <strong>Element</strong> (web, desktop, mobile — the reference), <strong>Element X</strong> (the new mobile client, fast), <strong>FluffyChat</strong>, <strong>Cinny</strong>, <strong>Nheko</strong>, <strong>SchildiChat</strong>, and many more. Voice/video calls via <strong>Element Call</strong>/LiveKit (below). E2EE by default in private rooms; verified devices; cross-signing.</p>
+<p><strong>Homeserver choices:</strong></p>
+<ul>
+<li><strong>Synapse</strong> — the reference implementation (Python, Postgres). Complete, well-documented, the most features and the most admin tooling (Synapse Admin UI). Heavy-ish (1–2 GB RAM for a small server; more when federating with large rooms — joining a 50,000-member public room can spike CPU and RAM for minutes). Maintained by Element (it moved to AGPL in 2023 with a commercial licence option; the community fork of the last Apache version is not recommended).</li>
+<li><strong>Conduit</strong> and its forks — a <strong>Rust</strong> homeserver using RocksDB, no Postgres, ~50–200 MB RAM, single binary, fast. Conduit itself slowed; <strong>Conduwuit</strong> became the community's Rust favourite in 2024, then was discontinued in 2025 by its maintainer; <strong>Tuwunel</strong> (continued by a maintainer with Matrix.org Foundation support) and <strong>continuwuity</strong> carry the lineage forward. Feature-complete for household and small-community use (federation, E2EE, media, most of the spec); some admin/moderation tooling and niche spec features lag Synapse. <strong>The recommendation for a small self-hosted Matrix server</strong> in 2026 — verify which fork is currently active before deploying.</li>
+<li><strong>Dendrite</strong> — Element's Go second-generation server; capable, lighter than Synapse, development has been intermittent. Fine but not the momentum choice.</li>
+</ul>
+<p><strong>Realities of running Matrix:</strong></p>
+<ul>
+<li><strong>Federation</strong> is optional. A private homeserver for your household with federation disabled is simple and light. Federation to the wider network means your server participates in room replication and can be surprised by resource use; a small server <em>can</em> federate happily if users avoid the enormous public rooms.</li>
+<li><strong>Well-known delegation</strong>: serve <code>https://example.com/.well-known/matrix/server</code> and <code>/client</code> from your main domain so <code>@alice:example.com</code> works while the homeserver lives at <code>matrix.example.com</code>. Port 8448 for federation can be avoided this way (federate over 443 via the proxy).</li>
+<li><strong>Media</strong> grows: set retention and size limits; consider S3-backed media (Synapse supports it; the Rust servers are adding it).</li>
+<li><strong>Bridges</strong> (mautrix-telegram/whatsapp/signal/discord, etc.) each run as a separate container and need care — WhatsApp and Signal bridges puppet your phone account and occasionally break with upstream changes. Powerful; not zero-maintenance.</li>
+<li><strong>Push notifications</strong> on mobile go via Element's push gateway (or <strong>ntfy</strong>/UnifiedPush for Android with compatible clients) — the server sends only a "wake up" ping; content stays E2EE.</li>
+<li><strong>Matrix Authentication Service</strong> (MAS) is the new OIDC-native auth layer for Synapse; Element X requires it in some configurations — the migration is a 2025–2026 concern for Synapse operators. Tuwunel supports OIDC/SSO via its own means.</li>
+</ul>
+<p><strong>Pick Matrix if:</strong> you want a household/friends chat with E2EE that <em>could</em> talk to the wider world, bridges to your other messengers, and no company in the middle. It is the recommendation for self-hosted chat, with the caveat that it is the most involved.</p>
+<h3 id="rocketchat">Rocket.Chat<a class="headerlink" href="#rocketchat" title="Permanent link">#</a></h3>
+<p>A <strong>Slack-like</strong> team chat (Node/Meteor + MongoDB): channels, DMs, threads, file sharing, video (via Jitsi/Pexip/its own), apps/integrations, omnichannel support desk features, LDAP/OIDC, mobile apps, and a polished UI. E2EE is optional and less mature than Matrix's; federation via Matrix bridge exists. The Community Edition has been repeatedly re-scoped — features moved to paid tiers, user/message caps introduced on some free options, and the licence and "Starter" plans have shifted several times since 2022. It works well; the trajectory is toward enterprise.</p>
+<h3 id="mattermost">Mattermost<a class="headerlink" href="#mattermost" title="Permanent link">#</a></h3>
+<p>The <strong>Slack alternative for teams</strong> (Go + Postgres): channels, threads, search, integrations (webhooks, slash commands, bots, a plugin marketplace), playbooks, Focalboard-derived boards, calls (built-in plugin, WebRTC), LDAP/SAML/OIDC (some auth methods Enterprise-only), mobile apps. The <strong>free Team Edition</strong> is capable and stable, though Mattermost has also moved features (some SSO, compliance, HA) to paid tiers and, in 2024–2025, introduced a user cap on free Enterprise-feature trials. Lighter and simpler to operate than Rocket.Chat. <strong>Pick it if</strong> you want Slack for a small team or a family and do not need E2EE or federation.</p>
+<h3 id="zulip">Zulip<a class="headerlink" href="#zulip" title="Permanent link">#</a></h3>
+<p>The <strong>threaded</strong> chat — every message belongs to a topic within a channel ("stream"), which makes asynchronous conversation dramatically more organised than Slack's firehose. Open source (Apache 2.0, Python/Django + Postgres + Redis + RabbitMQ), all features free when self-hosted, excellent documentation, LDAP/SAML/OIDC, mobile apps, integrations. Heavier to run (several services) and the topic model is loved or hated. <strong>Pick it if</strong> your group has many parallel discussions and values organisation over immediacy — open-source projects and study groups adore it.</p>
+<h3 id="xmpp">XMPP<a class="headerlink" href="#xmpp" title="Permanent link">#</a></h3>
+<p>The 25-year-old federated chat protocol (Jabber): <strong>Prosody</strong> (Lua, light, modular) or <strong>ejabberd</strong> (Erlang, industrial) as the server; <strong>Conversations</strong> (Android), <strong>Monal</strong> and <strong>Siskin</strong> (iOS), <strong>Gajim</strong>/<strong>Dino</strong> (desktop) as clients; <strong>OMEMO</strong> for E2EE; audio/video via Jingle. Extremely light (Prosody idles at ~30 MB), rock-solid, federates with a large existing network. Weaknesses: the client experience is uneven across platforms (iOS especially), group E2EE is fiddlier than Matrix's, and momentum has shifted to Matrix. <strong>Snikket</strong> packages Prosody with a curated client set for a turnkey family chat server — a genuinely lovely, low-maintenance option. <strong>Pick XMPP/Snikket if</strong> you want the lightest possible federated E2EE chat and your users are on Android/desktop.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<p><strong>Revolt</strong> (Discord-like, open source, self-hostable, young), <strong>Spacebar</strong> (a Discord-compatible server reimplementation), <strong>Rocket.Chat</strong>'s many forks, <strong>Tinode</strong>, <strong>Nextcloud Talk</strong> (chat + calls inside Nextcloud — fine for a Nextcloud household), <strong>Signal</strong> (not self-hostable in any practical sense), <strong>Simplex</strong> (self-hostable relays for a metadata-minimising messenger), <strong>IRC</strong> (<strong>Ergo</strong> is a modern server with history and auth; <strong>The Lounge</strong> is a web client — for the nostalgic and the pragmatic), <strong>Discord</strong> (no).</p>
+<h3 id="chat-comparison">Chat comparison<a class="headerlink" href="#chat-comparison" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Matrix (Tuwunel/Synapse)</th>
+<th>Mattermost</th>
+<th>Rocket.Chat</th>
+<th>Zulip</th>
+<th>XMPP (Snikket/Prosody)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td>Federated, E2EE by default</td>
+<td>Team chat (Slack)</td>
+<td>Team chat (Slack)</td>
+<td>Threaded team chat</td>
+<td>Federated, OMEMO E2EE</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>100 MB (Rust) / 1–2 GB (Synapse)</td>
+<td>~500 MB</td>
+<td>~1–2 GB</td>
+<td>~2 GB</td>
+<td>~50 MB</td>
+</tr>
+<tr>
+<td>Bridges to other networks</td>
+<td><strong>Yes (mautrix, many)</strong></td>
+<td>Some</td>
+<td>Some</td>
+<td>Some</td>
+<td>Some (Slidge)</td>
+</tr>
+<tr>
+<td>Voice/video</td>
+<td>Element Call / LiveKit</td>
+<td>Built-in calls</td>
+<td>Jitsi/own</td>
+<td>Jitsi/BigBlueButton</td>
+<td>Jingle</td>
+</tr>
+<tr>
+<td>Mobile clients</td>
+<td>Element X, FluffyChat, many</td>
+<td>Official</td>
+<td>Official</td>
+<td>Official</td>
+<td>Conversations / Monal</td>
+</tr>
+<tr>
+<td>Licence</td>
+<td>AGPL / Apache (varies by server)</td>
+<td>MIT (Team) + paid</td>
+<td>MIT + paid tiers</td>
+<td>Apache 2.0</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Households, communities, privacy</td>
+<td>Small teams</td>
+<td>Slack replacement with support desk</td>
+<td>Organised async groups</td>
+<td>Lightest federated E2EE</td>
+</tr>
+</tbody>
+</table>
+<h2 id="voice-and-video">Voice and video<a class="headerlink" href="#voice-and-video" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Jitsi Meet</strong> — the self-hosted Zoom: browser-based (no accounts needed by default), screen sharing, recording (with Jibri), lobby and passwords, breakout rooms, mobile apps, and JWT/OIDC authentication for who may create rooms. A Compose stack of several containers (web, prosody, jicofo, jvb). Video quality is good for a handful of participants; the <strong>JVB</strong> (videobridge) needs UDP 10000 open to the internet (or a TURN server) for participants outside your network — this is the one place where a forwarded port is nearly unavoidable, or where a VPS should host it. Works best with a small number of participants; large meetings need real bandwidth and CPU on the bridge.</li>
+<li><strong>Element Call / LiveKit</strong> — Matrix's native group calls, powered by <strong>LiveKit</strong> (an open-source SFU) with the <strong>Matrix RTC</strong> backend. Element X and Element Web use it; you run a LiveKit server (and its JWT service) alongside your homeserver. E2EE calls. The modern path for Matrix users; setup is more involved than Jitsi's but the integration is seamless once done.</li>
+<li><strong>Nextcloud Talk</strong> — chat and calls inside Nextcloud; for more than 2–3 participants it needs the <strong>High Performance Backend</strong> (a separate signalling server, now open source and included in AIO). Fine for a Nextcloud household.</li>
+<li><strong>Mumble</strong> — low-latency <strong>voice</strong> chat (the gamers' standard for two decades): tiny server (<strong>Murmur</strong>, ~20 MB), positional audio, channels, ACLs, clients everywhere including <strong>Mumla</strong> (Android) and <strong>Mumble</strong> (iOS). No video. Unbeatable for a gaming group or a family voice channel on a Raspberry Pi. <strong>TeamSpeak</strong> (proprietary) is the alternative nobody needs.</li>
+<li><strong>BigBlueButton</strong> (education-oriented conferencing with whiteboards and breakout rooms — heavy, needs a dedicated server), <strong>Galène</strong> (a minimal, efficient SFU in Go — great for small groups), <strong>MiroTalk</strong> (WebRTC P2P/SFU meeting rooms, light), <strong>Peer Calls</strong>, <strong>Rocket.Chat/Mattermost built-in calls</strong>. <strong>Signal/WhatsApp calls</strong> are not self-hostable.</li>
+</ul>
+<p><strong>Recommendation:</strong> Jitsi Meet for ad-hoc video with anyone (send a link); Mumble for persistent voice; Element Call if you are on Matrix and want calls in the same client.</p>
+<h2 id="email-the-honest-chapter">Email: the honest chapter<a class="headerlink" href="#email-the-honest-chapter" title="Permanent link">#</a></h2>
+<p>Self-hosting email is possible, and the tooling in 2026 is better than it has ever been. Before choosing to do it, understand what you are signing up for.</p>
+<h3 id="why-it-is-hard">Why it is hard<a class="headerlink" href="#why-it-is-hard" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Deliverability.</strong> The large providers (Gmail, Outlook/Microsoft 365, Yahoo, iCloud) treat mail from unknown IPs with suspicion. Residential IP ranges are <strong>blanket-blocked</strong> for outbound SMTP by nearly every recipient and by most ISPs (port 25 outbound is blocked at the ISP level for the majority of home connections). So your mail server <em>cannot</em> live at home and send mail directly. It lives on a <strong>VPS</strong> — and VPS IP ranges are also treated with suspicion, especially cheap ones with a history of spam. A new IP starts with <strong>no reputation</strong>; building it takes weeks of low-volume legitimate mail, and a single misstep (an open relay, a compromised account, a mailing-list blast) lands you on a blocklist that can take days to escape. Microsoft in particular is opaque and slow about delisting.</li>
+<li><strong>The standards are non-negotiable now.</strong> <strong>SPF</strong>, <strong>DKIM</strong>, and <strong>DMARC</strong> (with <code>p=quarantine</code> or <code>reject</code>) are required by Gmail and Yahoo for bulk senders since 2024 and effectively required for everyone. <strong>Reverse DNS (PTR)</strong> must match your HELO name. <strong>TLS</strong> with a valid certificate. <strong>MTA-STS</strong> and <strong>DANE</strong> are nice-to-haves. Any mail server package below sets these up; you still have to publish the DNS records correctly and understand what they do.</li>
+<li><strong>Inbound spam</strong> must be filtered (rspamd is excellent) and <em>you</em> tune the false positives.</li>
+<li><strong>Availability.</strong> If your server is down, senders retry for a few days, then bounce. A home internet outage or a botched update can lose mail. Email is the one service where downtime has irreversible consequences.</li>
+<li><strong>Time.</strong> Initial setup is a weekend. Ongoing: monitoring blocklists, reading rspamd reports, updating, occasionally begging Microsoft. Perhaps an hour a month once stable — and the "once stable" takes a few months.</li>
+</ul>
+<h3 id="why-people-do-it-anyway">Why people do it anyway<a class="headerlink" href="#why-people-do-it-anyway" title="Permanent link">#</a></h3>
+<p>Complete control over the most important account you have (every password reset goes through it); no provider reading or mining it; unlimited addresses and domains; catch-all and plus-addressing; no risk of a provider locking you out; learning the protocols that underpin the internet. For some, it is the point of self-hosting.</p>
+<h3 id="the-realistic-architectures">The realistic architectures<a class="headerlink" href="#the-realistic-architectures" title="Permanent link">#</a></h3>
+<ol>
+<li><strong>Don't.</strong> Use a privacy-respecting paid provider (<strong>Fastmail</strong>, <strong>Proton</strong>, <strong>mailbox.org</strong>, <strong>Migadu</strong>, <strong>Posteo</strong>, <strong>Tuta</strong>) with your own domain. USD 1–5/month per user. You keep domain portability (the actual lock-in protection), gain deliverability, and lose only the purity. <strong>This is the right answer for most households</strong>, and choosing it is not a failure.</li>
+<li><strong>Receive at home, send via a relay.</strong> Run your mail server at home (or on a VPS) for storage, IMAP, webmail, and filtering, but route <strong>outbound</strong> mail through a reputable <strong>SMTP relay</strong> — <strong>Amazon SES</strong> (USD 0.10 per 1,000 emails), <strong>Mailgun</strong>, <strong>Postmark</strong>, <strong>SMTP2GO</strong>, <strong>Brevo</strong>, <strong>Resend</strong>, or your ISP's relay. Deliverability becomes the relay's problem; you keep your mailbox and data. Inbound to a home IP requires port 25 open inbound (many ISPs allow it even when blocking outbound) and a static IP or a <strong>backup MX</strong>/<strong>inbound relay</strong> on a VPS that forwards to home over a VPN. <strong>The recommendation for anyone who insists on self-hosting the mailbox.</strong></li>
+<li><strong>Full stack on a VPS.</strong> Mail server on a VPS with a clean IP (check its history against blocklists <em>before</em> committing; Hetzner, OVH, and Vultr ranges vary — some providers block port 25 on new accounts until you ask). Do everything right (rDNS, SPF, DKIM, DMARC, TLS, rate limits, no open relay, MTA-STS), warm the IP slowly, monitor with <strong>mail-tester.com</strong> and blocklist checks, and accept the occasional Microsoft fight. Feasible; hundreds of people do it successfully; not effortless.</li>
+</ol>
+<h3 id="the-server-packages">The server packages<a class="headerlink" href="#the-server-packages" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Mailcow: dockerized</strong> — the full suite: Postfix (SMTP), Dovecot (IMAP), rspamd (spam, DKIM), SOGo (webmail, calendar, contacts, ActiveSync), ClamAV, Netfilter (fail2ban-like), a comprehensive admin UI with domains/mailboxes/aliases/quotas/sync jobs, automatic Let's Encrypt, DKIM management, and a backup/restore script. ~2–4 GB RAM (ClamAV and SOGo are heavy; both can be disabled). The most complete and the most popular; excellent documentation; a paid support option. <strong>The recommendation if you want a UI and everything included.</strong></li>
+<li><strong>Mailu</strong> — a lighter, Compose-native suite (Postfix, Dovecot, rspamd, Roundcube or SnappyMail webmail, an admin UI, fetchmail, optional ClamAV/full-text search) at ~1 GB RAM. Clean, well-designed setup wizard on the project website that generates your Compose file. Less feature-rich admin than Mailcow; simpler to understand. <strong>The recommendation for a lighter footprint.</strong></li>
+<li><strong>Stalwart Mail Server</strong> — a <strong>single Rust binary</strong> implementing SMTP, IMAP, JMAP (the modern mail protocol), CalDAV/CardDAV/WebDAV (since 2025), with built-in spam filtering, DKIM/SPF/DMARC/ARC, DANE, MTA-STS, S3 or filesystem or database storage, OIDC/LDAP, a web admin, and remarkable performance at ~50–200 MB RAM. Launched 2023, maturing very fast, and the most technically modern option by a wide margin. Fewer years in production than Postfix/Dovecot; a smaller community; webmail is not bundled (pair with SnappyMail/Roundcube). <strong>The recommendation for people who want modern, light, and are comfortable being slightly early.</strong></li>
+<li><strong>docker-mailserver</strong> — Postfix + Dovecot + rspamd (or SpamAssassin) + ClamAV + fail2ban in <strong>one container</strong>, configured via environment variables and a <code>setup</code> script, no web admin, no bundled webmail. Lean, well-documented, mature, and exactly right for a person who wants a classic mail stack without a UI. ~500 MB–1 GB.</li>
+<li><strong>Maddy</strong> — a single-binary Go mail server (SMTP + IMAP + DKIM/SPF/DMARC, SQLite-backed) with minimal configuration; lighter than everything but Stalwart; no webmail or admin UI; a good choice for a personal single-domain server on a tiny VPS.</li>
+<li><strong>Mail-in-a-Box</strong> (an opinionated all-in-one that takes over an Ubuntu VPS — DNS, mail, webmail, Nextcloud), <strong>iRedMail</strong> (the older full-suite installer; free edition + paid admin panel), <strong>Modoboa</strong>, <strong>Poste.io</strong> (free tier limited), <strong>YunoHost</strong> (bundles a mail stack with its apps — surprisingly good for a family server), <strong>Postal</strong> (transactional mail platform — for sending app mail, not personal mailboxes), <strong>Haraka</strong>, <strong>Zimbra</strong> (enterprise groupware, heavy), <strong>Cyrus</strong>.</li>
+</ul>
+<h3 id="webmail-and-clients">Webmail and clients<a class="headerlink" href="#webmail-and-clients" title="Permanent link">#</a></h3>
+<p><strong>Roundcube</strong> (the classic, complete, slightly dated), <strong>SnappyMail</strong> (the fast, modern fork of RainLoop — the current favourite), <strong>SOGo</strong> (bundled in Mailcow — groupware with calendar/contacts/ActiveSync), <strong>Nextcloud Mail</strong> (adequate). Desktop/mobile: <strong>Thunderbird</strong>, <strong>K-9 Mail/Thunderbird for Android</strong>, <strong>FairEmail</strong> (Android, superb), Apple Mail, <strong>Outlook</strong> (works with IMAP; ActiveSync via SOGo). JMAP clients (<strong>Twake Mail</strong>, <strong>Mailtemi</strong>) work with Stalwart.</p>
+<h3 id="if-you-self-host-mail-the-setup-checklist">If you self-host mail: the setup checklist<a class="headerlink" href="#if-you-self-host-mail-the-setup-checklist" title="Permanent link">#</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Server on a VPS with a clean IP, <strong>or</strong> at home with an outbound relay and inbound port 25 (or an inbound relay).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> rDNS (PTR) for the IP matches the mail hostname; the hostname's A/AAAA record matches back.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> MX record; SPF (<code>v=spf1 mx include:relay -all</code>); DKIM (2048-bit, rotated yearly); DMARC (<code>p=quarantine</code> moving to <code>reject</code>, with <code>rua=</code> reports to an address you read — or to <strong>parsedmarc</strong>); MTA-STS and TLS-RPT; DANE/TLSA if your DNS is DNSSEC-signed.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Valid TLS certificate; TLS enforced for submission (587/465) and offered for inbound 25.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> No open relay; authentication required for submission; rate limits per user.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> rspamd trained; greylisting or reputation configured; a quarantine you actually check.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> fail2ban/CrowdSec on SMTP/IMAP auth failures; MFA on the admin UI; app-specific passwords per client.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Backups of mail store <em>and</em> config <em>and</em> DKIM keys (<a href="../11-backups/">Chapter 11</a>); the mailbox is irreplaceable data.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Monitoring: blocklist checks (MXToolbox, multirbl), certificate expiry, queue length, disk; a mail-tester.com score of 10/10.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Warm the IP: low volume for weeks; personal mail only; no newsletters from a fresh server.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A <strong>secondary MX</strong> or inbound relay so mail queues elsewhere when you are down.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Critical accounts (bank, domain registrar) <em>not</em> moved to the new server until it has run reliably for three months.</li>
+</ul>
+<h3 id="recommendation">Recommendation<a class="headerlink" href="#recommendation" title="Permanent link">#</a></h3>
+<p>For most households: <strong>a paid provider with your own domain</strong> (Fastmail/Proton/Migadu/mailbox.org). For those who self-host: <strong>Mailcow or Stalwart on a VPS</strong>, <em>or</em> <strong>Mailcow/Mailu/Stalwart at home with an outbound relay</strong>; SnappyMail for webmail; DMARC reports read; three months of warming before trusting it with anything that matters. Never treat email as a service you can rebuild from scratch on a weekend — it is the one that cannot be down.</p>
+<h2 id="newsletters-and-mailing-lists">Newsletters and mailing lists<a class="headerlink" href="#newsletters-and-mailing-lists" title="Permanent link">#</a></h2>
+<p><strong>Listmonk</strong> (a fast, modern newsletter and mailing-list manager — subscribers, campaigns, templates, analytics; sends via any SMTP/relay; the standard), <strong>Mautic</strong> (marketing automation, heavy), <strong>Keila</strong>, <strong>Mlmmj/Mailman 3</strong> (traditional discussion lists), <strong>Sympa</strong>. For transactional mail from your own apps: point them at a relay (SES/SMTP2GO/Resend free tiers) or at your mail server's submission port with a dedicated account.</p>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Chat platform chosen (Matrix via Tuwunel/Synapse, or Snikket, or Mattermost); mobile push working; E2EE verified between devices.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Matrix (if used): <code>.well-known</code> delegation; federation decision made; media retention set; bridges monitored if run.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Video: Jitsi (JVB UDP reachable or a TURN server) or Element Call; tested with a participant outside the LAN.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Email: honest decision made — provider with own domain, relay hybrid, or full self-host on a VPS; if self-hosting, the checklist above completed and 10/10 on mail-tester.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> All communication services behind the reverse proxy with valid certificates; SMTP/IMAP ports protected by fail2ban/CrowdSec.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Mail store, chat database, and media in nightly backups; DKIM and Matrix signing keys in the secrets backup.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../19-home-automation/">← 19. Home Automation</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/20-communication.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#chat">Chat</a><ul>
+<li><a href="#matrix">Matrix</a></li>
+<li><a href="#rocketchat">Rocket.Chat</a></li>
+<li><a href="#mattermost">Mattermost</a></li>
+<li><a href="#zulip">Zulip</a></li>
+<li><a href="#xmpp">XMPP</a></li>
+<li><a href="#others">Others</a></li>
+<li><a href="#chat-comparison">Chat comparison</a></li>
+</ul>
+</li>
+<li><a href="#voice-and-video">Voice and video</a></li>
+<li><a href="#email-the-honest-chapter">Email: the honest chapter</a><ul>
+<li><a href="#why-it-is-hard">Why it is hard</a></li>
+<li><a href="#why-people-do-it-anyway">Why people do it anyway</a></li>
+<li><a href="#the-realistic-architectures">The realistic architectures</a></li>
+<li><a href="#the-server-packages">The server packages</a></li>
+<li><a href="#webmail-and-clients">Webmail and clients</a></li>
+<li><a href="#if-you-self-host-mail-the-setup-checklist">If you self-host mail: the setup checklist</a></li>
+<li><a href="#recommendation">Recommendation</a></li>
+</ul>
+</li>
+<li><a href="#newsletters-and-mailing-lists">Newsletters and mailing lists</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
