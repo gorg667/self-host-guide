@@ -101,3 +101,35 @@ Complete control over the most important account you have (every password reset 
 ### Webmail and clients
 
 **Roundcube** (the classic, complete, slightly dated), **SnappyMail** (the fast, modern fork of RainLoop — the current favourite), **SOGo** (bundled in Mailcow — groupware with calendar/contacts/ActiveSync), **Nextcloud Mail** (adequate). Desktop/mobile: **Thunderbird**, **K-9 Mail/Thunderbird for Android**, **FairEmail** (Android, superb), Apple Mail, **Outlook** (works with IMAP; ActiveSync via SOGo). JMAP clients (**Twake Mail**, **Mailtemi**) work with Stalwart.
+
+### If you self-host mail: the setup checklist
+
+- [ ] Server on a VPS with a clean IP, **or** at home with an outbound relay and inbound port 25 (or an inbound relay).
+- [ ] rDNS (PTR) for the IP matches the mail hostname; the hostname's A/AAAA record matches back.
+- [ ] MX record; SPF (`v=spf1 mx include:relay -all`); DKIM (2048-bit, rotated yearly); DMARC (`p=quarantine` moving to `reject`, with `rua=` reports to an address you read — or to **parsedmarc**); MTA-STS and TLS-RPT; DANE/TLSA if your DNS is DNSSEC-signed.
+- [ ] Valid TLS certificate; TLS enforced for submission (587/465) and offered for inbound 25.
+- [ ] No open relay; authentication required for submission; rate limits per user.
+- [ ] rspamd trained; greylisting or reputation configured; a quarantine you actually check.
+- [ ] fail2ban/CrowdSec on SMTP/IMAP auth failures; MFA on the admin UI; app-specific passwords per client.
+- [ ] Backups of mail store *and* config *and* DKIM keys ([Chapter 11](11-backups.md)); the mailbox is irreplaceable data.
+- [ ] Monitoring: blocklist checks (MXToolbox, multirbl), certificate expiry, queue length, disk; a mail-tester.com score of 10/10.
+- [ ] Warm the IP: low volume for weeks; personal mail only; no newsletters from a fresh server.
+- [ ] A **secondary MX** or inbound relay so mail queues elsewhere when you are down.
+- [ ] Critical accounts (bank, domain registrar) *not* moved to the new server until it has run reliably for three months.
+
+### Recommendation
+
+For most households: **a paid provider with your own domain** (Fastmail/Proton/Migadu/mailbox.org). For those who self-host: **Mailcow or Stalwart on a VPS**, *or* **Mailcow/Mailu/Stalwart at home with an outbound relay**; SnappyMail for webmail; DMARC reports read; three months of warming before trusting it with anything that matters. Never treat email as a service you can rebuild from scratch on a weekend — it is the one that cannot be down.
+
+## Newsletters and mailing lists
+
+**Listmonk** (a fast, modern newsletter and mailing-list manager — subscribers, campaigns, templates, analytics; sends via any SMTP/relay; the standard), **Mautic** (marketing automation, heavy), **Keila**, **Mlmmj/Mailman 3** (traditional discussion lists), **Sympa**. For transactional mail from your own apps: point them at a relay (SES/SMTP2GO/Resend free tiers) or at your mail server's submission port with a dedicated account.
+
+## Checklist
+
+- [ ] Chat platform chosen (Matrix via Tuwunel/Synapse, or Snikket, or Mattermost); mobile push working; E2EE verified between devices.
+- [ ] Matrix (if used): `.well-known` delegation; federation decision made; media retention set; bridges monitored if run.
+- [ ] Video: Jitsi (JVB UDP reachable or a TURN server) or Element Call; tested with a participant outside the LAN.
+- [ ] Email: honest decision made — provider with own domain, relay hybrid, or full self-host on a VPS; if self-hosting, the checklist above completed and 10/10 on mail-tester.
+- [ ] All communication services behind the reverse proxy with valid certificates; SMTP/IMAP ports protected by fail2ban/CrowdSec.
+- [ ] Mail store, chat database, and media in nightly backups; DKIM and Matrix signing keys in the secrets backup.
