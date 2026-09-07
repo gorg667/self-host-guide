@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Media: Streaming, Libraries, and Automation — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li class="active"><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 15 · ~3,658 words · 16 min read</div>
+    <article class="prose">
+      <h1 id="media-streaming-libraries-and-automation">Media: Streaming, Libraries, and Automation<a class="headerlink" href="#media-streaming-libraries-and-automation" title="Permanent link">#</a></h1>
+<p>Media serving is the gateway drug of self-hosting. A media server that streams your film collection to every TV and phone in the house, with cover art and resume-where-you-left-off and no monthly fee, is what convinces most people the whole hobby is worthwhile. It is also the category with the deepest tooling: the media servers themselves (Jellyfin, Plex, Emby), the automation stack that manages libraries (the *arr suite), request systems for the household (Jellyseerr), download clients and how to run them safely, hardware transcoding, and the adjacent categories of music (Navidrome), audiobooks and podcasts (Audiobookshelf), books and comics (Kavita, Komga, Calibre-Web), and library optimisation (Tdarr).</p>
+<p>A note on legality up front: everything in this chapter is about serving media <em>you have the right to</em>. Ripped discs you own, purchased downloads, home videos, and legally free content are unambiguous. The automation tools are agnostic and are widely used for both legitimate and infringing purposes; <a href="../30-legal-ethical/">Chapter 30</a> discusses the legal landscape. This guide describes the tools; what you feed them is your responsibility.</p>
+<h2 id="media-servers">Media servers<a class="headerlink" href="#media-servers" title="Permanent link">#</a></h2>
+<p>A media server scans directories of video/audio files, matches them against metadata databases (TMDB, TVDB, MusicBrainz) to fetch artwork and descriptions, and streams them to client apps — <strong>direct playing</strong> when the client can handle the file's codec and container, <strong>transcoding</strong> on the fly when it cannot (or when bandwidth is limited), with per-user libraries, watch history, and parental controls.</p>
+<h3 id="jellyfin">Jellyfin<a class="headerlink" href="#jellyfin" title="Permanent link">#</a></h3>
+<p>The fully free and open-source (GPL) media server, forked from Emby in 2018 when Emby went proprietary. No accounts, no subscriptions, no phone-home, no feature paywalls: hardware transcoding, multiple users, SyncPlay (watch together), live TV and DVR (with a tuner), plugins, a full API, and clients for web, Android, Android TV, iOS/tvOS (Swiftfin), Roku, Fire TV, LG webOS, Samsung Tizen, Kodi (via the Jellyfin for Kodi addon), and third-party clients (Infuse, Streamyfin, Findroid, Jellyfin Media Player for desktop). Development is community-driven and active; releases every few months.</p>
+<p><strong>Strengths:</strong> free forever, respects privacy, hardware transcoding on Intel QSV, NVIDIA NVENC, AMD VAAPI/AMF, and Apple VideoToolbox without any licence; excellent OIDC/LDAP via plugins; SyncPlay; an increasingly polished web client; trickplay (scrubbing thumbnails) built in; the *arr and request ecosystem treats it as a first-class target.</p>
+<p><strong>Weaknesses:</strong> client polish lags Plex on some platforms — the official iOS/tvOS client (Swiftfin) has matured but Infuse (paid, third-party) remains the best Apple experience; some smart-TV apps are community-maintained with variable quality; no hosted relay for remote access (you handle it — reverse proxy or VPN); metadata matching is good but occasionally needs manual fixing; no built-in "sharing with friends" beyond creating them a user account.</p>
+<p><strong>Pick it if:</strong> you want the free, open, no-strings option — which is most people reading this guide.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">jellyfin</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jellyfin/jellyfin:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jellyfin</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000:1000</span>
+<span class="w">    </span><span class="nt">group_add</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;render&quot;</span><span class="p p-Indicator">]</span><span class="w">            </span><span class="c1"># or the numeric GID of /dev/dri/renderD128 (getent group render)</span>
+<span class="w">    </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/dev/dri:/dev/dri</span><span class="w">            </span><span class="c1"># Intel/AMD iGPU for hardware transcoding</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./config:/config</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./cache:/cache</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/data/media:/media:ro</span>
+<span class="w">    </span><span class="nt">tmpfs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/config/transcodes:size=8g</span><span class="w">   </span><span class="c1"># keep transcode scratch off the SSD (optional)</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">JELLYFIN_PublishedServerUrl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://jellyfin.example.com</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="c1"># For NVIDIA: install nvidia-container-toolkit and add</span>
+<span class="w">    </span><span class="c1"># deploy: { resources: { reservations: { devices: [ { driver: nvidia, count: 1, capabilities: [gpu] } ] } } }</span>
+</code></pre></div>
+<h3 id="plex">Plex<a class="headerlink" href="#plex" title="Permanent link">#</a></h3>
+<p>The commercial incumbent, closed-source, with a free tier and <strong>Plex Pass</strong> (USD 5/month, USD 40/year, or USD 250 lifetime as of the 2025 price increase — lifetime is the only sensible purchase). Plex's strengths are exactly where Jellyfin is weakest: <strong>client apps on every platform are polished and first-party</strong>, including excellent smart-TV apps; <strong>remote access "just works"</strong> through Plex's relay/UPnP without you configuring a reverse proxy; <strong>sharing</strong> libraries with friends is a built-in feature with their own Plex accounts; metadata matching is very good; Plexamp is arguably the best music app of any kind; skip-intro, credits detection, and downloads for offline viewing are mature.</p>
+<p><strong>The costs, plainly:</strong> hardware transcoding, skip intro, downloads, and several other features require Plex Pass. As of 2025, <strong>remote streaming requires Plex Pass</strong> (or a per-user Remote Watch Pass) — a change that pushed many toward Jellyfin. Plex requires a plex.tv account and phones home constantly; when Plex's auth servers have outages, local playback has been affected (they added a local-auth fallback, but the dependency is real). Plex has been steadily adding ad-supported streaming content, "Discover" social features, and other things that a self-hoster did not ask for, and the free tier has been eroded over time. The company sells your viewing data in aggregate. It is a good product from a company whose incentives are not fully aligned with yours.</p>
+<p><strong>Pick it if:</strong> client polish and effortless sharing with non-technical friends matter more to you than openness, and you are willing to pay for and depend on a company.</p>
+<h3 id="emby">Emby<a class="headerlink" href="#emby" title="Permanent link">#</a></h3>
+<p>The proprietary middle option: the codebase Jellyfin forked from, still developed, with a free tier and <strong>Emby Premiere</strong> (USD 5/month, USD 54/year, USD 119 lifetime) required for hardware transcoding, mobile apps beyond a trial, and DVR. Client coverage is good (including smart TVs), the UI is clean, and it phones home less than Plex. It has neither Plex's ecosystem breadth nor Jellyfin's openness, and its community is far smaller. A reasonable product that most new users skip in favour of one of the other two.</p>
+<h3 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Jellyfin</th>
+<th>Plex</th>
+<th>Emby</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Licence</td>
+<td>GPL (fully open)</td>
+<td>Proprietary</td>
+<td>Proprietary (source-available core, closed apps)</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>Free</td>
+<td>Free tier; Plex Pass USD 250 lifetime</td>
+<td>Free tier; Premiere USD 119 lifetime</td>
+</tr>
+<tr>
+<td>Hardware transcoding</td>
+<td><strong>Free</strong></td>
+<td>Plex Pass</td>
+<td>Premiere</td>
+</tr>
+<tr>
+<td>Remote access</td>
+<td>You configure (proxy/VPN)</td>
+<td>Built-in relay; <strong>now requires Plex Pass</strong></td>
+<td>You configure</td>
+</tr>
+<tr>
+<td>Account required</td>
+<td>No</td>
+<td><strong>Yes (plex.tv)</strong></td>
+<td>Optional (Emby Connect)</td>
+</tr>
+<tr>
+<td>Client quality (TVs/mobile)</td>
+<td>Good, improving; Apple via Swiftfin/Infuse</td>
+<td><strong>Excellent, first-party everywhere</strong></td>
+<td>Good</td>
+</tr>
+<tr>
+<td>Sharing with friends</td>
+<td>Create user accounts</td>
+<td><strong>Built-in, their own accounts</strong></td>
+<td>Emby Connect</td>
+</tr>
+<tr>
+<td>Music</td>
+<td>Good (Finamp client; or use Navidrome)</td>
+<td><strong>Plexamp (excellent)</strong></td>
+<td>Good</td>
+</tr>
+<tr>
+<td>Live TV / DVR</td>
+<td>Free</td>
+<td>Plex Pass</td>
+<td>Premiere</td>
+</tr>
+<tr>
+<td>SSO (OIDC/LDAP)</td>
+<td>Plugins</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Privacy</td>
+<td>No telemetry</td>
+<td>Telemetry, viewing data</td>
+<td>Minimal</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Most self-hosters</td>
+<td>Non-technical households sharing widely</td>
+<td>Neither camp</td>
+</tr>
+</tbody>
+</table>
+<p>Many people run <strong>both</strong> Jellyfin and Plex against the same library — Jellyfin for themselves, Plex for a parent who needs the Roku app to work with zero explanation. Read-only library mounts make this harmless.</p>
+<h2 id="hardware-transcoding">Hardware transcoding<a class="headerlink" href="#hardware-transcoding" title="Permanent link">#</a></h2>
+<p>Transcoding — decoding a video and re-encoding it in real time to a format or bitrate the client can handle — is the CPU-hungriest thing a home server does. A software transcode of a 4K HEVC stream can saturate eight cores; a hardware transcode on an Intel iGPU uses almost nothing. This is why <a href="../02-hardware/">Chapter 2</a> insists on Intel Quick Sync.</p>
+<p><strong>When transcoding happens:</strong> the client cannot decode the codec (HEVC/H.265 on an older TV; AV1 on almost anything older than 2023); the container is unsupported (MKV in a browser → remux, which is cheap, or transcode); subtitles are image-based (PGS) and need burning in — this forces a <em>video</em> transcode and is the most common surprise; the audio codec is unsupported (TrueHD/DTS-HD on a phone → audio-only transcode, cheap); or the bandwidth setting on the client is below the file's bitrate (remote streaming).</p>
+<p><strong>When it does not:</strong> direct play. Most modern TVs and phones direct-play H.264 and HEVC in MP4/MKV with AAC/AC3 audio. A library encoded that way needs almost no transcoding. Tdarr (below) can normalise a library to that profile.</p>
+<p><strong>Hardware options:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Intel Quick Sync (iGPU / Arc)</th>
+<th>NVIDIA NVENC</th>
+<th>AMD VAAPI/AMF</th>
+<th>Apple VideoToolbox</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Simultaneous streams</td>
+<td>5–10+ on a modern iGPU; more on Arc</td>
+<td>Consumer cards had a 3–5 session driver limit; <strong>lifted to 8 in 2023</strong>; patchable further</td>
+<td>Several</td>
+<td>Several</td>
+</tr>
+<tr>
+<td>Codecs</td>
+<td>H.264, HEVC, VP9, <strong>AV1 (11th gen+, Arc)</strong> encode/decode</td>
+<td>H.264, HEVC, AV1 (40-series+)</td>
+<td>H.264, HEVC, AV1 (RDNA 3+)</td>
+<td>H.264, HEVC</td>
+</tr>
+<tr>
+<td>Quality per bitrate</td>
+<td>Very good (Arc: excellent)</td>
+<td>Very good</td>
+<td>Good, improving</td>
+<td>Good</td>
+</tr>
+<tr>
+<td>HDR → SDR tone mapping</td>
+<td>Yes (OpenCL/VPP)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Idle power</td>
+<td>~0 (it's in the CPU)</td>
+<td>10–30 W for a discrete card</td>
+<td>~0 (iGPU)</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td>Linux/Docker friction</td>
+<td><strong>Lowest</strong> (<code>/dev/dri</code>)</td>
+<td>Medium (container toolkit)</td>
+<td>Low–medium</td>
+<td>Mac only</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>Included, or Arc A310 ~USD 100</td>
+<td>USD 150+</td>
+<td>Included</td>
+<td>Mac</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommendation:</strong> an Intel CPU from 8th gen onward (10th+ for HEVC 10-bit, 11th+ for AV1 decode, Arc for AV1 encode) or an Arc A310/A380 in any machine. Pass <code>/dev/dri</code> into the container, add the <code>render</code> group, enable QSV in the server's transcoding settings, tick every codec the hardware supports, enable tone mapping, and test with a 4K HDR file on a phone. <code>intel_gpu_top</code> on the host shows the engine in use.</p>
+<h2 id="the-arr-automation-stack">The *arr automation stack<a class="headerlink" href="#the-arr-automation-stack" title="Permanent link">#</a></h2>
+<p>The "*arr" applications are a family of .NET tools that automate acquiring and organising media: you tell them what you want, they monitor indexers for it, send it to a download client, and when it arrives they rename it, move it into your library with a consistent naming scheme, and notify your media server to scan. They share a common UI lineage and configuration model.</p>
+<ul>
+<li><strong>Sonarr</strong> — TV series. Monitors series, grabs episodes as they air (or the back catalogue), handles seasons, specials, upgrades to better quality.</li>
+<li><strong>Radarr</strong> — films. Same model.</li>
+<li><strong>Lidarr</strong> — music (albums/artists via MusicBrainz).</li>
+<li><strong>Readarr</strong> — books and audiobooks (development stalled in 2024–2025; <strong>Bookshelf</strong> and others are forks; many users moved to Calibre-Web-Automated's book downloader or LazyLibrarian).</li>
+<li><strong>Prowlarr</strong> — the <strong>indexer manager</strong>: configure your indexers (Usenet indexers, torrent trackers, public indexers) <em>once</em> here and it syncs them to every other *arr. Replaced Jackett for most people (Jackett is still maintained and Prowlarr can use it as a fallback).</li>
+<li><strong>Bazarr</strong> — subtitles: watches Sonarr/Radarr libraries and fetches subtitles from OpenSubtitles, Subscene alternatives, and others in your languages.</li>
+<li><strong>Whisparr</strong> (adult content), <strong>Mylar3</strong> (comics), <strong>Kapowarr</strong> (comics), <strong>Lidarr</strong> alternatives (<strong>Headphones</strong>, <strong>Bliss</strong> for tagging).</li>
+<li><strong>Recyclarr</strong> — syncs <strong>TRaSH Guides</strong> quality profiles and custom formats into Sonarr/Radarr, so your quality preferences (prefer x265 web-dl, avoid low-quality groups, score HDR correctly) are expert-maintained rather than hand-built.</li>
+<li><strong>Unpackerr</strong> — extracts archived downloads so the *arrs can import them.</li>
+<li><strong>Autobrr</strong> — IRC announce-based grabbing for private trackers; niche, powerful.</li>
+<li><strong>Huntarr</strong>, <strong>Cleanuparr</strong>, <strong>Decluttarr</strong> — newer helpers that hunt missing items or clean stalled downloads.</li>
+<li><strong>Maintainerr</strong> — rules-based library cleanup ("delete films nobody has watched in 6 months and that were requested via Jellyseerr").</li>
+</ul>
+<p><strong>The single most important setup concept is the TRaSH Guides folder structure.</strong> All <em>arrs and the download client must see the </em>same<em> filesystem path for downloads and media so that imports are </em><em>hardlinks</em><em> (instant, no extra space, seeding continues) rather than copies. That means one bind mount — <code>/mnt/data:/data</code> — into every container, with <code>/data/torrents/{movies,tv}</code>, <code>/data/usenet/{movies,tv}</code>, and <code>/data/media/{movies,tv,music}</code> underneath, all on the </em>same filesystem<em>. Two separate mounts (<code>/downloads</code> and <code>/movies</code>) force copies and double your disk usage. TRaSH Guides (trash-guides.info) is the canonical reference for </em>arr configuration and should be read before setting anything up.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># media/compose.yaml (excerpt — the pattern, not every option)</span>
+<span class="nt">x-arr</span><span class="p">:</span><span class="w"> </span><span class="nl">&amp;arr</span>
+<span class="w">  </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">  </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">PUID</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1000&quot;</span>
+<span class="w">    </span><span class="nt">PGID</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1000&quot;</span>
+<span class="w">    </span><span class="nt">TZ</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Europe/London</span>
+<span class="w">  </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">default</span><span class="p p-Indicator">]</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">prowlarr</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">&lt;&lt;</span><span class="p">:</span><span class="w"> </span><span class="nv">*arr</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lscr.io/linuxserver/prowlarr:latest</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./config/prowlarr:/config&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">sonarr</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">&lt;&lt;</span><span class="p">:</span><span class="w"> </span><span class="nv">*arr</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lscr.io/linuxserver/sonarr:latest</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./config/sonarr:/config&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/mnt/data:/data&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">radarr</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">&lt;&lt;</span><span class="p">:</span><span class="w"> </span><span class="nv">*arr</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lscr.io/linuxserver/radarr:latest</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./config/radarr:/config&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/mnt/data:/data&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">bazarr</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">&lt;&lt;</span><span class="p">:</span><span class="w"> </span><span class="nv">*arr</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lscr.io/linuxserver/bazarr:latest</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./config/bazarr:/config&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/mnt/data/media:/data/media&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">recyclarr</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/recyclarr/recyclarr:latest</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000:1000</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./config/recyclarr:/config&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> TZ</span><span class="p">:</span><span class="w"> </span><span class="nv">Europe/London</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<h2 id="requests-jellyseerr-overseerr-ombi">Requests: Jellyseerr, Overseerr, Ombi<a class="headerlink" href="#requests-jellyseerr-overseerr-ombi" title="Permanent link">#</a></h2>
+<p>Your household should not need to log into Radarr. A <strong>request system</strong> gives them a Netflix-like browse-and-request UI: search for a film, click request, it goes to Radarr, and they get a notification when it is available.</p>
+<ul>
+<li><strong>Jellyseerr</strong> — the fork of Overseerr with Jellyfin and Emby support (and Plex). Users log in with their Jellyfin account; per-user quotas and approval rules; notifications via email, Discord, Telegram, ntfy, Gotify, webhooks; a discover page with trending/popular; watchlist sync. <strong>The standard choice</strong> for Jellyfin users and works fine with Plex too.</li>
+<li><strong>Overseerr</strong> — the original, Plex-only. Still excellent; Jellyseerr has superseded it for most.</li>
+<li><strong>Ombi</strong> — the older, more configurable request system with Plex/Emby/Jellyfin support, music requests via Lidarr, and a more dated UI. Still maintained.</li>
+<li><strong>Seerr</strong> — the 2025 reunification: Overseerr and Jellyseerr merging into one project. Watch for it.</li>
+<li><strong>Doplarr</strong>, <strong>Requestrr</strong> — Discord bots for requests.</li>
+<li><strong>Wizarr</strong> — invitation and onboarding for new users: sends them a link, creates their Jellyfin/Plex account, walks them through installing the apps and Jellyseerr. Lovely for sharing with family.</li>
+</ul>
+<h2 id="download-clients-and-the-vpn-sidecar">Download clients and the VPN sidecar<a class="headerlink" href="#download-clients-and-the-vpn-sidecar" title="Permanent link">#</a></h2>
+<h3 id="torrent-clients">Torrent clients<a class="headerlink" href="#torrent-clients" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>qBittorrent</strong> — the community default: full-featured web UI, categories (which the <em>arrs use to route downloads), RSS, sequential download, IP filtering, an API that everything integrates with. The </em><em>VueTorrent</em>* alternative web UI is worth enabling. LinuxServer and hotio images are both well maintained.</li>
+<li><strong>Deluge</strong> — older, plugin-based, lighter; a fine alternative.</li>
+<li><strong>Transmission</strong> — minimal, extremely light, the choice for Raspberry Pis and NAS appliances; fewer features.</li>
+<li><strong>rTorrent/ruTorrent</strong> — the power-user classic, common on seedboxes; more setup.</li>
+<li><strong>Flood</strong> — a modern web UI that fronts rTorrent, qBittorrent, Deluge, or Transmission.</li>
+</ul>
+<h3 id="usenet-clients">Usenet clients<a class="headerlink" href="#usenet-clients" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>SABnzbd</strong> — the standard: fast, reliable, categories, post-processing, good API. Pair with one or two Usenet providers (paid, ~USD 3–10/month) and indexers (some free, most ~USD 10–20/year). Usenet is direct-download over SSL from a provider, so no VPN is needed for privacy and speeds are line-rate.</li>
+<li><strong>NZBGet</strong> — lighter (C++), the choice for low-power hardware; development resumed under new maintainers in 2023.</li>
+</ul>
+<h3 id="gluetun-the-vpn-sidecar-pattern">Gluetun: the VPN sidecar pattern<a class="headerlink" href="#gluetun-the-vpn-sidecar-pattern" title="Permanent link">#</a></h3>
+<p>Torrent traffic should go through a VPN if you value your ISP not knowing what you download and not receiving notices. The clean way is <strong>Gluetun</strong> — a container that connects to a commercial VPN provider (Mullvad, ProtonVPN, AirVPN, Private Internet Access, Surfshark, Windscribe, and dozens more, plus any WireGuard or OpenVPN config) with a <strong>kill switch</strong> built in: if the VPN drops, <em>nothing</em> can reach the internet. Other containers join its network namespace and inherit the tunnel:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">gluetun</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qmcgaw/gluetun:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gluetun</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">cap_add</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">NET_ADMIN</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">devices</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/dev/net/tun:/dev/net/tun&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">VPN_SERVICE_PROVIDER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mullvad</span>
+<span class="w">      </span><span class="nt">VPN_TYPE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wireguard</span>
+<span class="w">      </span><span class="nt">WIREGUARD_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${MULLVAD_KEY}</span>
+<span class="w">      </span><span class="nt">WIREGUARD_ADDRESSES</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${MULLVAD_ADDR}</span>
+<span class="w">      </span><span class="nt">SERVER_CITIES</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Amsterdam</span>
+<span class="w">      </span><span class="nt">FIREWALL_OUTBOUND_SUBNETS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0.0.0/8</span><span class="w">      </span><span class="c1"># let the *arrs on the LAN reach qBittorrent&#39;s API</span>
+<span class="w">      </span><span class="nt">VPN_PORT_FORWARDING</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;on&quot;</span><span class="w">                  </span><span class="c1"># providers that support it (ProtonVPN, AirVPN, PIA)</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;127.0.0.1:8080:8080&quot;</span><span class="w">                    </span><span class="c1"># qBittorrent web UI is published HERE, on gluetun</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./gluetun:/gluetun&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">qbittorrent</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lscr.io/linuxserver/qbittorrent:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qbittorrent</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;service:gluetun&quot;</span><span class="w">              </span><span class="c1"># all traffic via the VPN or not at all</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gluetun</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> PUID</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1000&quot;</span><span class="p p-Indicator">,</span><span class="nt"> PGID</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1000&quot;</span><span class="p p-Indicator">,</span><span class="nt"> TZ</span><span class="p">:</span><span class="w"> </span><span class="nv">Europe/London</span><span class="p p-Indicator">,</span><span class="nt"> WEBUI_PORT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;8080&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./config/qbittorrent:/config</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/data/torrents:/data/torrents</span>
+</code></pre></div>
+<p>The <em>arrs reach qBittorrent at <code>http://gluetun:8080</code> (the Gluetun container's name, since qBittorrent has no network of its own). For </em><em>port forwarding</em><em> (which dramatically improves torrent connectivity), pick a provider that supports it — Mullvad dropped it in 2023; </em><em>ProtonVPN</em><em>, </em><em>AirVPN</em><em>, and </em><em>PIA</em>* support it, and Gluetun can update qBittorrent's listening port automatically for some providers (or a small script does it). Verify the tunnel is working: <code>docker exec gluetun wget -qO- ifconfig.me</code> should show the VPN's IP; a torrent IP-check tool (ipleak.net's torrent test) confirms qBittorrent's announced IP.</p>
+<p><strong>Seedboxes</strong> — a rented server at a hosting company that downloads and seeds on your behalf, synced home via rsync/Syncthing/FTP — are the alternative for people who want the traffic off their home connection entirely; ~USD 5–20/month.</p>
+<h2 id="music">Music<a class="headerlink" href="#music" title="Permanent link">#</a></h2>
+<p><strong>Navidrome</strong> is the standard self-hosted music server: light (Go, ~50 MB RAM), fast scanning of large libraries, a clean web player, multi-user with per-user play counts and favourites, Last.fm/ListenBrainz scrobbling, smart playlists, and — critically — the <strong>Subsonic API</strong>, which means dozens of excellent mobile and desktop clients: <strong>Symfonium</strong> (Android, the best), <strong>DSub</strong>, <strong>Ultrasonic</strong>, <strong>Tempo</strong>, <strong>play:Sub</strong> and <strong>Amperfy</strong> and <strong>Substreamer</strong> (iOS), <strong>Feishin</strong> and <strong>Sonixd</strong> (desktop), <strong>Supersonic</strong>. Navidrome has no transcoding UI drama, no metadata editing (it reads tags — fix them with <strong>MusicBrainz Picard</strong> or <strong>beets</strong> first), and just works.</p>
+<p>Alternatives: <strong>Jellyfin</strong> itself with the <strong>Finamp</strong> client (good, and one fewer service); <strong>Plexamp</strong> if you are in Plex; <strong>Airsonic-Advanced</strong> and <strong>Gonic</strong> (other Subsonic servers); <strong>Funkwhale</strong> (federated, social, heavier); <strong>Koel</strong>, <strong>Ampache</strong>, <strong>mStream</strong>, <strong>Black Candy</strong>; <strong>LMS</strong> (Lightweight Music Server); <strong>Mopidy/Snapcast</strong> for multi-room playback; <strong>Lidarr</strong> upstream for acquisition; <strong>beets</strong> for library management and tagging. <strong>Music Assistant</strong> (a Home Assistant companion) bridges local libraries and streaming services to speakers around the house (<a href="../19-home-automation/">Chapter 19</a>).</p>
+<h2 id="audiobooks-and-podcasts">Audiobooks and podcasts<a class="headerlink" href="#audiobooks-and-podcasts" title="Permanent link">#</a></h2>
+<p><strong>Audiobookshelf</strong> has become the definitive self-hosted audiobook and podcast server: a beautiful web UI, per-user progress sync, chapters, playback speed, sleep timer, bookmarks, metadata from Audible/Google Books/OpenLibrary, podcast subscriptions with automatic downloading and episode management, ebook reading (EPUB/PDF/comics) in the browser, multi-library, and first-rate mobile apps (official Android/iOS, plus <strong>Plappa</strong> and <strong>ShelfPlayer</strong> on iOS). Easy to run, actively developed, and universally recommended. Pair with <strong>Readarr</strong> or <strong>LazyLibrarian</strong> for acquisition if you want automation.</p>
+<p>For podcasts specifically, <strong>AntennaPod</strong> (Android app, with <strong>gPodder.net</strong> or <strong>Nextcloud gPodder</strong> sync) is a client-side alternative; <strong>Podgrab</strong> and <strong>Podfetch</strong> are minimal podcast downloaders; Audiobookshelf covers the same ground better.</p>
+<h2 id="books-and-comics">Books and comics<a class="headerlink" href="#books-and-comics" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Kavita</strong> — a fast, modern reader-server for manga, comics, and ebooks (EPUB, PDF, CBZ/CBR) with per-user progress, series metadata, collections, reading lists, and a good web reader plus OPDS for external apps. The best all-rounder if you read both books and comics.</li>
+<li><strong>Komga</strong> — the comics/manga specialist (CBZ/CBR/PDF/EPUB), with strong metadata handling (ComicInfo.xml), OPDS, and the <strong>Komf</strong> metadata fetcher. Rock solid; <strong>Mihon/Tachiyomi</strong> (Android) and <strong>Panels</strong> (iOS) connect to it.</li>
+<li><strong>Calibre-Web</strong> — a web UI for a Calibre library: browse, read EPUBs in the browser, send to Kindle by email, OPDS, per-user shelves. <strong>Calibre-Web Automated</strong> (CWA) adds an ingest folder that auto-converts and imports new books and a built-in book downloader — the current favourite for people who want the Calibre database with automation.</li>
+<li><strong>Calibre</strong> itself (the desktop app, optionally served via <strong>calibre-server</strong> or a <strong>Calibre in Docker</strong> with a web VNC) remains the best tool for <em>managing and converting</em> ebooks; the web front-ends are for <em>reading and serving</em>.</li>
+<li><strong>BookLore</strong> (2025, a modern all-in-one with metadata, reading, and OPDS), <strong>Kapowarr</strong> and <strong>Mylar3</strong> (comics acquisition), <strong>Suwayomi/Tachidesk</strong> (manga source aggregator), <strong>Stump</strong>, <strong>Codex</strong>, <strong>Ubooquity</strong> (older).</li>
+<li>Readers: <strong>KOReader</strong> on e-ink devices talks OPDS to any of the above and syncs progress; <strong>Moon+ Reader</strong> and <strong>Librera</strong> on Android; <strong>Yomu</strong> and <strong>Panels</strong> on iOS.</li>
+</ul>
+<h2 id="library-optimisation-tdarr-and-friends">Library optimisation: Tdarr and friends<a class="headerlink" href="#library-optimisation-tdarr-and-friends" title="Permanent link">#</a></h2>
+<p><strong>Tdarr</strong> is a distributed transcoding system for <em>normalising a library</em>: define a flow ("if not HEVC → transcode to HEVC with QSV at CRF 22; strip non-English audio; remove image subtitles; remux to MKV") and it processes every file, using one or many worker nodes with hardware acceleration. Reduces library size by 30–60% and eliminates most on-the-fly transcoding by making everything direct-playable. Runs as a server + nodes; the flow editor takes learning; <strong>Unmanic</strong> is a simpler alternative; <strong>FileFlows</strong> is a more general file-processing pipeline. All three want a GPU and a long weekend for a large library. Be aware that re-encoding is lossy — many people choose to keep original remuxes for films they care about and transcode only TV.</p>
+<h2 id="library-management-and-stats">Library management and stats<a class="headerlink" href="#library-management-and-stats" title="Permanent link">#</a></h2>
+<p><strong>Jellystat</strong> (Jellyfin statistics — who watched what, popular content, playback methods), <strong>Tautulli</strong> (the Plex equivalent, long-established, with notifications like "new episode added" and per-user history), <strong>Streamystats</strong>, <strong>Jellyfin-Vue</strong>/<strong>Jellyfin Enhanced</strong> (alternative front-ends), <strong>Intro Skipper</strong> (Jellyfin plugin for skip-intro, now maintained separately), <strong>Kometa</strong> (formerly Plex Meta Manager — collection and overlay automation for Plex, with Jellyfin support arriving), <strong>Posterizarr</strong> and <strong>Posterr</strong> (artwork), <strong>Checkrr</strong> (finds corrupt files), <strong>Duplicacy</strong>-style <strong>dedupe</strong> tools, <strong>Radarr/Sonarr Trakt lists</strong> for automation from Trakt watchlists, <strong>Ryot</strong> and <strong>Yamtrack</strong> (self-hosted Trakt/Letterboxd/Goodreads-style tracking across media types).</p>
+<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Server:</strong> Jellyfin. Add Plex alongside only if a specific non-technical viewer needs it.</li>
+<li><strong>Hardware:</strong> Intel iGPU (8th gen+) or Arc A310. Pass <code>/dev/dri</code>.</li>
+<li><strong>Automation:</strong> Prowlarr + Sonarr + Radarr + Bazarr + Recyclarr, all seeing <code>/mnt/data:/data</code>, hardlinks working (check with <code>stat</code> — link count &gt; 1 after import). Read TRaSH Guides first.</li>
+<li><strong>Download:</strong> qBittorrent behind Gluetun with a port-forwarding VPN provider; SABnzbd for Usenet (no VPN needed).</li>
+<li><strong>Requests:</strong> Jellyseerr (or Seerr), with Wizarr for onboarding.</li>
+<li><strong>Music:</strong> Navidrome + Symfonium/Amperfy; <strong>Audiobooks/podcasts:</strong> Audiobookshelf; <strong>Books/comics:</strong> Kavita (or Komga + Calibre-Web Automated).</li>
+<li><strong>Optimisation:</strong> Tdarr once the library is large and the transcoding load is real — not before.</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Media on a filesystem with redundancy; classified as replaceable (or not) and backed up accordingly (<a href="../11-backups/">Chapter 11</a>).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> One data mount into every media container; hardlinks verified.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Hardware transcoding enabled and tested with a 4K HDR file on a phone; tone mapping on.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Jellyfin/Plex reachable via the reverse proxy with a valid certificate; remote users via VPN or an exposed, rate-limited, CrowdSec-guarded proxy — never a raw forwarded 8096/32400.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Torrent client cannot reach the internet except via the VPN (kill switch verified by stopping Gluetun and checking).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> *arr web UIs behind forward-auth or VPN-only; their API paths bypassed for the mobile companions.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Quality profiles from TRaSH via Recyclarr; naming schemes consistent.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Household onboarded via Wizarr; requests via Jellyseerr; nobody but you logs into Radarr.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../14-dashboards/">← 14. Dashboards and Start Pages</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/15-media.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#media-servers">Media servers</a><ul>
+<li><a href="#jellyfin">Jellyfin</a></li>
+<li><a href="#plex">Plex</a></li>
+<li><a href="#emby">Emby</a></li>
+<li><a href="#comparison">Comparison</a></li>
+</ul>
+</li>
+<li><a href="#hardware-transcoding">Hardware transcoding</a></li>
+<li><a href="#the-arr-automation-stack">The *arr automation stack</a></li>
+<li><a href="#requests-jellyseerr-overseerr-ombi">Requests: Jellyseerr, Overseerr, Ombi</a></li>
+<li><a href="#download-clients-and-the-vpn-sidecar">Download clients and the VPN sidecar</a><ul>
+<li><a href="#torrent-clients">Torrent clients</a></li>
+<li><a href="#usenet-clients">Usenet clients</a></li>
+<li><a href="#gluetun-the-vpn-sidecar-pattern">Gluetun: the VPN sidecar pattern</a></li>
+</ul>
+</li>
+<li><a href="#music">Music</a></li>
+<li><a href="#audiobooks-and-podcasts">Audiobooks and podcasts</a></li>
+<li><a href="#books-and-comics">Books and comics</a></li>
+<li><a href="#library-optimisation-tdarr-and-friends">Library optimisation: Tdarr and friends</a></li>
+<li><a href="#library-management-and-stats">Library management and stats</a></li>
+<li><a href="#recommendations">Recommendations</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
