@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Databases and Backing Services — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li><li><a href="../25-misc-apps/"><span class="num">25</span> The Long Tail: Household, Finance, Web, and Utility Apps</a></li><li class="active"><a href="../26-databases-backing-services/"><span class="num">26</span> Databases and Backing Services</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 26 · ~3,163 words · 14 min read</div>
+    <article class="prose">
+      <h1 id="databases-and-backing-services">Databases and Backing Services<a class="headerlink" href="#databases-and-backing-services" title="Permanent link">#</a></h1>
+<p>Behind almost every application in this guide sits a database, a cache, or an object store. Most of the time you never think about them — the project's Compose file includes a <code>postgres</code> service and it just works. But when forty applications each bring their own Postgres, MariaDB, Redis, and MongoDB, you are running a small data centre's worth of backing services, and the decisions you make about them — one shared instance or many, which versions, how to back up, how to upgrade — determine whether your lab is tidy or a swamp. This chapter covers the relational databases (PostgreSQL, MariaDB/MySQL, SQLite), key-value caches (Redis and its fork Valkey), document and time-series stores (MongoDB, InfluxDB, VictoriaMetrics, TimescaleDB), object storage (Garage, MinIO, SeaweedFS, RustFS), search (Meilisearch, Typesense, OpenSearch), message queues, the no-code database tools (NocoDB, Baserow, Teable), and the admin UIs (pgAdmin, Adminer, CloudBeaver, DBeaver, phpMyAdmin) — with the operational guidance that matters: shared vs per-app, upgrades, and backups.</p>
+<h2 id="the-central-question-shared-or-per-app">The central question: shared or per-app?<a class="headerlink" href="#the-central-question-shared-or-per-app" title="Permanent link">#</a></h2>
+<p><strong>Per-app</strong> (each Compose stack has its own <code>db</code> service) is what every project's example gives you and what most people run.</p>
+<ul>
+<li>Pros: total isolation (one app's bad query cannot hurt another); each app pins the version it was tested with; the stack is self-contained and portable; <code>docker compose down -v</code> on one app touches only its data; upgrades are per-app.</li>
+<li>Cons: ten Postgres containers use ~10× the baseline RAM (each idles at 30–100 MB — so 0.5–1 GB total, which is fine on most hosts); ten things to back up (but a loop over containers handles it); ten major-version upgrades to do eventually.</li>
+</ul>
+<p><strong>Shared</strong> (one Postgres, one MariaDB, one Redis for everything, each app with its own database/user):</p>
+<ul>
+<li>Pros: one thing to tune, monitor, back up, and upgrade; less RAM; a single pgAdmin.</li>
+<li>Cons: a single point of failure for everything; version conflicts (Immich wants its own extension-laden image; an app that needs Postgres 17 features while another is untested on 17); restarting the DB for maintenance takes down every app; blast radius of a mistake is total; a <code>depends_on</code> across Compose projects is awkward (external network, no health-condition ordering).</li>
+</ul>
+<p><strong>The guide's position:</strong> <strong>per-app by default</strong>, with a shared instance only for the apps that are small, numerous, and boring (a dozen tiny apps that each want a Postgres for a few tables can share one), never for Immich (its extensions), Nextcloud (its scale), or anything whose upgrade cadence you want to control separately. The RAM argument for sharing was compelling when hosts had 8 GB; with 32–64 GB it rarely is. <strong>Redis is the exception in the other direction</strong>: an app-specific Redis is almost always the right call because Redis is trivially light and apps use it as a cache/queue with database-number collisions if shared.</p>
+<h2 id="postgresql">PostgreSQL<a class="headerlink" href="#postgresql" title="Permanent link">#</a></h2>
+<p>The default relational database of the self-hosting world and the right choice whenever an app offers it. Mature, standards-compliant, extensible (pgvector for embeddings, PostGIS for geo, TimescaleDB for time-series, pg_trgm for fuzzy search), excellent documentation, and the most predictable behaviour under load. Immich, Nextcloud (recommended), Paperless, Gitea/Forgejo, Authentik, Synapse, Mastodon, Outline, Vikunja, Miniflux, Linkwarden, n8n, Umami, Firefly III, and most modern apps prefer it.</p>
+<p><strong>Operational notes:</strong></p>
+<ul>
+<li><strong>Pin the major version</strong> in the image tag (<code>postgres:17</code>, not <code>postgres:latest</code>). Postgres major upgrades are <em>not</em> automatic: a <code>postgres:17</code> data directory will not start under <code>postgres:18</code>. The upgrade is <code>pg_dumpall</code> → new container → <code>psql &lt; dump</code>, or <code>pg_upgrade</code> (via the <code>pgautoupgrade/pgautoupgrade</code> image, which does it on start — take a backup first). Minor versions (17.1 → 17.2) upgrade in place. Do one major upgrade per app per year; it is a fifteen-minute job.</li>
+<li><strong>Alpine vs Debian images</strong>: <code>postgres:17-alpine</code> is smaller; the Debian variant has better locale/collation compatibility. Collation changes between glibc versions can silently corrupt indexes on upgrade (<code>REINDEX</code> after a major host or image OS bump). Debian is the safer default.</li>
+<li><strong>Data on local SSD</strong>, never NFS/SMB. <code>POSTGRES_INITDB_ARGS: "--data-checksums"</code> to detect corruption.</li>
+<li><strong>Tuning</strong> for home scale is mostly unnecessary; if an app is slow, <code>shared_buffers</code> (25% of the RAM you give it), <code>work_mem</code>, and <code>effective_cache_size</code> via a mounted <code>postgresql.conf</code> or command flags. <strong>PGTune</strong> generates sane values.</li>
+<li><strong>Backups</strong>: <code>pg_dumpall -U postgres | zstd</code> nightly (logical, portable across versions — the restore format), plus filesystem snapshots (crash-consistent). For point-in-time recovery, <strong>pgBackRest</strong> or <strong>Barman</strong> with WAL archiving — overkill for a home lab except for a self-hosted email or business database.</li>
+<li><strong>Extensions</strong>: Immich's image (<code>ghcr.io/immich-app/postgres</code>) bundles VectorChord; <code>pgvector/pgvector</code> images bundle pgvector; <code>timescale/timescaledb</code> bundles Timescale; <code>postgis/postgis</code> bundles PostGIS. Use the pre-built image rather than compiling extensions into a shared instance.</li>
+<li><strong>Connection pooling</strong> (<strong>PgBouncer</strong>) matters for apps that open many connections (Nextcloud with many PHP workers); rarely needed otherwise.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="c1"># a well-behaved per-app Postgres</span>
+<span class="w">  </span><span class="nt">db</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:17</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/secrets/db_password</span>
+<span class="w">      </span><span class="nt">POSTGRES_INITDB_ARGS</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;--data-checksums&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/mnt/fast/app-db:/var/lib/postgresql/data&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">db_password</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD-SHELL&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">app</span><span class="nv"> </span><span class="s">-d</span><span class="nv"> </span><span class="s">app&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">    </span><span class="c1"># no ports: — only the app on the same network reaches it</span>
+</code></pre></div>
+<h2 id="mariadb-and-mysql">MariaDB and MySQL<a class="headerlink" href="#mariadb-and-mysql" title="Permanent link">#</a></h2>
+<p><strong>MariaDB</strong> is the community fork of MySQL (2009, after Oracle's acquisition) and what most self-hosted apps mean when they say "MySQL": WordPress, Ghost (MySQL 8 specifically), Nextcloud (supported; Postgres preferred), Photoprism, Mealie (SQLite/Postgres actually), Bookstack, Kanboard, Matomo, Firefly III (either), Mailcow (bundled), Piwigo, and the PHP world generally. Fast for simple read-heavy workloads, familiar, and fine. <strong>MySQL 8</strong> (Oracle's) is required by a few apps (Ghost); the two have diverged enough since 2020 that "MariaDB is a drop-in MySQL replacement" is no longer reliably true — use what the app documents.</p>
+<p>Operational notes mirror Postgres: pin the major (<code>mariadb:11</code>), data on local SSD, <code>mariadb-dump --all-databases --single-transaction | zstd</code> nightly (<code>--single-transaction</code> for InnoDB consistency), in-place minor upgrades, major upgrades usually work in place with <code>mariadb-upgrade</code> but back up first. The <code>MARIADB_AUTO_UPGRADE=1</code> env var runs it automatically. InnoDB is the only storage engine you should use. <code>utf8mb4</code> everywhere.</p>
+<h2 id="sqlite">SQLite<a class="headerlink" href="#sqlite" title="Permanent link">#</a></h2>
+<p>Not a server — a library that stores a whole database in one file. It is inside more self-hosted apps than any other database: Sonarr/Radarr/Prowlarr/Bazarr, Jellyfin, Home Assistant (default), Vaultwarden (default), Uptime Kuma, Grafana (default), Gitea/Forgejo (default), Navidrome, Audiobookshelf, Linkding, Memos, Homebox, Actual, Miniflux (no — Postgres), Paperless (optional), FreshRSS (default), Wallabag (default), Syncthing's index, and hundreds more. It is fast, zero-config, and perfectly adequate for a household's write volume.</p>
+<p><strong>The three rules:</strong></p>
+<ol>
+<li><strong>Never on a network filesystem</strong> (NFS/SMB). File locking over the network is unreliable and corrupts databases — this is the most common cause of "my Sonarr database is malformed." Local disk only; bind-mount from local SSD even when media is on the NAS.</li>
+<li><strong>Back up with <code>sqlite3 db.sqlite3 ".backup 'copy.sqlite3'"</code></strong> (or stop the app, or snapshot the filesystem), not <code>cp</code> while running — the <code>-wal</code>/<code>-shm</code> sidecar files hold uncommitted state.</li>
+<li><strong>WAL mode</strong> (most apps enable it) improves concurrency; the <code>-wal</code> file can grow if checkpoints do not run; it is normal to see it.</li>
+</ol>
+<p>For apps that offer both, choose SQLite when the app is single-user or low-write (most of the list above) and Postgres when it is multi-user with heavy writes (Gitea with CI, Paperless with large ingests, Home Assistant with hundreds of chatty sensors — where MariaDB/Postgres for the recorder is the standard advice). <strong>Litestream</strong> and <strong>LiteFS</strong> stream SQLite changes to S3/another host for continuous backup — an elegant addition for the SQLite apps you care most about (Vaultwarden).</p>
+<h2 id="redis-and-valkey">Redis and Valkey<a class="headerlink" href="#redis-and-valkey" title="Permanent link">#</a></h2>
+<p><strong>Redis</strong> is the in-memory key-value store used as a cache, session store, job queue, and pub/sub broker by Nextcloud, Immich, Paperless, Authentik, Synapse, Mastodon, Outline, Gitea (optional), and many more. In March 2024 Redis Ltd. changed the licence from BSD to the source-available RSALv2/SSPL; the Linux Foundation forked the last BSD version as <strong>Valkey</strong>, which Immich, many distributions, and much of the community adopted. In May 2025 Redis added the AGPLv3 as an option for Redis 8, becoming open source again. Both work identically for every self-hosted app; <strong>Valkey</strong> (<code>valkey/valkey:8</code>) is the community default for new deployments; <code>redis:7</code>/<code>redis:8</code> is fine. <strong>KeyDB</strong> (a multithreaded fork) and <strong>Dragonfly</strong> (a high-performance drop-in) exist for scale you do not have.</p>
+<p>Operational notes: one Redis per app (they are ~5–10 MB each); persistence is optional (a cache can be rebuilt — set <code>--save ""</code> to disable RDB writes and reduce disk churn, unless the app uses Redis as a <em>queue</em> whose loss matters, in which case keep AOF/RDB and back it up); <code>maxmemory</code> with an eviction policy for caches; never expose port 6379 (no auth by default).</p>
+<h2 id="document-time-series-and-search">Document, time-series, and search<a class="headerlink" href="#document-time-series-and-search" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>MongoDB</strong> — required by Rocket.Chat, Unifi Controller (the network application — a notorious dependency that pins old MongoDB versions), Nightscout, Cronicle, and a few others. Licence is SSPL (source-available); AVX-capable CPU required since 5.0 (an issue on some older mini PCs — use 4.4 or the <code>mongo:4.4</code> tag where the app allows). Pin the major; <code>mongodump</code> for backups. Prefer apps that use Postgres where you have the choice. <strong>FerretDB</strong> provides a MongoDB-compatible API over Postgres for apps with simple needs.</li>
+<li><strong>InfluxDB</strong> — the time-series database Home Assistant users ran for long-term history (v1 and v2 differ significantly; v3 changed the model again with the OSS "Core" edition limited to 72 hours of queryable history — check current status before adopting). <strong>VictoriaMetrics</strong> (Prometheus-compatible, very efficient, also accepts InfluxDB line protocol) and <strong>TimescaleDB</strong> (Postgres extension) are the modern recommendations for HA long-term stats (<a href="../19-home-automation/">Chapter 19</a>) and for Prometheus retention (<a href="../12-monitoring/">Chapter 12</a>). <strong>QuestDB</strong> and <strong>ClickHouse</strong> (Plausible's backend) are the heavyweights.</li>
+<li><strong>Search engines</strong>: <strong>Meilisearch</strong> (fast, typo-tolerant, easy — used by Karakeep, Immich's earlier versions, many apps; ~200 MB), <strong>Typesense</strong> (similar niche, also excellent), <strong>OpenSearch/Elasticsearch</strong> (heavy — 2–4 GB minimum; required by Mastodon's full-text search, Nextcloud's full-text search app, Graylog, Wazuh; avoid unless an app demands it), <strong>Sonic</strong> (tiny), <strong>Zinc/ZincSearch</strong> (a light Elasticsearch-API-compatible alternative), <strong>Tantivy/Quickwit</strong> (Rust). Postgres full-text search (<code>tsvector</code>) covers many needs without another service.</li>
+<li><strong>Vector databases</strong> for AI: <strong>pgvector</strong> (in Postgres — the pragmatic choice), <strong>Qdrant</strong> (excellent, Rust, easy), <strong>Chroma</strong>, <strong>Weaviate</strong>, <strong>Milvus</strong> (<a href="../23-ai-llm/">Chapter 23</a>).</li>
+</ul>
+<h2 id="object-storage-s3-compatible">Object storage (S3-compatible)<a class="headerlink" href="#object-storage-s3-compatible" title="Permanent link">#</a></h2>
+<p>Many modern apps can store blobs in S3 rather than on a filesystem: Immich (partial), Mastodon media, Synapse media (via plugin), Outline attachments, Ghost images, Nextcloud primary storage (possible; not recommended), Restic/Kopia backups, Ente, Plane, Docmost, and anything built cloud-first. An S3-compatible server at home lets you run them without a filesystem dependency and gives you an S3 target for backups from other machines.</p>
+<ul>
+<li><strong>Garage</strong> — a lightweight, geo-distributed-capable S3 server (Rust, Deuxfleurs) designed for small self-hosters: single-binary, runs on a Pi, replicates across a few nodes with no central coordinator, ~50 MB RAM, simple config, and a tiny admin surface. <strong>The recommendation for a home lab</strong> that wants S3 without MinIO's weight or drama.</li>
+<li><strong>MinIO</strong> — the long-time standard: high-performance, single or distributed, a full web console, IAM/policies, versioning, object lock, replication, and the reference for S3 compatibility. In 2025 MinIO <strong>removed most of the management features from the community web console</strong> (leaving essentially only an object browser) and shifted development emphasis to the paid AIStor product; the server remains AGPL and functional via <code>mc</code> (the CLI) and the API, but the direction alienated many self-hosters. Still the most compatible; less recommended for new home deployments than it was.</li>
+<li><strong>SeaweedFS</strong> — a distributed file/object store with S3, FUSE mount, WebDAV, and filer features; very capable, more complex; good for many small files.</li>
+<li><strong>RustFS</strong> (2025, a MinIO-API-compatible Rust server aiming to be the community MinIO successor — young, watch it), <strong>Zenko CloudServer</strong> (Scality's S3 implementation, single-node), <strong>Ceph RGW</strong> (if you run Ceph — <a href="../06-storage/">Chapter 6</a>), <strong>LocalStack</strong> (AWS emulator — for development, not storage), <strong>rclone serve s3</strong> (expose any rclone remote — including a plain directory — as an S3 endpoint; a surprisingly useful shim), <strong>Versitygw</strong> (S3 gateway over a POSIX filesystem — put S3 in front of an existing directory tree).</li>
+</ul>
+<p>For most people: <strong>Garage</strong> for S3-native apps and as a Restic target; or skip S3 entirely and bind-mount filesystems, which every app in this guide also supports.</p>
+<h2 id="message-queues-and-brokers">Message queues and brokers<a class="headerlink" href="#message-queues-and-brokers" title="Permanent link">#</a></h2>
+<p>Rarely needed directly at home — apps bundle what they need — but you will meet them: <strong>Mosquitto</strong> (MQTT — <a href="../19-home-automation/">Chapter 19</a>), <strong>RabbitMQ</strong> (required by Zulip and some others; heavy Erlang), <strong>NATS</strong> (light, fast, used by some Go apps), <strong>Apache Kafka/Redpanda</strong> (only if you are learning them for work — Redpanda is the single-binary Kafka-compatible option), <strong>Redis Streams/Lists</strong> (what most small apps actually use as a queue), <strong>Gearman/Beanstalkd</strong> (legacy). Run what the app requires; do not add one speculatively.</p>
+<h2 id="no-code-databases-and-internal-tools">No-code databases and internal tools<a class="headerlink" href="#no-code-databases-and-internal-tools" title="Permanent link">#</a></h2>
+<p>The Airtable/Notion-database category — spreadsheet-like UIs over real databases, with forms, views, and APIs — useful for household inventories, trackers, and small business data without writing an app:</p>
+<ul>
+<li><strong>NocoDB</strong> — turns any Postgres/MySQL/SQLite into an Airtable-style interface: grid/gallery/kanban/calendar/form views, links between tables, formulas, roles, webhooks, API, and the ability to connect to an <em>existing</em> database (e.g., browse your Immich or Paperless tables — carefully). Node + SQLite/Postgres. <strong>The recommendation.</strong></li>
+<li><strong>Baserow</strong> — a closer Airtable clone (Django + Postgres) with a polished UI, forms, row comments, automations/workflows (newer), and an application builder; a free tier with some premium features. Very approachable for non-technical users.</li>
+<li><strong>Teable</strong> — a 2024 entrant built on Postgres with high performance on large tables and a clean UI; each table is a real Postgres table you can query directly. Promising.</li>
+<li><strong>Grist</strong> — spreadsheet-database hybrid with Python formulas, access rules, and a strong data-model story; excellent for people who think in spreadsheets; self-hostable (Grist Core).</li>
+<li><strong>Appsmith</strong>, <strong>ToolJet</strong>, <strong>Budibase</strong>, <strong>Appwrite/Supabase/PocketBase</strong> (backend-as-a-service — Supabase is Postgres + auth + storage + realtime as a self-hostable stack, heavy; PocketBase is a single Go binary with SQLite, auth, realtime, and an admin UI — a delightful backend for small personal apps and what Beszel is built on), <strong>Directus</strong> (headless CMS/data platform over any SQL database with a beautiful admin — arguably the best "admin UI for my existing database" tool), <strong>Mathesar</strong> (a spreadsheet-like Postgres UI with a data-modelling focus).</li>
+</ul>
+<h2 id="admin-uis">Admin UIs<a class="headerlink" href="#admin-uis" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>pgAdmin 4</strong> — the official, comprehensive Postgres admin (web); heavy (~300 MB), powerful, dated UI. Every DBA knows it.</li>
+<li><strong>Adminer</strong> — a <em>single PHP file</em> that administers Postgres, MySQL/MariaDB, SQLite, MongoDB, MS SQL, and more. Tiny, fast, ugly, indispensable. Run it as a container, LAN/VPN-only, and only when needed. The community-maintained <strong>AdminerEvo</strong> fork is current.</li>
+<li><strong>CloudBeaver</strong> — the web version of <strong>DBeaver</strong> (the excellent desktop universal database tool): connections to everything, SQL editor, data browser, ER diagrams, users and permissions. Community Edition is free. <strong>The recommendation for a web UI over many databases.</strong></li>
+<li><strong>DBeaver</strong> (desktop), <strong>DataGrip</strong> (JetBrains, paid), <strong>Beekeeper Studio</strong> (desktop, pleasant, partly open), <strong>TablePlus</strong> (desktop, paid) — connecting over SSH tunnel/VPN to your databases is often better than hosting a web admin at all.</li>
+<li><strong>phpMyAdmin</strong> — the ancient MySQL/MariaDB admin; still works; Adminer or CloudBeaver are lighter and cover more.</li>
+<li><strong>Redis</strong>: <strong>RedisInsight</strong> (official, web/desktop), <strong>Redis Commander</strong>, <strong>redis-cli</strong>. <strong>MongoDB</strong>: <strong>Mongo Express</strong>, <strong>Compass</strong> (desktop). <strong>SQLite</strong>: <strong>sqlite-web</strong>, <strong>DB Browser for SQLite</strong> (desktop), <strong>Datasette</strong> (publish/explore SQLite as a website — wonderful for read-only exploration of app databases). <strong>InfluxDB/Victoria</strong>: their own UIs or Grafana.</li>
+</ul>
+<p><strong>Do not leave admin UIs running</strong> on a network anyone else can reach; they are a full-control surface over your data with, often, weak or no auth. Start them when needed, or forward-auth them and bind to LAN/VPN.</p>
+<h2 id="backups-once-more">Backups, once more<a class="headerlink" href="#backups-once-more" title="Permanent link">#</a></h2>
+<p>Databases are where file-copy backups silently fail. The pattern (<a href="../11-backups/">Chapter 11</a>):</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env bash</span>
+<span class="c1"># /opt/backups/dump-databases.sh — run nightly before the file backup</span>
+<span class="nb">set</span><span class="w"> </span>-euo<span class="w"> </span>pipefail
+<span class="nv">OUT</span><span class="o">=</span>/opt/backups/dumps<span class="p">;</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OUT</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="nv">DATE</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%F<span class="k">)</span>
+<span class="k">for</span><span class="w"> </span>c<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>docker<span class="w"> </span>ps<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;{{.Names}}&#39;</span><span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;ancestor=postgres:17&quot;</span><span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;ancestor=postgres:16&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$c</span><span class="s2">&quot;</span><span class="w"> </span>pg_dumpall<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span><span class="p">|</span><span class="w"> </span>zstd<span class="w"> </span>-q<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OUT</span><span class="s2">/</span><span class="nv">$c</span><span class="s2">-</span><span class="nv">$DATE</span><span class="s2">.sql.zst&quot;</span>
+<span class="k">done</span>
+<span class="k">for</span><span class="w"> </span>c<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>docker<span class="w"> </span>ps<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;{{.Names}}&#39;</span><span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;ancestor=mariadb:11&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$c</span><span class="s2">&quot;</span><span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mariadb-dump --all-databases --single-transaction -uroot -p&quot;$MARIADB_ROOT_PASSWORD&quot;&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>zstd<span class="w"> </span>-q<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OUT</span><span class="s2">/</span><span class="nv">$c</span><span class="s2">-</span><span class="nv">$DATE</span><span class="s2">.sql.zst&quot;</span>
+<span class="k">done</span>
+<span class="c1"># Immich uses a custom image; name it explicitly</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>immich_postgres<span class="w"> </span>pg_dumpall<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span><span class="p">|</span><span class="w"> </span>zstd<span class="w"> </span>-q<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OUT</span><span class="s2">/immich-</span><span class="nv">$DATE</span><span class="s2">.sql.zst&quot;</span>
+<span class="c1"># SQLite apps: consistent copies</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>vaultwarden<span class="w"> </span>sqlite3<span class="w"> </span>/data/db.sqlite3<span class="w"> </span><span class="s2">&quot;.backup &#39;/data/db-backup.sqlite3&#39;&quot;</span>
+find<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OUT</span><span class="s2">&quot;</span><span class="w"> </span>-name<span class="w"> </span><span class="s1">&#39;*.zst&#39;</span><span class="w"> </span>-mtime<span class="w"> </span>+7<span class="w"> </span>-delete
+curl<span class="w"> </span>-fsS<span class="w"> </span>-m<span class="w"> </span><span class="m">10</span><span class="w"> </span>--retry<span class="w"> </span><span class="m">3</span><span class="w"> </span>https://hc.example.com/ping/&lt;uuid&gt;<span class="w"> </span>&gt;/dev/null
+</code></pre></div>
+<p>Tools that do this for you: <strong>docker-db-backup</strong> (tiredofit), <strong>Borgmatic</strong>'s database hooks, <strong>Backrest</strong> pre-hooks, <strong>Offen docker-volume-backup</strong> (stops containers, archives volumes, uploads — a simple all-in-one), <strong>pg_back</strong>, per-app sidecars (<strong>prodrigestivill/postgres-backup-local</strong>). Restore-test quarterly: <code>zstdcat dump.sql.zst | docker exec -i scratch-postgres psql -U postgres</code>.</p>
+<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Per-app databases</strong> by default; pin majors; data on local SSD with checksums; no published ports; healthchecks so <code>depends_on</code> works.</li>
+<li><strong>Postgres</strong> whenever the app offers it; <strong>MariaDB</strong> for the PHP apps that want it; <strong>SQLite</strong> for single-user apps — on local disk, backed up with <code>.backup</code>.</li>
+<li><strong>Valkey</strong> (or Redis) per app; persistence off for pure caches.</li>
+<li><strong>Garage</strong> if you want S3 at home; <strong>pgvector</strong> for embeddings; <strong>VictoriaMetrics</strong> for time-series; <strong>Meilisearch</strong> if an app needs search and offers it.</li>
+<li><strong>NocoDB</strong> or <strong>Baserow</strong> for household data you would otherwise put in a spreadsheet; <strong>PocketBase</strong> for small personal apps.</li>
+<li><strong>CloudBeaver</strong> (or Adminer on demand) for a web admin UI, LAN/VPN-only.</li>
+<li><strong>Nightly logical dumps of every database</strong> plus filesystem snapshots; quarterly restore tests.</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Every database container has a pinned major version tag and its data on local SSD (not NFS); Postgres initialised with data checksums.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> No database ports published to the host/LAN; databases on isolated Compose networks with only their app.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Nightly logical dumps (<code>pg_dumpall</code>, <code>mariadb-dump --single-transaction</code>, <code>sqlite3 .backup</code>, <code>mongodump</code>) into the file-backup path; Healthchecks ping; quarterly restore test.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A plan (and a calendar entry) for annual Postgres/MariaDB major upgrades per app.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Redis/Valkey instances have persistence configured deliberately (off for caches, on for queues).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Admin UIs (pgAdmin/Adminer/CloudBeaver) not left exposed; started on demand or behind forward-auth on LAN/VPN.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Object storage (if run) has bucket policies, versioning/object-lock on the backup bucket, and its own backup.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../25-misc-apps/">← 25. The Long Tail: Household, Finance, Web, and Utility Apps</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/26-databases-backing-services.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#the-central-question-shared-or-per-app">The central question: shared or per-app?</a></li>
+<li><a href="#postgresql">PostgreSQL</a></li>
+<li><a href="#mariadb-and-mysql">MariaDB and MySQL</a></li>
+<li><a href="#sqlite">SQLite</a></li>
+<li><a href="#redis-and-valkey">Redis and Valkey</a></li>
+<li><a href="#document-time-series-and-search">Document, time-series, and search</a></li>
+<li><a href="#object-storage-s3-compatible">Object storage (S3-compatible)</a></li>
+<li><a href="#message-queues-and-brokers">Message queues and brokers</a></li>
+<li><a href="#no-code-databases-and-internal-tools">No-code databases and internal tools</a></li>
+<li><a href="#admin-uis">Admin UIs</a></li>
+<li><a href="#backups-once-more">Backups, once more</a></li>
+<li><a href="#recommendations">Recommendations</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

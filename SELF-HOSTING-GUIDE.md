@@ -2,7 +2,7 @@
 
 > A comprehensive, opinionated, in-depth guide to services worth self-hosting — and everything around them.
 
-*Generated 2026-09-07 from the chapter sources in `guide/`. 25 chapters, ~88,393 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
+*Generated 2026-09-07 from the chapter sources in `guide/`. 27 chapters, ~94,498 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
 
 
 ## Table of contents
@@ -41,6 +41,8 @@
 - [22. Developer Tools, Git Hosting, and Automation](#developer-tools-git-hosting-and-automation)
 - [23. Local AI: LLMs, Image Generation, Speech, and Search](#local-ai-llms-image-generation-speech-and-search)
 - [24. Gaming: Game Servers, Retro Libraries, and Streaming](#gaming-game-servers-retro-libraries-and-streaming)
+- [25. The Long Tail: Household, Finance, Web, and Utility Apps](#the-long-tail-household-finance-web-and-utility-apps)
+- [26. Databases and Backing Services](#databases-and-backing-services)
 
 ---
 
@@ -1707,7 +1709,7 @@ The combination gives you: mix any drives, add one at a time, spin down idle dri
 
 **Ceph** is a distributed storage system providing block (RBD), object (S3-compatible RGW), and file (CephFS) storage across many nodes with configurable replication or erasure coding, self-healing, and no single point of failure. Proxmox integrates it: three or more nodes each contribute drives (OSDs), and VM disks on Ceph RBD can live-migrate and survive node failures. It is genuinely enterprise-grade and genuinely heavy: **three nodes minimum** (five for comfort), a dedicated 10 GbE (ideally 25 GbE) network for replication, enterprise SSDs (consumer SSDs will be destroyed by Ceph's write patterns and their lack of PLP causes latency spikes), and a real learning investment. Performance on three consumer-grade nodes over 1 GbE is poor. Run it if you want to learn Ceph or genuinely need HA storage for a Tier 3 cluster; do not run it as your NAS.
 
-**GlusterFS** is in maintenance mode and not recommended for new deployments. **SeaweedFS**, **Garage**, and **MinIO** are object stores rather than general filesystems; see [Chapter 26](26-databases-backing-services.md). **Longhorn** and **Rook** are Kubernetes-native storage; see [Chapter 5](#containers-docker-compose-podman-and-kubernetes). **Proxmox ZFS replication** (scheduled `zfs send` of VM disks between nodes, with HA failover to the replica) is the pragmatic alternative to Ceph for two- and three-node home clusters — asynchronous (you lose changes since the last replication interval, which can be as short as a minute) but simple and fast.
+**GlusterFS** is in maintenance mode and not recommended for new deployments. **SeaweedFS**, **Garage**, and **MinIO** are object stores rather than general filesystems; see [Chapter 26](#databases-and-backing-services). **Longhorn** and **Rook** are Kubernetes-native storage; see [Chapter 5](#containers-docker-compose-podman-and-kubernetes). **Proxmox ZFS replication** (scheduled `zfs send` of VM disks between nodes, with HA failover to the replica) is the pragmatic alternative to Ceph for two- and three-node home clusters — asynchronous (you lose changes since the last replication interval, which can be as short as a minute) but simple and fast.
 
 ## Sharing storage over the network
 
@@ -1731,7 +1733,7 @@ Block-level: the NAS exports a LUN (a zvol or a file), the client sees a raw dis
 
 ### Others
 
-**WebDAV** (HTTP-based; Nextcloud speaks it, useful for mobile apps and across the internet); **SFTP** (SSH file transfer; universal, secure, slow-ish; fine for occasional use); **rsync daemon** (for bulk sync); **S3-compatible object storage** (Garage/MinIO/SeaweedFS — for applications that speak S3 rather than for people; [Chapter 26](26-databases-backing-services.md)); **9p/virtiofs** (for sharing host directories into VMs on Proxmox/KVM without a network protocol — virtiofs is fast and increasingly well supported).
+**WebDAV** (HTTP-based; Nextcloud speaks it, useful for mobile apps and across the internet); **SFTP** (SSH file transfer; universal, secure, slow-ish; fine for occasional use); **rsync daemon** (for bulk sync); **S3-compatible object storage** (Garage/MinIO/SeaweedFS — for applications that speak S3 rather than for people; [Chapter 26](#databases-and-backing-services)); **9p/virtiofs** (for sharing host directories into VMs on Proxmox/KVM without a network protocol — virtiofs is fast and increasingly well supported).
 
 ### Which protocol
 
@@ -3107,7 +3109,7 @@ The dead-man's switch as a service, self-hostable (Python/Django). Each check ha
 
 ### Others
 
-**Statping-ng**, **Kener** and **Upptime** (status pages; Upptime runs entirely on GitHub Actions and is a neat external monitor for a public service), **Cachet** (status page), **Changedetection.io** (not uptime — watches web pages for changes; [Chapter 25](25-misc-apps.md)), **Peekaping**, **Tianji** (uptime + analytics + telemetry in one), **checkmk** and **Nagios/Icinga** (the enterprise ancestors; heavy, still capable).
+**Statping-ng**, **Kener** and **Upptime** (status pages; Upptime runs entirely on GitHub Actions and is a neat external monitor for a public service), **Cachet** (status page), **Changedetection.io** (not uptime — watches web pages for changes; [Chapter 25](#the-long-tail-household-finance-web-and-utility-apps)), **Peekaping**, **Tianji** (uptime + analytics + telemetry in one), **checkmk** and **Nagios/Icinga** (the enterprise ancestors; heavy, still capable).
 
 ## Layer 2: Metrics
 
@@ -4439,7 +4441,7 @@ The **Notion alternatives**: block-based editors with databases/kanban/calendar 
 
 ## Collaborative editors
 
-**HedgeDoc** (formerly CodiMD, forked from HackMD) — real-time collaborative Markdown with live preview, slide mode (reveal.js), permissions per note, and optional accounts (or anonymous editing by link). The right tool for "let's write this together right now." **Etherpad** — the original real-time plain-text pad, plugin-rich, ancient and reliable. **CryptPad** ([Chapter 17](#files-sync-and-documents)) for E2EE. **Excalidraw** and **draw.io/diagrams.net** self-hosted for collaborative diagrams ([Chapter 25](25-misc-apps.md)).
+**HedgeDoc** (formerly CodiMD, forked from HackMD) — real-time collaborative Markdown with live preview, slide mode (reveal.js), permissions per note, and optional accounts (or anonymous editing by link). The right tool for "let's write this together right now." **Etherpad** — the original real-time plain-text pad, plugin-rich, ancient and reliable. **CryptPad** ([Chapter 17](#files-sync-and-documents)) for E2EE. **Excalidraw** and **draw.io/diagrams.net** self-hosted for collaborative diagrams ([Chapter 25](#the-long-tail-household-finance-web-and-utility-apps)).
 
 ## Tasks and project boards
 
@@ -4448,7 +4450,7 @@ The **Notion alternatives**: block-based editors with databases/kanban/calendar 
 - **Focalboard** — Mattermost's kanban/table/gallery boards; standalone or inside Mattermost; development has slowed since being folded into Mattermost. Fine.
 - **Kanboard** — the old, lightweight PHP kanban with plugins and a spartan UI; reliable and boring.
 - **WeKan**, **Taiga** (agile PM — scrum/kanban, heavier), **OpenProject** (full enterprise PM — Gantt, budgets, agile; heavy), **Leantime**, **Plane** (a Jira/Linear alternative with cycles, modules, issues; Postgres + Redis + MinIO; polished but heavy for home), **Huly** (an ambitious all-in-one, 2024).
-- **Donetick** (2024) — chores and recurring household tasks with assignment, points, and a nag system; **Grocy** ([Chapter 25](25-misc-apps.md)) also covers chores.
+- **Donetick** (2024) — chores and recurring household tasks with assignment, points, and a nag system; **Grocy** ([Chapter 25](#the-long-tail-household-finance-web-and-utility-apps)) also covers chores.
 - **Tasks.md** — a tiny Markdown-file-based kanban.
 - **CalDAV tasks** via Radicale/Baikal/Nextcloud Tasks with **Tasks.org** (Android) or **Reminders** (iOS via CalDAV) — the no-server-app approach.
 
@@ -4459,7 +4461,7 @@ CalDAV and CardDAV are the open standards every phone and desktop calendar/conta
 - **Radicale** — a tiny Python CalDAV/CardDAV server: users in an htpasswd file, collections as plain `.ics`/`.vcf` files on disk (trivially backed up and inspected), no web UI for events (it is a sync server; you use clients), a minimal admin/web page. ~20 MB RAM. The right answer for "I just want my calendar and contacts to sync between my devices." **The recommendation** for households not running Nextcloud.
 - **Baikal** — PHP CalDAV/CardDAV (built on sabre/dav) with a small web admin for users and calendars; SQLite or MySQL. Slightly more UI than Radicale; equally solid.
 - **Nextcloud** Calendar and Contacts — full web UI for viewing and editing events/contacts, sharing calendars between users, public calendar links, appointment booking, and CalDAV/CardDAV to devices. If you run Nextcloud, this is included and excellent.
-- **Xandikos** (Git-backed CalDAV/CardDAV — every change is a commit), **DAViCal** (the old heavyweight), **SOGo** (groupware with web calendar/mail/contacts; heavier), **Stalwart** (the mail server, adds CalDAV/CardDAV since 2025 — [Chapter 20](#communication-chat-video-calls-and-email)), **Cal.com** (appointment scheduling — a different thing; [Chapter 25](25-misc-apps.md)).
+- **Xandikos** (Git-backed CalDAV/CardDAV — every change is a commit), **DAViCal** (the old heavyweight), **SOGo** (groupware with web calendar/mail/contacts; heavier), **Stalwart** (the mail server, adds CalDAV/CardDAV since 2025 — [Chapter 20](#communication-chat-video-calls-and-email)), **Cal.com** (appointment scheduling — a different thing; [Chapter 25](#the-long-tail-household-finance-web-and-utility-apps)).
 
 Clients: **DAVx⁵** (Android — syncs CalDAV/CardDAV into the system calendar/contacts; essential), iOS/macOS built-in (add a CalDAV/CardDAV account), **Thunderbird**, **GNOME Calendar/Evolution**, **Fossify Calendar** (Android). For a web calendar UI without Nextcloud, **InfCloud**/**AgenDAV** or simply Thunderbird.
 
@@ -5154,8 +5156,8 @@ Typical lab automations: "when Sonarr imports an episode, post to the family Mat
 - **Diagramming**: **Excalidraw** (self-hostable whiteboard, wonderful), **draw.io/diagrams.net** (self-hosted container), **Kroki** (text-to-diagram server for Mermaid/PlantUML/Graphviz/D2), **PlantUML server**, **tldraw**.
 - **Speed/latency**: **LibreSpeed** (a self-hosted speed test — measure LAN and VPN throughput to your server, not to the internet), **OpenSpeedTest**.
 - **API/HTTP**: **Hoppscotch** (a Postman alternative; self-hostable), **Bruno** (local-first client, no server), **Webhook.site** alternatives (**webhook-tester**, **Requestbin** clones), **Mockoon**.
-- **Docs and static sites**: **Hugo**, **Astro**, **MkDocs Material**, **Docusaurus** built by CI and served by Caddy/Nginx ([Chapter 25](25-misc-apps.md)).
-- **Databases and admin tools**: [Chapter 26](26-databases-backing-services.md).
+- **Docs and static sites**: **Hugo**, **Astro**, **MkDocs Material**, **Docusaurus** built by CI and served by Caddy/Nginx ([Chapter 25](#the-long-tail-household-finance-web-and-utility-apps)).
+- **Databases and admin tools**: [Chapter 26](#databases-and-backing-services).
 
 ## Recommendations
 
@@ -5291,7 +5293,7 @@ RAG lets a model answer questions from *your* documents: chunk them, embed them 
 - **AnythingLLM** for a more document-centric workflow.
 - **Paperless-AI / Paperless-GPT** for asking questions of your Paperless archive ([Chapter 17](#files-sync-and-documents)).
 - **Khoj** (a personal AI over your notes — Obsidian/Markdown/PDF/Notion — with chat, search, and an agent framework; self-hostable), **Danswer/Onyx** (enterprise-grade search-and-chat over many connectors — heavy), **Dify** and **Flowise** and **Langflow** (visual builders for LLM apps and RAG pipelines — for people building rather than just using), **n8n's AI nodes** ([Chapter 22](#developer-tools-git-hosting-and-automation)).
-- Vector stores if you build your own: **Qdrant**, **Chroma**, **Weaviate**, **Milvus**, **pgvector** in Postgres ([Chapter 26](26-databases-backing-services.md)) — pgvector is the pragmatic home choice.
+- Vector stores if you build your own: **Qdrant**, **Chroma**, **Weaviate**, **Milvus**, **pgvector** in Postgres ([Chapter 26](#databases-and-backing-services)) — pgvector is the pragmatic home choice.
 
 Realistic expectations: RAG over a few thousand well-formatted documents with a 14–32 B model is genuinely useful; over a messy 200 GB archive it needs tuning (chunking, hybrid search with a keyword index, reranking) and patience.
 
@@ -5481,5 +5483,312 @@ Play a full gaming PC on a TV, laptop, tablet, phone, or Steam Deck anywhere in 
 - [ ] ROM library organised per platform; RomM (or Gaseous) scanned with metadata; saves synced; hashes verified if desired.
 - [ ] Streaming host reachable via Moonlight on the LAN with sub-20 ms latency; a wake/power-on mechanism for the gaming VM/PC.
 - [ ] Mumble (or chosen voice) alongside for the group.
+
+---
+
+# The Long Tail: Household, Finance, Web, and Utility Apps
+
+Every home lab accumulates a layer of small, delightful, single-purpose applications that do not fit a big category but make daily life better: a recipe manager the family actually uses, a budget tool that is not a subscription, an inventory of what is in the garage, a website change-watcher, a privacy-respecting YouTube front-end, analytics for a blog, the blog itself. This chapter is a curated survey — grouped by need, with a recommendation in each group — of the applications worth knowing in the categories that did not get their own chapter: recipes and groceries, personal finance, inventory and household management, web monitoring and archiving, privacy front-ends, websites and blogs, analytics, forms and scheduling, whiteboards, and a grab-bag of oddities that people run and love.
+
+## Recipes and groceries
+
+- **Mealie** — the recipe manager most households settle on: import from any URL (scraper), a clean recipe view with scaling, meal planning, shopping lists (with aisle grouping), tags and categories, multi-user with households, OIDC, an API, and a good mobile PWA. Python + SQLite/Postgres. **The recommendation.**
+- **Tandoor Recipes** — the power-user alternative: import from URLs and PDFs/images (OCR), highly structured ingredients and steps, meal planning, shopping lists, a space/multi-tenant model, keyword hierarchy, and integration with Bring! and Home Assistant. Django + Postgres. More features, denser UI.
+- **Grocy** — not a recipe app first but an **ERP for your household**: stock tracking with barcodes and expiry dates, shopping lists driven by minimum stock, recipes that consume stock, chores, tasks, batteries, equipment with manuals — the "know what is in the pantry" tool. PHP + SQLite. Steep to maintain data discipline; rewarding for people who will. Companion **Barcode Buddy** scans into Grocy.
+- **KitchenOwl** (shopping-list-first with recipes and meal planning; excellent shared shopping lists with native mobile apps), **Recipya**, **RecipeSage**, **Bar Assistant** (cocktail recipes and bar inventory — a niche gem), **Cooklang** (recipes as a plain-text markup with tooling).
+
+## Personal finance
+
+- **Actual Budget** — envelope/zero-based budgeting (the YNAB model), local-first with a sync server you self-host, bank import via files or **SimpleFIN/GoCardless** bridges, reports, rules, schedules, a fast UI, and mobile PWA. Node, tiny. **The recommendation for budgeting** and the best YNAB replacement.
+- **Firefly III** — the comprehensive personal finance manager: accounts, transactions, budgets, categories, tags, bills, rules, piggy banks, recurring transactions, reports, multi-currency, and a large API; imports via the **Firefly III Data Importer** (CSV, camt, and GoCardless/Salt Edge bank connections). PHP + database. Less "budgeting method," more "complete ledger." **The recommendation for tracking everything.**
+- **Ghostfolio** — investment portfolio tracking: holdings, performance, allocation, dividends, benchmarks, with market data from Yahoo/CoinGecko and a polished UI. **The recommendation for investments.**
+- **Wallos** — subscription tracking: what recurring charges you pay, when, and totals — the "why is my card statement so high" tool. Small PHP app, lovely.
+- **Maybe Finance** (an ambitious personal-finance app that went open source in 2024 — accounts, budgets, investments, AI assistant; the company later pivoted, community continues), **Beancount/Fava** and **hledger** (plain-text accounting with web UIs — for people who like double-entry in a text file), **GnuCash** (desktop, with optional shared DB), **Invoice Ninja** and **Crater** and **InvoicePlane** (invoicing for freelancers), **Kimai** and **Traggo** (time tracking), **Akaunting** (small-business accounting), **Money Manager Ex**, **Paisa** (Ledger-based with a UI), **Budget Zero**.
+
+## Inventory and household management
+
+- **Homebox** — inventory of your possessions: items with photos, locations (nested — house → garage → shelf), labels, purchase info, warranty dates, manuals, QR-code labels to print and stick on bins, and a simple, fast UI. Go + SQLite, tiny. **The recommendation**; the actively maintained fork is under `sysadminsmedia/homebox`.
+- **Grocy** (above) for consumables and chores; **Snipe-IT** (IT asset management — serious, for people with a lot of hardware or a small business); **Shelf**, **Inventree** (parts inventory for makers — components, BOMs, stock, suppliers; excellent for electronics hobbyists), **PartDB** (electronic parts), **Spoolman** (3D-printer filament tracking; integrates with Klipper/OctoPrint), **Homarr**'s inventory-ish widgets, **Manyfold** (3D model library for printing), **Papra/Paperless** for the receipts and manuals.
+- **Home maintenance**: **HomeBox**'s maintenance log, **Donetick** (recurring chores with assignments — [Chapter 18](#notes-knowledge-and-personal-productivity)), **Grocy** chores, **Maintainerr** (for media — different thing), **Reminders via HA**.
+- **Vehicles**: **LubeLogger** — vehicle maintenance records, fuel economy, reminders, documents; excellent and the standard. **Hammond** (fuel/expenses).
+- **Plants**: **Plant-it**, **HortusFox**; **Home Assistant** with soil sensors for the automated version.
+- **Family organisation**: **Nextcloud** calendars, **Vikunja**, **Homarr** boards ([Chapter 18](#notes-knowledge-and-personal-productivity)); **Baby Buddy** (feeding/sleep/nappy tracking for new parents — genuinely useful, with HA integration); **Wger** (workout and nutrition tracking — a self-hosted fitness log with a large exercise database); **FitTrackee** (GPS activity tracking — a Strava-ish self-hosted log); **Endurain**; **Fasten Health** (aggregating medical records from providers — US-centric).
+- **Pets**: **Petkeeper**-style apps are thin; Grocy/Homebox/HA cover most.
+
+## Web monitoring, archiving, and downloading
+
+- **Changedetection.io** — watch any web page (or JSON API) for changes and alert via 70+ notification services: price drops, restock, a job listing, a government page, a changelog. Visual selector for the region to watch, browser-rendering (Playwright) for JS pages, price-tracking mode, and scheduling. **The recommendation**; one of the highest-utility small apps in self-hosting.
+- **ArchiveBox** — save web pages in every format (HTML, PDF, screenshot, WARC, media via yt-dlp, readability text) into a browsable local archive; the "keep this forever" tool ([Chapter 18](#notes-knowledge-and-personal-productivity) has the bookmark-oriented alternatives — Linkwarden/Karakeep archive too).
+- **Wallabag/Readeck** (read-later), **Linkwarden** (bookmarks with archiving) — [Chapter 18](#notes-knowledge-and-personal-productivity).
+- **yt-dlp** front-ends: **MeTube** (paste a URL, get the video/audio — the simplest), **Tube Archivist** (subscribe to YouTube channels, download and index everything with a Jellyfin-style UI and Jellyfin/Plex integration — the "own my YouTube subscriptions" tool), **Pinchflat** (channel/playlist downloader designed to feed a media server, lighter than Tube Archivist; the current favourite for that use), **ytdl-sub**, **TubeSync**, **Podgrab/Podfetch** for podcasts ([Chapter 15](#media-streaming-libraries-and-automation) has Audiobookshelf), **Cobalt** (self-hosted media downloader UI for many sites), **gallery-dl** (image galleries).
+- **Speedtest Tracker** — scheduled Ookla/LibreSpeed tests with history graphs and alerts when your ISP under-delivers; ammunition for support calls. **The recommendation** for ISP accountability. **MySpeed** is the alternative.
+- **Uptime and status**: [Chapter 12](#monitoring-logging-and-alerting).
+- **Web scraping/RSS generation**: **RSS-Bridge**, **RSSHub**, **Huginn** ([Chapter 18](#notes-knowledge-and-personal-productivity), [Chapter 22](#developer-tools-git-hosting-and-automation)).
+
+## Privacy front-ends
+
+Self-hosted proxies that let you use big platforms without their tracking, ads, or accounts. They work by fetching content server-side and re-rendering it; platforms periodically break them and they periodically recover.
+
+- **Invidious** — YouTube: no ads, no tracking, subscriptions without an account, audio-only mode, RSS for channels, SponsorBlock, and a lightweight UI. The most established; YouTube's countermeasures have made public instances unreliable, but a *private* instance for a household works well most of the time (a companion **Invidious companion**/**inv_sig_helper** and occasionally a proxy or PO-token setup are needed as of 2025). Apps: **Clipious**, **FreeTube** (desktop, uses Invidious/local), **Yattee** (iOS).
+- **Piped** — the other YouTube front-end (Kotlin backend + Vue front-end, SponsorBlock, DeArrow, subscriptions, playlists); similar cat-and-mouse dynamics. **LibreTube** is its Android app.
+- **Redlib** (formerly Libreddit) — Reddit without JavaScript, ads, or tracking; browse subreddits and users; no posting. Works; Reddit rate-limits aggressively.
+- **Nitter** — Twitter/X; largely non-functional since X's 2023–2024 API and login-wall changes; private instances with session tokens limp along. Effectively dead for most.
+- **ProxiTok** (TikTok), **Rimgo** (Imgur), **Scribe** (Medium), **BreezeWiki** (Fandom wikis without the bloat), **AnonymousOverflow** (Stack Overflow), **Quetre** (Quora), **Dumb** (Genius lyrics), **Wikiless**, **Photon/Voyager** (Lemmy front-ends), **SearXNG** (search — [Chapter 23](#local-ai-llms-image-generation-speech-and-search)).
+- **LibRedirect** (a browser extension) redirects links to your instances automatically. **Farside** does the same server-side.
+
+Honest assessment: these are valuable and fragile. YouTube front-ends in particular require occasional maintenance. Run them for yourself; do not run public instances unless you enjoy IP bans.
+
+## Websites, blogs, and static sites
+
+- **Static site generators** — **Hugo** (Go, blazing fast, the most popular), **Astro** (modern, component-based, islands), **Eleventy/11ty** (flexible JS), **Zola** (Rust, Hugo-like, single binary), **MkDocs Material** (documentation — this guide's stylistic cousin), **Docusaurus**, **Jekyll** (the classic). Build in CI ([Chapter 22](#developer-tools-git-hosting-and-automation)) and serve the output from **Caddy**/**Nginx** — the most secure and lowest-maintenance website possible: no database, no PHP, no admin login to attack. **The recommendation for a personal site.**
+- **Ghost** — the modern publishing platform: a beautiful editor, memberships and newsletters (paid subscriptions via Stripe), themes, SEO, and a Node + MySQL backend. Excellent for a real blog with subscribers. The self-hosted version is fully featured; Ghost(Pro) is their hosted offering.
+- **WordPress** — powers a third of the web; runs anywhere; every plugin imaginable; and is the most attacked application on the internet by volume. If you self-host it: keep core/plugins/themes updated automatically, minimise plugins, put it behind the reverse proxy with a WAF, use strong auth and 2FA (WordFence or similar), disable XML-RPC, and consider **WP2Static**/**Simply Static** to publish a static copy publicly while keeping the WordPress admin LAN-only — the best of both worlds.
+- **WriteFreely** (minimalist, federated via ActivityPub — your blog appears in the fediverse), **Hexo**, **Grav** (flat-file CMS with an admin UI — a good middle ground between static and WordPress), **Kirby** (paid, flat-file, superb), **Publii** (desktop static CMS), **Bear Blog**-style minimal engines, **Pico CMS**, **Bludit**, **Typemill**, **Decap CMS** (a Git-based admin UI for static sites — edit Markdown in a browser, commits to your repo, CI rebuilds; pairs with Hugo/Astro), **Sveltia CMS** (Decap's modern successor), **Payload/Strapi/Directus** (headless CMSes — for developers building sites), **Wagtail** (Django CMS).
+- **Fediverse servers** — **Mastodon** (heavy: Ruby + Postgres + Redis + Sidekiq + Elasticsearch optional; ~4 GB for a single-user instance), **GoToSocial** (a lightweight Go ActivityPub server — the single-user Mastodon alternative at ~200 MB), **Akkoma/Pleroma**, **Misskey/Sharkey/Iceshrimp**, **Lemmy** and **PieFed** (Reddit-like), **Pixelfed** (Instagram-like), **PeerTube** (video), **Funkwhale** (audio), **Mobilizon** (events), **Bookwyrm** (Goodreads-like). Running your own fediverse instance is a real commitment (moderation, federation storage growth, spam); GoToSocial for a personal presence is the sane entry point.
+- **Comments for static sites**: **Isso**, **Remark42**, **Commento/Comentario**, **Cusdis**, **Giscus** (GitHub Discussions-backed, hosted).
+- **Link-in-bio / landing**: **LinkStack**, **LittleLink**.
+
+## Analytics
+
+Privacy-respecting alternatives to Google Analytics — no cookies, no cross-site tracking, GDPR-friendly, and often no consent banner needed:
+
+- **Umami** — a clean, fast, cookie-less analytics dashboard (Node + Postgres/MySQL): pageviews, referrers, countries, devices, events, funnels, retention; multi-site; team access. ~100 MB. **The recommendation.**
+- **Plausible CE** — the other favourite: simple, beautiful, cookie-less, with goals/events, funnels, and a Community Edition that is fully self-hostable (Elixir + Postgres + ClickHouse — heavier than Umami at ~1–2 GB). Some features arrive in the hosted version first.
+- **Matomo** — the full Google-Analytics replacement: everything GA does (heatmaps and session recording via plugins, e-commerce, funnels, A/B tests, tag manager), PHP + MySQL, heavier and more complex; the choice when you need depth.
+- **GoatCounter** (tiny, single-binary, minimal), **Shynet**, **Ackee**, **Rybbit** (2025, polished Umami/Plausible-style with session replay), **Swetrix**, **Counter**, **PostHog** (product analytics + feature flags + session replay — heavy, developer-oriented, self-hostable "hobby" deployment), **GoAccess** (log-file analytics — no JavaScript at all, works on your Caddy/Nginx logs).
+
+## Forms, scheduling, and signatures
+
+- **Cal.com** — the Calendly replacement: booking pages, availability from your CalDAV/Google/Outlook calendars, event types, round-robin, video integrations (Jitsi, Cal Video, Zoom), workflows. Self-hosting is supported but heavy (Next.js + Postgres + Redis + many env vars); the open-core split moves some features to paid. **Easy!Appointments** (PHP, simpler, for a small business), **Rallly** (Doodle-style group scheduling — light and lovely), **Zitadel/…** no.
+- **Forms**: **Formbricks** (surveys and in-app feedback, open source), **HeyForm**, **Typebot** (conversational forms/chatbots — excellent), **OhMyForm**, **LimeSurvey** (the academic-survey heavyweight), **Formspree alternatives** like **Formio**; **Nextcloud Forms** if you run Nextcloud; **Baserow**/**NocoDB**/**Teable** (Airtable-style databases with forms — see [Chapter 26](#databases-and-backing-services)).
+- **E-signatures**: **DocuSeal** — sign and send documents for signature, templates, audit trail, API; the self-hosted DocuSign, and genuinely good. **Documenso** is the other strong option (TypeScript, polished).
+- **Polls/decisions**: **Rallly**, **Framadate**, **Polls** in Nextcloud.
+
+## Whiteboards, diagrams, and design
+
+- **Excalidraw** — the hand-drawn-style collaborative whiteboard; self-hostable with the **excalidraw-room** collaboration server; exports to PNG/SVG; embeds in Obsidian/Docmost/HedgeDoc. **The recommendation.**
+- **draw.io / diagrams.net** — the full diagramming tool (network diagrams, flowcharts, UML, AWS/Azure icon sets); a single self-hosted container; integrates with Nextcloud/BookStack/Outline.
+- **tldraw** (self-hostable modern whiteboard), **Penpot** (open-source Figma — design and prototyping; heavy but complete), **Kroki** (text → diagram service for Mermaid/PlantUML/D2/Graphviz), **PlantUML server**, **Mermaid Live** (static), **Ludwig**, **wbo** (a minimal shared whiteboard).
+
+## Oddities people love
+
+- **Actual Budget** and **Mealie** have already appeared; these did not fit anywhere but earn their keep:
+- **Kiwix** — offline Wikipedia (and StackExchange, Project Gutenberg, TED, and more) served from ZIM files. The full English Wikipedia with images is ~100 GB; the whole knowledge of the internet on your NAS, available when the internet is not. Doomsday-prepper approved.
+- **Stirling PDF** ([Chapter 17](#files-sync-and-documents)), **IT-Tools**, **CyberChef** ([Chapter 22](#developer-tools-git-hosting-and-automation)).
+- **Dawarich** — a self-hosted Google Timeline replacement: location history from your phone (via OwnTracks, Overland, or Google Takeout import), maps, stats, trips; **Reitti** and **OwnTracks Recorder** are alternatives; **Traccar** is the fleet-grade GPS tracker.
+- **PhotoPrism/Immich** ([Chapter 16](#photos-replacing-google-photos-and-icloud)) aside, **Immich Public Proxy** shares Immich albums publicly without exposing Immich.
+- **Wakapi** (WakaTime-compatible coding-time tracker), **Umami** for your own dashboards, **Beaver Habit Tracker** and **Habitica** (habit tracking), **Monica** (personal CRM — remember birthdays and conversations with friends and family), **Twenty** (open-source CRM for a small business), **Fider** (feature-request voting board), **Zammad**/**FreeScout**/**Helpy**/**UVdesk** (help desks — FreeScout is the light one), **Peppermint** and **Zammad** (ticketing), **Statamic**…
+- **Home lab specifics**: **NetBox** (the network/infrastructure source of truth — IPAM, racks, devices, cables; enterprise-grade, and many home labbers document their lab in it; heavy), **Netbox's** lighter cousins **phpIPAM** and **NIPAP** (IP address management only), **Rack Elevation** tools, **WatchYourLAN** (ARP-based device discovery and new-device alerts on your LAN — light and useful), **Fing** alternatives **NetAlertX** (formerly PiAlert — new-device detection with notifications; the recommendation for "who just joined my Wi-Fi"), **Nmap web UIs**, **Speedtest Tracker** (above), **Smokeping** (latency graphs — ancient and still unmatched), **ntopng** (traffic analysis), **LibreNMS** ([Chapter 12](#monitoring-logging-and-alerting)), **Oxidized** (network device config backup — pairs with LibreNMS), **PhpMyAdmin**-style tools in [Chapter 26](#databases-and-backing-services), **Guacamole** (browser-based RDP/SSH/VNC gateway — a clientless remote desktop to every machine in the lab, behind forward-auth; excellent), **RustDesk** (self-hosted TeamViewer — relay + ID server for remote support of family PCs; genuinely useful), **MeshCentral** (remote management of many machines with an agent — the free RMM), **Tactical RMM**, **Semaphore UI** (a web UI for Ansible/Terraform — [Chapter 27](27-automation-iac.md)), **Cockpit** ([Chapter 12](#monitoring-logging-and-alerting)), **Webmin** (the ancient server admin UI; still works), **Wake-on-LAN** dashboards (**UpSnap** — a clean WoL UI with device discovery and scheduled wakes; useful for the gaming/GPU box).
+- **Printing and scanning**: **CUPS** in a container for AirPrint/network printing of a USB printer; **scanservjs** or **Scanopy** for a web UI on a USB scanner (pairs with Paperless's consume folder); **OctoPrint**/**Klipper + Mainsail/Fluidd** for 3D printers (with **Spoolman** and **Obico** for AI failure detection).
+- **Weather**: a personal weather station (Ecowitt, Ambient) feeding **WeeWX** or **Home Assistant**; **Windy/Open-Meteo** for data.
+- **Education**: **Moodle** (heavy LMS), **Kolibri** (offline education content), **Anki sync server** (self-hosted AnkiWeb — small and useful for flashcard users), **Kiwix** (above).
+- **Genealogy**: **Gramps Web** (the desktop genealogy app's web version — multi-user family tree with photos and sources; excellent), **webtrees**.
+- **Music practice and misc**: **Navidrome** ([Chapter 15](#media-streaming-libraries-and-automation)), **Snapcast** (multi-room audio), **Owntone** (iTunes/DAAP/AirPlay server), **Mopidy**, **Volumio**/**moOde** (Pi audio players).
+- **Ham radio, aviation, and hobby feeds**: **ADS-B** receivers (tar1090/readsb with a USD 25 SDR dongle — watch the planes overhead), **AIS** for ships, **WSJT-X/Wavelog** for amateur radio logging, **OpenWebRX** (a web SDR).
+
+## Recommendations (one per category)
+
+| Need | Pick |
+|---|---|
+| Recipes | Mealie (Tandoor for power users) |
+| Groceries & pantry | KitchenOwl (lists) / Grocy (stock) |
+| Budget | Actual Budget |
+| Full finance ledger | Firefly III |
+| Investments | Ghostfolio |
+| Subscriptions | Wallos |
+| Home inventory | Homebox |
+| Vehicles | LubeLogger |
+| Page change alerts | Changedetection.io |
+| YouTube archiving | Pinchflat (or Tube Archivist) |
+| ISP accountability | Speedtest Tracker |
+| YouTube front-end | Invidious (private instance) |
+| Personal website | Hugo/Astro static, built in CI, served by Caddy |
+| Blog with subscribers | Ghost |
+| Analytics | Umami |
+| Scheduling | Cal.com (or Rallly for group polls) |
+| E-signatures | DocuSeal |
+| Whiteboard | Excalidraw |
+| Diagrams | draw.io |
+| Offline knowledge | Kiwix |
+| Location history | Dawarich |
+| "Who joined my Wi-Fi" | NetAlertX |
+| Browser remote desktop | Apache Guacamole |
+| Remote support for family | RustDesk |
+| Wake-on-LAN | UpSnap |
+
+## Checklist
+
+- [ ] Each small app runs from its own Compose stack with pinned versions and data on local disk; SQLite apps not on NFS.
+- [ ] Household-facing apps (recipes, lists, budget) have friendly hostnames on the family dashboard and, where supported, OIDC login.
+- [ ] Anything with financial or location data (Actual, Firefly, Dawarich) is VPN-only or behind forward-auth; never public.
+- [ ] Public-facing sites are static where possible; dynamic CMSes (WordPress/Ghost) are updated automatically, behind the proxy with WAF/CrowdSec, admin restricted to LAN/VPN.
+- [ ] Privacy front-ends run as private instances and are expected to need occasional fixes.
+- [ ] Every app's export format checked before committing years of data (recipes → JSON/Markdown; finance → CSV/OFX; inventory → CSV).
+- [ ] Small-app data directories included in the nightly backup — they are small, precious, and easy to forget.
+
+---
+
+# Databases and Backing Services
+
+Behind almost every application in this guide sits a database, a cache, or an object store. Most of the time you never think about them — the project's Compose file includes a `postgres` service and it just works. But when forty applications each bring their own Postgres, MariaDB, Redis, and MongoDB, you are running a small data centre's worth of backing services, and the decisions you make about them — one shared instance or many, which versions, how to back up, how to upgrade — determine whether your lab is tidy or a swamp. This chapter covers the relational databases (PostgreSQL, MariaDB/MySQL, SQLite), key-value caches (Redis and its fork Valkey), document and time-series stores (MongoDB, InfluxDB, VictoriaMetrics, TimescaleDB), object storage (Garage, MinIO, SeaweedFS, RustFS), search (Meilisearch, Typesense, OpenSearch), message queues, the no-code database tools (NocoDB, Baserow, Teable), and the admin UIs (pgAdmin, Adminer, CloudBeaver, DBeaver, phpMyAdmin) — with the operational guidance that matters: shared vs per-app, upgrades, and backups.
+
+## The central question: shared or per-app?
+
+**Per-app** (each Compose stack has its own `db` service) is what every project's example gives you and what most people run.
+
+- Pros: total isolation (one app's bad query cannot hurt another); each app pins the version it was tested with; the stack is self-contained and portable; `docker compose down -v` on one app touches only its data; upgrades are per-app.
+- Cons: ten Postgres containers use ~10× the baseline RAM (each idles at 30–100 MB — so 0.5–1 GB total, which is fine on most hosts); ten things to back up (but a loop over containers handles it); ten major-version upgrades to do eventually.
+
+**Shared** (one Postgres, one MariaDB, one Redis for everything, each app with its own database/user):
+
+- Pros: one thing to tune, monitor, back up, and upgrade; less RAM; a single pgAdmin.
+- Cons: a single point of failure for everything; version conflicts (Immich wants its own extension-laden image; an app that needs Postgres 17 features while another is untested on 17); restarting the DB for maintenance takes down every app; blast radius of a mistake is total; a `depends_on` across Compose projects is awkward (external network, no health-condition ordering).
+
+**The guide's position:** **per-app by default**, with a shared instance only for the apps that are small, numerous, and boring (a dozen tiny apps that each want a Postgres for a few tables can share one), never for Immich (its extensions), Nextcloud (its scale), or anything whose upgrade cadence you want to control separately. The RAM argument for sharing was compelling when hosts had 8 GB; with 32–64 GB it rarely is. **Redis is the exception in the other direction**: an app-specific Redis is almost always the right call because Redis is trivially light and apps use it as a cache/queue with database-number collisions if shared.
+
+## PostgreSQL
+
+The default relational database of the self-hosting world and the right choice whenever an app offers it. Mature, standards-compliant, extensible (pgvector for embeddings, PostGIS for geo, TimescaleDB for time-series, pg_trgm for fuzzy search), excellent documentation, and the most predictable behaviour under load. Immich, Nextcloud (recommended), Paperless, Gitea/Forgejo, Authentik, Synapse, Mastodon, Outline, Vikunja, Miniflux, Linkwarden, n8n, Umami, Firefly III, and most modern apps prefer it.
+
+**Operational notes:**
+
+- **Pin the major version** in the image tag (`postgres:17`, not `postgres:latest`). Postgres major upgrades are *not* automatic: a `postgres:17` data directory will not start under `postgres:18`. The upgrade is `pg_dumpall` → new container → `psql < dump`, or `pg_upgrade` (via the `pgautoupgrade/pgautoupgrade` image, which does it on start — take a backup first). Minor versions (17.1 → 17.2) upgrade in place. Do one major upgrade per app per year; it is a fifteen-minute job.
+- **Alpine vs Debian images**: `postgres:17-alpine` is smaller; the Debian variant has better locale/collation compatibility. Collation changes between glibc versions can silently corrupt indexes on upgrade (`REINDEX` after a major host or image OS bump). Debian is the safer default.
+- **Data on local SSD**, never NFS/SMB. `POSTGRES_INITDB_ARGS: "--data-checksums"` to detect corruption.
+- **Tuning** for home scale is mostly unnecessary; if an app is slow, `shared_buffers` (25% of the RAM you give it), `work_mem`, and `effective_cache_size` via a mounted `postgresql.conf` or command flags. **PGTune** generates sane values.
+- **Backups**: `pg_dumpall -U postgres | zstd` nightly (logical, portable across versions — the restore format), plus filesystem snapshots (crash-consistent). For point-in-time recovery, **pgBackRest** or **Barman** with WAL archiving — overkill for a home lab except for a self-hosted email or business database.
+- **Extensions**: Immich's image (`ghcr.io/immich-app/postgres`) bundles VectorChord; `pgvector/pgvector` images bundle pgvector; `timescale/timescaledb` bundles Timescale; `postgis/postgis` bundles PostGIS. Use the pre-built image rather than compiling extensions into a shared instance.
+- **Connection pooling** (**PgBouncer**) matters for apps that open many connections (Nextcloud with many PHP workers); rarely needed otherwise.
+
+```yaml
+# a well-behaved per-app Postgres
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes: ["/mnt/fast/app-db:/var/lib/postgresql/data"]
+    secrets: [db_password]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 10s
+      retries: 5
+    # no ports: — only the app on the same network reaches it
+```
+
+## MariaDB and MySQL
+
+**MariaDB** is the community fork of MySQL (2009, after Oracle's acquisition) and what most self-hosted apps mean when they say "MySQL": WordPress, Ghost (MySQL 8 specifically), Nextcloud (supported; Postgres preferred), Photoprism, Mealie (SQLite/Postgres actually), Bookstack, Kanboard, Matomo, Firefly III (either), Mailcow (bundled), Piwigo, and the PHP world generally. Fast for simple read-heavy workloads, familiar, and fine. **MySQL 8** (Oracle's) is required by a few apps (Ghost); the two have diverged enough since 2020 that "MariaDB is a drop-in MySQL replacement" is no longer reliably true — use what the app documents.
+
+Operational notes mirror Postgres: pin the major (`mariadb:11`), data on local SSD, `mariadb-dump --all-databases --single-transaction | zstd` nightly (`--single-transaction` for InnoDB consistency), in-place minor upgrades, major upgrades usually work in place with `mariadb-upgrade` but back up first. The `MARIADB_AUTO_UPGRADE=1` env var runs it automatically. InnoDB is the only storage engine you should use. `utf8mb4` everywhere.
+
+## SQLite
+
+Not a server — a library that stores a whole database in one file. It is inside more self-hosted apps than any other database: Sonarr/Radarr/Prowlarr/Bazarr, Jellyfin, Home Assistant (default), Vaultwarden (default), Uptime Kuma, Grafana (default), Gitea/Forgejo (default), Navidrome, Audiobookshelf, Linkding, Memos, Homebox, Actual, Miniflux (no — Postgres), Paperless (optional), FreshRSS (default), Wallabag (default), Syncthing's index, and hundreds more. It is fast, zero-config, and perfectly adequate for a household's write volume.
+
+**The three rules:**
+
+1. **Never on a network filesystem** (NFS/SMB). File locking over the network is unreliable and corrupts databases — this is the most common cause of "my Sonarr database is malformed." Local disk only; bind-mount from local SSD even when media is on the NAS.
+2. **Back up with `sqlite3 db.sqlite3 ".backup 'copy.sqlite3'"`** (or stop the app, or snapshot the filesystem), not `cp` while running — the `-wal`/`-shm` sidecar files hold uncommitted state.
+3. **WAL mode** (most apps enable it) improves concurrency; the `-wal` file can grow if checkpoints do not run; it is normal to see it.
+
+For apps that offer both, choose SQLite when the app is single-user or low-write (most of the list above) and Postgres when it is multi-user with heavy writes (Gitea with CI, Paperless with large ingests, Home Assistant with hundreds of chatty sensors — where MariaDB/Postgres for the recorder is the standard advice). **Litestream** and **LiteFS** stream SQLite changes to S3/another host for continuous backup — an elegant addition for the SQLite apps you care most about (Vaultwarden).
+
+## Redis and Valkey
+
+**Redis** is the in-memory key-value store used as a cache, session store, job queue, and pub/sub broker by Nextcloud, Immich, Paperless, Authentik, Synapse, Mastodon, Outline, Gitea (optional), and many more. In March 2024 Redis Ltd. changed the licence from BSD to the source-available RSALv2/SSPL; the Linux Foundation forked the last BSD version as **Valkey**, which Immich, many distributions, and much of the community adopted. In May 2025 Redis added the AGPLv3 as an option for Redis 8, becoming open source again. Both work identically for every self-hosted app; **Valkey** (`valkey/valkey:8`) is the community default for new deployments; `redis:7`/`redis:8` is fine. **KeyDB** (a multithreaded fork) and **Dragonfly** (a high-performance drop-in) exist for scale you do not have.
+
+Operational notes: one Redis per app (they are ~5–10 MB each); persistence is optional (a cache can be rebuilt — set `--save ""` to disable RDB writes and reduce disk churn, unless the app uses Redis as a *queue* whose loss matters, in which case keep AOF/RDB and back it up); `maxmemory` with an eviction policy for caches; never expose port 6379 (no auth by default).
+
+## Document, time-series, and search
+
+- **MongoDB** — required by Rocket.Chat, Unifi Controller (the network application — a notorious dependency that pins old MongoDB versions), Nightscout, Cronicle, and a few others. Licence is SSPL (source-available); AVX-capable CPU required since 5.0 (an issue on some older mini PCs — use 4.4 or the `mongo:4.4` tag where the app allows). Pin the major; `mongodump` for backups. Prefer apps that use Postgres where you have the choice. **FerretDB** provides a MongoDB-compatible API over Postgres for apps with simple needs.
+- **InfluxDB** — the time-series database Home Assistant users ran for long-term history (v1 and v2 differ significantly; v3 changed the model again with the OSS "Core" edition limited to 72 hours of queryable history — check current status before adopting). **VictoriaMetrics** (Prometheus-compatible, very efficient, also accepts InfluxDB line protocol) and **TimescaleDB** (Postgres extension) are the modern recommendations for HA long-term stats ([Chapter 19](#home-automation)) and for Prometheus retention ([Chapter 12](#monitoring-logging-and-alerting)). **QuestDB** and **ClickHouse** (Plausible's backend) are the heavyweights.
+- **Search engines**: **Meilisearch** (fast, typo-tolerant, easy — used by Karakeep, Immich's earlier versions, many apps; ~200 MB), **Typesense** (similar niche, also excellent), **OpenSearch/Elasticsearch** (heavy — 2–4 GB minimum; required by Mastodon's full-text search, Nextcloud's full-text search app, Graylog, Wazuh; avoid unless an app demands it), **Sonic** (tiny), **Zinc/ZincSearch** (a light Elasticsearch-API-compatible alternative), **Tantivy/Quickwit** (Rust). Postgres full-text search (`tsvector`) covers many needs without another service.
+- **Vector databases** for AI: **pgvector** (in Postgres — the pragmatic choice), **Qdrant** (excellent, Rust, easy), **Chroma**, **Weaviate**, **Milvus** ([Chapter 23](#local-ai-llms-image-generation-speech-and-search)).
+
+## Object storage (S3-compatible)
+
+Many modern apps can store blobs in S3 rather than on a filesystem: Immich (partial), Mastodon media, Synapse media (via plugin), Outline attachments, Ghost images, Nextcloud primary storage (possible; not recommended), Restic/Kopia backups, Ente, Plane, Docmost, and anything built cloud-first. An S3-compatible server at home lets you run them without a filesystem dependency and gives you an S3 target for backups from other machines.
+
+- **Garage** — a lightweight, geo-distributed-capable S3 server (Rust, Deuxfleurs) designed for small self-hosters: single-binary, runs on a Pi, replicates across a few nodes with no central coordinator, ~50 MB RAM, simple config, and a tiny admin surface. **The recommendation for a home lab** that wants S3 without MinIO's weight or drama.
+- **MinIO** — the long-time standard: high-performance, single or distributed, a full web console, IAM/policies, versioning, object lock, replication, and the reference for S3 compatibility. In 2025 MinIO **removed most of the management features from the community web console** (leaving essentially only an object browser) and shifted development emphasis to the paid AIStor product; the server remains AGPL and functional via `mc` (the CLI) and the API, but the direction alienated many self-hosters. Still the most compatible; less recommended for new home deployments than it was.
+- **SeaweedFS** — a distributed file/object store with S3, FUSE mount, WebDAV, and filer features; very capable, more complex; good for many small files.
+- **RustFS** (2025, a MinIO-API-compatible Rust server aiming to be the community MinIO successor — young, watch it), **Zenko CloudServer** (Scality's S3 implementation, single-node), **Ceph RGW** (if you run Ceph — [Chapter 6](#storage-filesystems-redundancy-and-sharing)), **LocalStack** (AWS emulator — for development, not storage), **rclone serve s3** (expose any rclone remote — including a plain directory — as an S3 endpoint; a surprisingly useful shim), **Versitygw** (S3 gateway over a POSIX filesystem — put S3 in front of an existing directory tree).
+
+For most people: **Garage** for S3-native apps and as a Restic target; or skip S3 entirely and bind-mount filesystems, which every app in this guide also supports.
+
+## Message queues and brokers
+
+Rarely needed directly at home — apps bundle what they need — but you will meet them: **Mosquitto** (MQTT — [Chapter 19](#home-automation)), **RabbitMQ** (required by Zulip and some others; heavy Erlang), **NATS** (light, fast, used by some Go apps), **Apache Kafka/Redpanda** (only if you are learning them for work — Redpanda is the single-binary Kafka-compatible option), **Redis Streams/Lists** (what most small apps actually use as a queue), **Gearman/Beanstalkd** (legacy). Run what the app requires; do not add one speculatively.
+
+## No-code databases and internal tools
+
+The Airtable/Notion-database category — spreadsheet-like UIs over real databases, with forms, views, and APIs — useful for household inventories, trackers, and small business data without writing an app:
+
+- **NocoDB** — turns any Postgres/MySQL/SQLite into an Airtable-style interface: grid/gallery/kanban/calendar/form views, links between tables, formulas, roles, webhooks, API, and the ability to connect to an *existing* database (e.g., browse your Immich or Paperless tables — carefully). Node + SQLite/Postgres. **The recommendation.**
+- **Baserow** — a closer Airtable clone (Django + Postgres) with a polished UI, forms, row comments, automations/workflows (newer), and an application builder; a free tier with some premium features. Very approachable for non-technical users.
+- **Teable** — a 2024 entrant built on Postgres with high performance on large tables and a clean UI; each table is a real Postgres table you can query directly. Promising.
+- **Grist** — spreadsheet-database hybrid with Python formulas, access rules, and a strong data-model story; excellent for people who think in spreadsheets; self-hostable (Grist Core).
+- **Appsmith**, **ToolJet**, **Budibase**, **Appwrite/Supabase/PocketBase** (backend-as-a-service — Supabase is Postgres + auth + storage + realtime as a self-hostable stack, heavy; PocketBase is a single Go binary with SQLite, auth, realtime, and an admin UI — a delightful backend for small personal apps and what Beszel is built on), **Directus** (headless CMS/data platform over any SQL database with a beautiful admin — arguably the best "admin UI for my existing database" tool), **Mathesar** (a spreadsheet-like Postgres UI with a data-modelling focus).
+
+## Admin UIs
+
+- **pgAdmin 4** — the official, comprehensive Postgres admin (web); heavy (~300 MB), powerful, dated UI. Every DBA knows it.
+- **Adminer** — a *single PHP file* that administers Postgres, MySQL/MariaDB, SQLite, MongoDB, MS SQL, and more. Tiny, fast, ugly, indispensable. Run it as a container, LAN/VPN-only, and only when needed. The community-maintained **AdminerEvo** fork is current.
+- **CloudBeaver** — the web version of **DBeaver** (the excellent desktop universal database tool): connections to everything, SQL editor, data browser, ER diagrams, users and permissions. Community Edition is free. **The recommendation for a web UI over many databases.**
+- **DBeaver** (desktop), **DataGrip** (JetBrains, paid), **Beekeeper Studio** (desktop, pleasant, partly open), **TablePlus** (desktop, paid) — connecting over SSH tunnel/VPN to your databases is often better than hosting a web admin at all.
+- **phpMyAdmin** — the ancient MySQL/MariaDB admin; still works; Adminer or CloudBeaver are lighter and cover more.
+- **Redis**: **RedisInsight** (official, web/desktop), **Redis Commander**, **redis-cli**. **MongoDB**: **Mongo Express**, **Compass** (desktop). **SQLite**: **sqlite-web**, **DB Browser for SQLite** (desktop), **Datasette** (publish/explore SQLite as a website — wonderful for read-only exploration of app databases). **InfluxDB/Victoria**: their own UIs or Grafana.
+
+**Do not leave admin UIs running** on a network anyone else can reach; they are a full-control surface over your data with, often, weak or no auth. Start them when needed, or forward-auth them and bind to LAN/VPN.
+
+## Backups, once more
+
+Databases are where file-copy backups silently fail. The pattern ([Chapter 11](#backups-the-chapter-that-matters-most)):
+
+```bash
+#!/usr/bin/env bash
+# /opt/backups/dump-databases.sh — run nightly before the file backup
+set -euo pipefail
+OUT=/opt/backups/dumps; mkdir -p "$OUT"; DATE=$(date +%F)
+for c in $(docker ps --format '{{.Names}}' --filter "ancestor=postgres:17" --filter "ancestor=postgres:16"); do
+  docker exec "$c" pg_dumpall -U postgres | zstd -q > "$OUT/$c-$DATE.sql.zst"
+done
+for c in $(docker ps --format '{{.Names}}' --filter "ancestor=mariadb:11"); do
+  docker exec "$c" sh -c 'mariadb-dump --all-databases --single-transaction -uroot -p"$MARIADB_ROOT_PASSWORD"' | zstd -q > "$OUT/$c-$DATE.sql.zst"
+done
+# Immich uses a custom image; name it explicitly
+docker exec immich_postgres pg_dumpall -U postgres | zstd -q > "$OUT/immich-$DATE.sql.zst"
+# SQLite apps: consistent copies
+docker exec vaultwarden sqlite3 /data/db.sqlite3 ".backup '/data/db-backup.sqlite3'"
+find "$OUT" -name '*.zst' -mtime +7 -delete
+curl -fsS -m 10 --retry 3 https://hc.example.com/ping/<uuid> >/dev/null
+```
+
+Tools that do this for you: **docker-db-backup** (tiredofit), **Borgmatic**'s database hooks, **Backrest** pre-hooks, **Offen docker-volume-backup** (stops containers, archives volumes, uploads — a simple all-in-one), **pg_back**, per-app sidecars (**prodrigestivill/postgres-backup-local**). Restore-test quarterly: `zstdcat dump.sql.zst | docker exec -i scratch-postgres psql -U postgres`.
+
+## Recommendations
+
+- **Per-app databases** by default; pin majors; data on local SSD with checksums; no published ports; healthchecks so `depends_on` works.
+- **Postgres** whenever the app offers it; **MariaDB** for the PHP apps that want it; **SQLite** for single-user apps — on local disk, backed up with `.backup`.
+- **Valkey** (or Redis) per app; persistence off for pure caches.
+- **Garage** if you want S3 at home; **pgvector** for embeddings; **VictoriaMetrics** for time-series; **Meilisearch** if an app needs search and offers it.
+- **NocoDB** or **Baserow** for household data you would otherwise put in a spreadsheet; **PocketBase** for small personal apps.
+- **CloudBeaver** (or Adminer on demand) for a web admin UI, LAN/VPN-only.
+- **Nightly logical dumps of every database** plus filesystem snapshots; quarterly restore tests.
+
+## Checklist
+
+- [ ] Every database container has a pinned major version tag and its data on local SSD (not NFS); Postgres initialised with data checksums.
+- [ ] No database ports published to the host/LAN; databases on isolated Compose networks with only their app.
+- [ ] Nightly logical dumps (`pg_dumpall`, `mariadb-dump --single-transaction`, `sqlite3 .backup`, `mongodump`) into the file-backup path; Healthchecks ping; quarterly restore test.
+- [ ] A plan (and a calendar entry) for annual Postgres/MariaDB major upgrades per app.
+- [ ] Redis/Valkey instances have persistence configured deliberately (off for caches, on for queues).
+- [ ] Admin UIs (pgAdmin/Adminer/CloudBeaver) not left exposed; started on demand or behind forward-auth on LAN/VPN.
+- [ ] Object storage (if run) has bucket policies, versioning/object-lock on the backup bucket, and its own backup.
 
 ---
