@@ -162,3 +162,206 @@ Body size limits: Cloudflare free (100 MB), NPM/nginx `client_max_body_size` (de
 ### Real client IPs show as the proxy's IP
 
 Pass `X-Forwarded-For`/`X-Real-IP` and tell the app to trust the proxy's subnet (Nextcloud `TRUSTED_PROXIES`, Vaultwarden `IP_HEADER`, Immich reads `X-Forwarded-For` automatically, Authelia/Authentik need it for geo rules). Behind Cloudflare, trust Cloudflare's IP ranges and use `CF-Connecting-IP`. CrowdSec decisions on the wrong IP = you banned your own proxy; check this first when *everything* is suddenly 403.
+
+## Remote access and VPN
+
+### Tailscale connects but can't reach LAN devices
+
+Subnet router: `tailscale up --advertise-routes=192.168.1.0/24` **and** approve the route in the admin console (or use autoApprovers in the ACL). On Linux routers, enable forwarding (`net.ipv4.ip_forward=1`, `net.ipv6.conf.all.forwarding=1`). Clients on Linux need `--accept-routes`. If it's a Docker container acting as subnet router, it needs `network_mode: host` or `cap_add: NET_ADMIN` + `/dev/net/tun`.
+
+### Tailscale is slow / shows "relayed" (DERP)
+
+Direct connection failed; both sides behind hard NAT (CGNAT, symmetric NAT, some 5G). Fix one end: forward UDP 41641 to the home node, or enable UPnP/NAT-PMP on the router, or run your own DERP. `tailscale netcheck` and `tailscale ping <peer>` show what's happening. IPv6 on both ends usually fixes it.
+
+### WireGuard handshake never completes
+
+99 % one of: wrong public key pasted (each side needs the *other's* public key), `Endpoint` unreachable (CGNAT, port not forwarded, DDNS stale), clock skew > a few minutes, `AllowedIPs` on the server missing the client's tunnel IP. `wg show` on the server: if `latest handshake` never appears, packets aren't arriving — `tcpdump -ni any udp port 51820`. MTU issues (`MTU = 1280` fixes many mobile-network problems) show as "handshake fine, traffic dies".
+
+### I'm behind CGNAT
+
+Check: the router's WAN IP is in `100.64.0.0/10` or differs from `curl ifconfig.me`. Options: ask the ISP for a public IPv4 (often free or a couple of euros), use IPv6 if you have it, Tailscale/NetBird (no inbound needed), Pangolin/Cloudflare Tunnel on a VPS for public services. Port forwarding will *never* work; stop trying.
+
+### Cloudflare Tunnel: 502/`error code 1033`/"origin unreachable"
+
+`cloudflared` can't reach the service URL you configured — it's the same as a proxy 502: use the Docker service name and *internal* port if `cloudflared` is in the same network; `http://localhost` only works with `network_mode: host`. For HTTPS origins with self-signed certs, enable "No TLS Verify" in the tunnel's TLS settings.
+
+## Storage
+
+### ZFS pool DEGRADED / a disk shows FAULTED
+
+`zpool status -v`. If a disk is `FAULTED` with read/write/cksum errors, check SMART (`smartctl -a /dev/sdX`), cables first (SATA cables cause more "disk failures" than disks). Replace: `zpool replace tank <old> <new>`; watch `zpool status` for resilver. Checksum errors with a healthy disk → RAM (run memtest), controller, or cable. **Do not** `zpool clear` and forget; note the disk. Scrub after resilver.
+
+### ZFS: "cannot import pool: pool was previously in use from another system"
+
+`zpool import -f tank`. After a hostname change or moving disks between machines this is normal.
+
+### ZFS/Proxmox: RAM "full"
+
+ARC. `arc_summary` or `cat /proc/spl/kstat/zfs/arcstats | grep -E '^(size|c_max)'`. Cap it in `/etc/modprobe.d/zfs.conf`: `options zfs zfs_arc_max=8589934592` (8 GiB) then `update-initramfs -u` and reboot. Used-by-ARC memory is released under pressure, but VMs' balloon drivers and OOM heuristics don't always wait.
+
+### SMB share slow / NFS hangs
+
+- SMB: check `smb.conf` for `server multi channel support = yes` on 2.5/10 GbE; disable `strict sync` for media; macOS needs `vfs objects = fruit streams_xattr`; Windows Explorer thumbnails hammer the share (`veto files` for `Thumbs.db`).
+- NFS "hang": server went away with `hard` mounts (correct behaviour — it waits). `umount -f -l`; use `soft,timeo=…` only for non-critical mounts, or systemd automount so a dead NAS doesn't wedge boot (`x-systemd.automount,_netdev,nofail`).
+- Permissions: NFSv4 with `all_squash,anonuid=1000,anongid=1000` for a home lab, or map UIDs consistently across hosts.
+
+### Docker on ZFS: many datasets / slow `docker pull`
+
+Docker's `zfs` storage driver creates a dataset per layer. Use `overlay2` on a plain dataset instead: put `/var/lib/docker` on a ZFS dataset and set `"storage-driver": "overlay2"` in `daemon.json` (works on ZFS 2.2+ with overlayfs support). In an LXC on Proxmox the same applies; keyctl/nesting features must be enabled.
+
+### Btrfs: "No space left on device" with free space showing
+
+Metadata exhausted or unbalanced chunks. `btrfs filesystem usage /`; `btrfs balance start -dusage=50 /`. Enable the periodic balance via `btrfsmaintenance`.
+
+### Disk is CMR or SMR?
+
+`smartctl -a /dev/sdX | grep -i 'rotation\|TRIM'` — SMR drives often report `TRIM Command: Available`. Better: check the manufacturer's model list (WD Red *non-Plus* 2–6 TB and many 2.5" drives are SMR). SMR in a ZFS resilver = days, or a failed resilver.
+
+## Proxmox
+
+### VM won't start: "TASK ERROR: ... kvm: -device vfio-pci ... " (passthrough)
+
+IOMMU not enabled (`intel_iommu=on iommu=pt` / `amd_iommu=on` in GRUB or systemd-boot cmdline, then `update-grub`/`proxmox-boot-tool refresh`), device still bound to the host driver (blacklist `i915`/`nouveau`/`amdgpu`, or `vfio-pci.ids=`), or the device isn't in its own IOMMU group (`pvesh get /nodes/<node>/hardware/pci --pci-class-blacklist ""` shows groups; ACS override is a last resort).
+
+### LXC: can't run Docker / permission errors on bind mounts
+
+Unprivileged LXC needs `features: nesting=1,keyctl=1`. Bind-mount ownership: UIDs are shifted by 100000 in unprivileged containers — either `chown 101000:101000` on the host or add an idmap in the CT config. Running Docker in LXC is unsupported by Proxmox (works, but a Docker VM is the recommendation).
+
+### Cluster: node shows with a red X / "no quorum"
+
+Two-node cluster with one down = no quorum by design. Add a **QDevice** (`pvecm qdevice setup <ip>` with `corosync-qnetd` on a Pi) or temporarily `pvecm expected 1` to operate. Corosync wants low latency; don't run it over Wi-Fi or a saturated link — a busy backup on the same NIC as corosync is a classic cause of flapping nodes.
+
+### Backups slow / PBS "chunk verification failed"
+
+Slow: PBS datastore on HDD without a special device — add a small SSD mirror as ZFS `special` vdev, or enable `dirty-bitmap` (default for running VMs; a shutdown resets it). Verification failures: bad disk or RAM on the PBS host; re-run verify, check SMART, scrub the pool.
+
+### Web UI unreachable after network change
+
+`/etc/network/interfaces` typo — you still have the console. `ifreload -a` after fixing. Also `/etc/hosts` must resolve the node name to the *cluster* IP or pve services misbehave.
+
+## Applications
+
+### Nextcloud: slow, "maintenance mode", or "untrusted domain"
+
+- Untrusted domain: `occ config:system:set trusted_domains 1 --value=cloud.home.example.com`.
+- Maintenance mode stuck: `occ maintenance:mode --off`; after upgrades run `occ upgrade`, `occ db:add-missing-indices`, `occ maintenance:repair --include-expensive`.
+- Slow: no Redis (`memcache.local` = APCu, `memcache.locking` = Redis), cron via `nextcloud-cron` container instead of AJAX, PHP `memory_limit` ≥ 512 M, `opcache.interned_strings_buffer=16`, HTTP/2 on the proxy, and previews pre-generated (`preview:pre-generate`). Nextcloud AIO handles most of this for you.
+- Desktop client "connection closed": body size limit on the proxy, or Cloudflare's 100 MB.
+
+### Immich: app can't upload / "server offline" / ML never finishes
+
+- Mobile: the server URL must be reachable from *mobile data* (so Tailscale on the phone, or public exposure). Background upload on iOS is limited by the OS; keep the app open for the first big import.
+- After an update, migration errors: check release notes; pin `IMMICH_VERSION`; **never** run `:latest` for the DB image; the Postgres image must match the pgvecto.rs/VectorChord version Immich expects.
+- ML jobs at 0 %: the `immich-machine-learning` container is OOM-killed or can't download models (no internet, or set `MACHINE_LEARNING_*` cache mount). Smart search re-indexing after changing the CLIP model takes hours — normal.
+
+### Jellyfin: buffering, "playback error", or transcoding when it shouldn't
+
+- Direct play requires the client to support the codec **and** container **and** subtitle format; burnt-in PGS/ASS subtitles force transcoding. Use SRT subs or a client that supports the format (Jellyfin Media Player, Infuse, Kodi).
+- Bitrate limit in the client set low (defaults to 20 Mbps on some).
+- Transcode dir on a slow/full disk; move to `tmpfs` or SSD.
+- HW transcoding not actually active → Dashboard → Active devices shows "(hw)" only if it worked; see the GPU section.
+
+### Vaultwarden: clients won't log in / "Failed to fetch"
+
+The `DOMAIN` env must match exactly the URL the client uses (including https). WebSocket notifications need the proxy to pass `/notifications/hub`. If the browser extension works and the mobile app doesn't, the certificate chain or name resolution from mobile data is the issue. Backups: `db.sqlite3` **plus** `attachments/`, `sends/`, `rsa_key*`.
+
+### Home Assistant: "400 Bad Request" behind a proxy
+
+Add to `configuration.yaml`:
+
+```yaml
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.16.0.0/12     # or your proxy's subnet / Docker network
+```
+
+Companion app "unable to connect": internal URL vs external URL; set both in the app, and make sure the internal SSID list is right.
+
+### Paperless-ngx: consumption folder ignores files
+
+`PAPERLESS_CONSUMER_POLLING=30` when the folder is a network mount (inotify doesn't work over NFS/SMB). Permission: the consumer runs as `USERMAP_UID`. Duplicate detection silently skips identical files (check "Duplicates" in logs).
+
+### Authelia/Authentik/Pocket ID: redirect loop or "invalid redirect_uri"
+
+Redirect URI in the IdP must match **exactly** what the app sends (scheme, host, path, trailing slash). Clock skew between IdP and app (> 30 s) breaks token validation. Cookie domain: forward-auth needs the IdP and the apps under the same parent domain (`home.example.com`) or a session domain setting. `TRUST_PROXY` / `X-Forwarded-*` headers must reach the IdP or it generates `http://` URLs.
+
+## Hardware and host
+
+### Random reboots / freezes
+
+RAM (memtest86+ overnight), PSU (undersized after adding disks/GPU), C-states on some Intel boards (add `intel_idle.max_cstate=1` or disable C6 in BIOS — common on N100 boxes and older Atoms), thermal (check `sensors`, dust), a USB device (external HDD enclosures with flaky power), or kernel + driver issue (Realtek 2.5 GbE `r8169`/`r8125` — install the `r8125-dkms` driver).
+
+### High idle power
+
+BIOS: enable ASPM, C-states, disable unused controllers; Linux: `powertop --auto-tune` then make the tunables permanent; avoid HBA/RAID cards and 10 GbE copper NICs that block package C-states (`powertop` shows the deepest reached state). Spin down idle HDDs (`hdparm -S` or `hd-idle`) *only* on media pools, never on ZFS pools with periodic writes.
+
+### USB drive disappears / renames from `sda` to `sdb`
+
+Never mount by `/dev/sdX`; use `/dev/disk/by-uuid/` or `by-id/` in `fstab` with `nofail`. Enclosure power management: `usbcore.autosuspend=-1` on the kernel cmdline; UAS quirks for some chipsets (`usb-storage.quirks=VID:PID:u`).
+
+### Boot hangs on a missing network mount / "A start job is running for …"
+
+Add `nofail,x-systemd.automount,_netdev` to network mounts; `nofail` on any disk that isn't the root.
+
+### SMART says the drive is fine, but…
+
+SMART "PASSED" is a low bar. Watch attributes 5 (Reallocated), 187 (Reported Uncorrectable), 188 (Command Timeout), 197 (Pending), 198 (Offline Uncorrectable). Any non-zero *and rising* 197/198 means replace. Run `smartd` with email/ntfy notifications and a monthly long test ([Maintenance](28-maintenance-operations.md)).
+
+---
+
+## FAQ
+
+**Do I need a domain name?**
+For local-only with self-signed certs, no. For trusted TLS certificates via Let's Encrypt (which also makes phones and apps happy), yes — around €5–15/year. A domain on a registrar with an API (Cloudflare, Porkbun, deSEC, Hetzner) enables DNS-01 wildcard certificates with zero open ports. `.home.arpa` and `.internal` are the correct choices for purely private names *without* public certificates.
+
+**Should I use `.local`?**
+No. `.local` is reserved for mDNS and resolvers treat it specially; you'll chase odd resolution failures. Use `home.arpa`, `internal`, or a subdomain of a real domain.
+
+**Is it safe to expose services to the internet?**
+Safe enough if you: keep only a proxy on 443 (or use a tunnel), put an IdP/SSO or at least 2FA in front of anything that isn't designed to be public, run CrowdSec/fail2ban, update promptly, and don't expose management UIs (Proxmox, routers, Portainer, Docker socket) ever. Safer still: don't expose at all and use Tailscale/WireGuard. Only expose what *needs* to be reachable by people who can't run a VPN ([Remote access](08-remote-access-vpn.md), [Security](13-security.md)).
+
+**Is port forwarding "insecure"?**
+Forwarding 443 to a well-maintained reverse proxy is fine — it's what every website does. What's insecure is forwarding *many* ports to *many* apps, each with its own auth and patch cadence, or forwarding SSH/RDP/admin ports.
+
+**Cloudflare Tunnel vs Tailscale vs Pangolin vs WireGuard?**
+Tailscale/WireGuard for *you and your family* (no public exposure); Pangolin or Cloudflare Tunnel for *the public* (grandma clicks a link). Cloudflare Tunnel: easiest, free, but Cloudflare decrypts your traffic and its ToS discourages video streaming; Pangolin: self-hosted equivalent on a €4 VPS, you hold the keys ([Remote access](08-remote-access-vpn.md)).
+
+**Proxmox or bare-metal Docker?**
+One box, want simplicity, comfortable rebuilding from Compose files: bare Debian + Docker. Want snapshots before upgrades, Home Assistant OS, isolation of experiments, or PBS backups of whole systems: Proxmox with a Docker VM. Most people who start with bare metal end up on Proxmox within a year; the reverse migration is rare ([OS & hypervisors](04-os-and-hypervisors.md)).
+
+**Docker or Podman or Kubernetes?**
+Docker Compose is the lingua franca — every project ships a compose file. Podman is a fine drop-in if you value rootless and daemonless (Quadlet is genuinely nice). Kubernetes (k3s/Talos) at home is a *learning* choice, not an operational one ([Containers](05-containers.md)).
+
+**ZFS or Btrfs or ext4 or MergerFS+SnapRAID?**
+ZFS for anything you can't lose and want checksummed, snapshotted and replicated; it wants RAM and same-size disks. Btrfs if you want ZFS-like features with mixed disks and don't run RAID5/6. ext4/XFS for scratch and appliances. MergerFS + SnapRAID for large, mostly-static media on mixed-size disks that you'd rather spin down ([Storage](06-storage.md)).
+
+**How much RAM do I need?**
+16 GB runs ten typical services comfortably. 32 GB removes thinking about it. 64 GB is for Proxmox with several VMs plus ZFS ARC. RAM is cheap; buy the second stick.
+
+**Do I need ECC?**
+Nice, not necessary. Non-ECC ZFS is still far safer than non-ECC ext4; the "scrub of death" is a myth. If the platform supports ECC cheaply (AMD Pro APUs, used Xeon/EPYC, some Alder Lake boards), take it ([Hardware](02-hardware.md)).
+
+**RAID is a backup, right?**
+No. RAID/RAIDZ/mirrors protect against *disk failure*. They replicate deletions, ransomware and corruption instantly. Snapshots protect against oops. Backups (off-machine, off-site, tested) protect against everything else ([Backups](11-backups.md)).
+
+**Should I auto-update containers?**
+For stateless/low-risk images with good semver (proxy, DNS, dashboards), yes, with notifications. For anything with a database or migrations (Immich, Nextcloud, Paperless, Home Assistant), no — pin versions, read release notes, update deliberately after a snapshot/backup. Renovate/Diun/Watchtower-in-monitor-mode tell you what's available ([Maintenance](28-maintenance-operations.md)).
+
+**`latest` tag or pinned?**
+Pin major (or exact) versions for anything stateful, use Renovate to bump them via PRs. `latest` is fine for tools you'd redeploy from scratch anyway.
+
+**How do I share Jellyfin/Immich with family who won't install a VPN?**
+Public exposure of *that one app* through Pangolin or Cloudflare Tunnel, with the app's native login plus rate limiting/CrowdSec. Jellyfin has no 2FA — put it behind an auth proxy with a "media-users" group, or accept the risk with strong passwords. Jellyfin over Cloudflare Tunnel violates the ToS spirit; Pangolin doesn't.
+
+**Self-host email?**
+Almost certainly not as your primary. Deliverability (IP reputation, DKIM/DMARC/SPF, blocklists, residential IP ranges being blanket-blocked) is a full-time job. A €2–5/month provider (Migadu, Fastmail, mailbox.org, Purelymail) with your own domain gives you the portability benefit. If you must, do it on a clean VPS with Mailcow/Stalwart and keep the home lab as archive/backup MX ([Communication](20-communication.md)).
+
+**How much does this cost per month?**
+Starter: €2–4 electricity (10 W ≈ 7 kWh) + ~€1 domain + €1–3 B2. Intermediate: €8–15 electricity + €4 VPS (optional) + €3–5 B2. Advanced: €25–60 electricity + VPS + storage. Compare against the subscriptions you're replacing — and be honest that the *time* is the real cost ([Power, cost & environment](29-power-cost-environment.md)).
+
+**What happens when I'm not around / the "bus factor"?**
+Document the break-glass sheet, keep the household on services that degrade gracefully (Bitwarden clients cache the vault; Immich phones keep originals; Jellyfin is entertainment), and choose a "shutdown plan": how someone exports the photos and passwords if the lab is abandoned. See [Planning](01-planning.md).
+
+**Where do I ask for help?**
+Read the project's docs and GitHub issues first (search the exact error string). Then the communities in [Resources & community](33-resources-community.md). Post: what you expected, what happened, exact error, compose file (secrets redacted), `docker logs` tail, what you already tried, what changed recently. Half the time, writing that out reveals the answer.
