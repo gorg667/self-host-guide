@@ -539,3 +539,310 @@ Run with a systemd timer at 03:00 (a unit that sets `Environment=B2_ACCOUNT_ID=�
 5. Keep every Compose file; they run unchanged inside a Debian VM.
 
 ---
+
+## Intermediate: hypervisor, redundant storage, SSO, real monitoring
+
+### Goals
+
+- Survive a single disk failure and a botched OS upgrade (snapshots + rollback).
+- Segregate IoT and guests from servers with two VLANs.
+- One login for everything that supports OIDC; forward-auth for what does not.
+- Alerts on your phone when a disk, backup, certificate or service goes bad.
+- Public exposure for a *small* set of apps without touching the router's port-forward table.
+
+### Bill of materials
+
+| Item | Suggested | Notes |
+|---|---|---|
+| Main node | Used SFF/tower (Dell 3070/7070 SFF, HP 800 G5 SFF) or a 6-core mini PC (MINISFORUM MS-01, ASUS NUC 13 Pro) | i5-9500+/Ryzen 5 5600+ ; iGPU for transcoding. MS-01 gives 2×2.5 GbE + 2×10 GbE SFP+ and 3 NVMe slots |
+| RAM | 64 GB (2×32 DDR4/DDR5 SODIMM) | ZFS ARC + 6–10 VMs/LXCs. ECC if the platform allows (see [Hardware](02-hardware.md)) |
+| Boot + VM pool | 2 × 1–2 TB NVMe, **ZFS mirror** | Choose enterprise-ish drives or expect TBW to be consumed by Proxmox's logging; set `zfs_arc_max` |
+| Bulk pool | 2–4 × 8–16 TB CMR HDD (WD Red Plus/Pro, Seagate IronWolf, Toshiba N300) | RAIDZ1 with 3–4 drives, or a mirror with 2. Or MergerFS + SnapRAID if mostly media |
+| Second node | Raspberry Pi 5 / used thin client (Fujitsu Futro S740, HP t640) | Runs second AdGuard, Uptime Kuma *externally to the main node*, PBS if it has a USB SSD |
+| Switch | 8-port managed 2.5 GbE (or 1 GbE with 2.5 GbE uplinks) that does 802.1Q VLANs | TP-Link TL-SG108E class is enough; PoE if you want APs/cameras |
+| Router | Keep the ISP router **or** move routing to an OPNsense VM with a dedicated NIC | The VM route is elegant but ties your internet to the hypervisor rebooting. See [Networking](03-networking.md) |
+| UPS | 600–1000 VA line-interactive with USB (Eaton Ellipse, APC Back-UPS Pro, CyberPower CP series) | NUT on the Proxmox host shuts down cleanly |
+
+### Network layout
+
+```mermaid
+flowchart TB
+    Internet((Internet)) --- Router[Router / OPNsense<br/>VLAN 10 Servers 10.0.10.0/24<br/>VLAN 20 Trusted 10.0.20.0/24<br/>VLAN 30 IoT 10.0.30.0/24]
+    Router --- Switch[Managed switch<br/>trunk to PVE, access ports]
+    Switch --- PVE[Proxmox VE node<br/>vmbr0 trunk]
+    Switch --- Pi[Second node<br/>AdGuard #2, Uptime Kuma, PBS]
+    Switch --- AP[Wi-Fi AP<br/>SSIDs mapped to VLAN 20 / 30]
+    subgraph PVE
+        Docker[VM: docker-01<br/>Debian, 16 GB]
+        HA[VM: Home Assistant OS]
+        LXC1[LXC: AdGuard #1 + Unbound]
+        LXC2[LXC: PBS or Samba]
+        Traefik[Traefik in docker-01<br/>*.home.example.com]
+    end
+    Docker --> Traefik
+    Pangolin[VPS: Pangolin<br/>public apps] -. WireGuard/Newt .-> Docker
+```
+
+Rules on the router firewall, in order:
+
+1. IoT → Servers: allow only what the integration needs (e.g. TCP 8123 to Home Assistant, MQTT 1883, DNS 53); block the rest.
+2. Trusted → Servers: allow all.
+3. Servers → Trusted/IoT: allow *established* only, plus specific exceptions (HA → IoT devices, Jellyfin → Chromecast on IoT via mDNS reflector).
+4. Guest Wi-Fi → Internet only.
+
+mDNS across VLANs needs a reflector (Avahi on OPNsense, or `mdns-repeater`); Chromecast discovery is the classic casualty. Details and IPv6 considerations in [Networking](03-networking.md).
+
+### Proxmox layout
+
+| Guest | Type | vCPU / RAM | Storage | Notes |
+|---|---|---|---|---|
+| `docker-01` | VM (Debian 12, q35, virtio) | 6 / 16–24 GB | 200 GB on NVMe mirror; **bind-mount bulk via NFS or virtiofs** | The main Compose host. iGPU passthrough *or* leave the GPU on the host and give Jellyfin its own LXC with `/dev/dri` mapped |
+| `haos` | VM (Home Assistant OS) | 2 / 4 GB | 32 GB | Use the community helper script or import the qcow2. USB Zigbee/Z-Wave stick passthrough |
+| `dns-01` | LXC (Debian, unprivileged) | 1 / 512 MB | 4 GB | AdGuard Home + Unbound. Static IP `10.0.10.53` |
+| `pbs` | LXC or VM | 2 / 4 GB | datastore on bulk pool | Proxmox Backup Server. Better on the second node if it has the disk |
+| `files` | LXC | 2 / 2 GB | bind-mounts from bulk pool | Samba/NFS exports for the LAN; keeps SMB out of the Docker VM |
+
+ZFS specifics: `zfs set compression=zstd atime=off xattr=sa` on pools; datasets per purpose (`tank/media`, `tank/photos`, `tank/appdata-backups`); `zfs_arc_max` ≈ 25 % of RAM in `/etc/modprobe.d/zfs.conf`; monthly scrubs via the default timer; `zfs-auto-snapshot` or Sanoid for 15-min/hourly/daily snapshots on the VM pool. Full treatment in [Storage](06-storage.md) and [OS & hypervisors](04-os-and-hypervisors.md).
+
+!!! warning "Proxmox on consumer NVMe"
+    Proxmox writes constantly (pmxcfs, RRD, journal). Two mitigations: `zfs set sync=disabled` is **not** one of them. Use `log2ram`-style tmpfs for `/var/log` sparingly, disable the HA services if you have a single node (`systemctl disable --now pve-ha-lrm pve-ha-crm`), and buy drives with ≥600 TBW.
+
+### Compose on `docker-01`
+
+The Starter stacks carry over. What changes: Traefik replaces Caddy (Docker labels, middlewares, forward-auth), a socket proxy hides the Docker socket, Pocket ID provides OIDC, TinyAuth guards apps that lack native OIDC, and Beszel + ntfy add metrics and alerts.
+
+**`/srv/stacks/proxy/compose.yaml`**:
+
+```yaml
+services:
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: socket-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    read_only: true
+    tmpfs: [/run]
+    networks: [socket]
+
+  traefik:
+    image: traefik:v3.4
+    container_name: traefik
+    restart: unless-stopped
+    depends_on: [socket-proxy]
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN}
+    command:
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.endpoint=tcp://socket-proxy:2375
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+      - --providers.file.directory=/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls.certresolver=le
+      - --entrypoints.websecure.http.tls.domains[0].main=home.example.com
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.home.example.com
+      - --certificatesresolvers.le.acme.dnschallenge=true
+      - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.le.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
+      - --certificatesresolvers.le.acme.email=you@example.com
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --log.level=INFO
+      - --accesslog=true
+      - --metrics.prometheus=true
+    volumes:
+      - /srv/appdata/traefik/letsencrypt:/letsencrypt
+      - ./dynamic:/dynamic:ro
+    networks: [proxy, socket]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.traefik.rule: Host(`traefik.home.example.com`)
+      traefik.http.routers.traefik.service: api@internal
+      traefik.http.routers.traefik.middlewares: tinyauth@docker,secure-headers@file
+
+  tinyauth:
+    image: ghcr.io/steveiliop56/tinyauth:v3
+    container_name: tinyauth
+    restart: unless-stopped
+    environment:
+      APP_URL: https://auth.home.example.com
+      SECRET: ${TINYAUTH_SECRET}
+      GENERIC_CLIENT_ID: ${TINYAUTH_OIDC_CLIENT_ID}
+      GENERIC_CLIENT_SECRET: ${TINYAUTH_OIDC_CLIENT_SECRET}
+      GENERIC_AUTH_URL: https://id.home.example.com/authorize
+      GENERIC_TOKEN_URL: https://id.home.example.com/api/oidc/token
+      GENERIC_USER_URL: https://id.home.example.com/api/oidc/userinfo
+      GENERIC_SCOPES: openid email profile groups
+      GENERIC_NAME: Pocket ID
+      OAUTH_WHITELIST: you@example.com,partner@example.com
+    networks: [proxy]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.tinyauth.rule: Host(`auth.home.example.com`)
+      traefik.http.middlewares.tinyauth.forwardauth.address: http://tinyauth:3000/api/auth/traefik
+
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id:v1
+    container_name: pocket-id
+    restart: unless-stopped
+    environment:
+      APP_URL: https://id.home.example.com
+      TRUST_PROXY: "true"
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - /srv/appdata/pocket-id:/app/data
+    networks: [proxy]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.pocket-id.rule: Host(`id.home.example.com`)
+
+networks:
+  proxy:
+    name: proxy
+  socket:
+    internal: true
+```
+
+**`/srv/stacks/proxy/dynamic/middlewares.yaml`**:
+
+```yaml
+http:
+  middlewares:
+    secure-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        referrerPolicy: strict-origin-when-cross-origin
+        frameDeny: false        # Homepage iframes; set true per-router if desired
+    lan-only:
+      ipAllowList:
+        sourceRange: ["10.0.10.0/24", "10.0.20.0/24", "100.64.0.0/10"]
+```
+
+An app then needs only labels, e.g. Jellyfin (native login, so no TinyAuth):
+
+```yaml
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.jellyfin.rule: Host(`jellyfin.home.example.com`)
+      traefik.http.services.jellyfin.loadbalancer.server.port: 8096
+      traefik.http.routers.jellyfin.middlewares: secure-headers@file
+```
+
+and something like Dozzle (no auth of its own) gets `traefik.http.routers.dozzle.middlewares: tinyauth@docker,lan-only@file`.
+
+Apps with native OIDC — Immich, Paperless (via `PAPERLESS_SOCIALACCOUNT_PROVIDERS`), Nextcloud (`user_oidc` app), Forgejo, Miniflux, Audiobookshelf, Grafana, Komodo, Home Assistant (through the *hass-oidc* custom integration) — get a client in Pocket ID and log in with a passkey. The mechanics are in [Identity & SSO](10-identity-sso.md).
+
+**`/srv/stacks/ops/compose.yaml`** (additions):
+
+```yaml
+  beszel:
+    image: henrygd/beszel:latest
+    container_name: beszel
+    restart: unless-stopped
+    volumes:
+      - /srv/appdata/beszel:/beszel_data
+    networks: [proxy]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.beszel.rule: Host(`metrics.home.example.com`)
+      traefik.http.services.beszel.loadbalancer.server.port: 8090
+
+  beszel-agent:
+    image: henrygd/beszel-agent:latest
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      LISTEN: 45876
+      KEY: ${BESZEL_PUBLIC_KEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    restart: unless-stopped
+    command: serve
+    environment:
+      NTFY_BASE_URL: https://ntfy.home.example.com
+      NTFY_CACHE_FILE: /var/cache/ntfy/cache.db
+      NTFY_AUTH_FILE: /var/lib/ntfy/user.db
+      NTFY_AUTH_DEFAULT_ACCESS: deny-all
+      NTFY_BEHIND_PROXY: "true"
+      NTFY_ENABLE_LOGIN: "true"
+    volumes:
+      - /srv/appdata/ntfy/cache:/var/cache/ntfy
+      - /srv/appdata/ntfy/data:/var/lib/ntfy
+    networks: [proxy]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.ntfy.rule: Host(`ntfy.home.example.com`)
+```
+
+Install the Beszel agent on the Proxmox host and the Pi too (binary + systemd), and point Uptime Kuma on the **Pi** at everything on the main node — monitoring that lives on the thing it monitors cannot tell you it is down. Wire Uptime Kuma, Beszel, PBS, smartd and the ZFS event daemon (`zed`) to ntfy. Full stack options in [Monitoring](12-monitoring.md).
+
+**`/srv/stacks/komodo/`** — Komodo (Core + Periphery) gives you a UI over your Git-stored stacks with deploy-on-push and shows drift; Renovate (self-hosted runner in Forgejo Actions or the hosted GitHub app on a mirror) opens PRs for image bumps. That workflow is described step by step in [Automation & IaC](27-automation-iac.md).
+
+### Exposure model (Intermediate)
+
+Three tiers, decided per app:
+
+| Tier | Mechanism | Examples |
+|---|---|---|
+| **LAN + tailnet only** | Traefik `lan-only` middleware; DNS only resolves internally | Proxmox UI, Traefik dashboard, Dozzle, Beszel, AdGuard, PBS |
+| **Authenticated anywhere** | Tailscale (with AdGuard as tailnet DNS) — no public DNS record | Immich, Nextcloud, Paperless, Vaultwarden (Bitwarden clients work fine over Tailscale) |
+| **Public** | **Pangolin** on a €4 VPS: Newt tunnel from `docker-01`, Pangolin's own SSO/2FA in front, CrowdSec bouncer on the VPS | Jellyfin for relatives, a shared Immich album domain, a static site, Uptime Kuma status page |
+
+Public apps use a *different* hostname scheme (`jellyfin.example.com`, not `*.home.example.com`) so a leaked public name reveals nothing about the internal one. Cloudflare Tunnel is the alternative for the third tier if you accept its ToS limits on video streaming; comparison in [Remote access & VPN](08-remote-access-vpn.md).
+
+### Backups (Intermediate)
+
+```mermaid
+flowchart LR
+    VMs[Proxmox VMs/LXCs] -- nightly, dirty-bitmap incremental --> PBS[PBS datastore<br/>on Pi USB SSD or bulk pool]
+    PBS -- weekly sync job --> B2[(Backblaze B2<br/>via rclone or PBS S3 target)]
+    Appdata[/srv/appdata + dumps] -- Restic hourly --> Tank[tank/appdata-backups]
+    Tank -- ZFS snapshots hourly/daily --> Tank
+    Tank -- Restic nightly --> B2
+    Photos[tank/photos] -- ZFS send --> USB[Cold USB disk monthly]
+    Photos -- Restic --> B2
+```
+
+- **PBS** backs up every guest nightly; retention 7 daily / 4 weekly / 6 monthly; verify job weekly; the datastore is *not* on the same pool as the guests.
+- **Restic** inside `docker-01` for appdata and DB dumps (same script as Starter) → `tank/appdata-backups` via NFS, then B2. Hourly locally, nightly off-site.
+- **ZFS snapshots** on `tank` via Sanoid: 48 hourly, 30 daily, 6 monthly — this is your ransomware/oops rollback, not your backup.
+- **Cold copy** of irreplaceable data (photos, documents) to a USB disk monthly, stored somewhere else.
+- **Tested**: PBS file-restore into a scratch VM quarterly; Restic restore of one app quarterly; a full "rebuild `docker-01` from Git + Restic" drill once a year.
+
+### What Intermediate leaves out
+
+- Single hypervisor: hardware failure = everything down until you rebuild on spare hardware (the backups make that a day, not a disaster).
+- Storage and compute share a box; a Proxmox upgrade gone wrong takes the NAS role with it.
+- Grafana/Prometheus are optional here; Beszel covers most of what a home needs.
+- No email hosting, no Matrix, no large GPU work.
+
+### Upgrade path → Advanced
+
+1. Separate storage into a NAS (TrueNAS SCALE or a second Proxmox box with ZFS + Samba/NFS) and replicate between the two pools.
+2. Add a second/third Proxmox node; cluster with a QDevice on the Pi for quorum.
+3. Move routing to dedicated OPNsense hardware; add more VLANs (cameras, management, lab).
+4. Swap TinyAuth for Authentik or Kanidm when you need LDAP or group-based access.
+5. Replace Beszel with Prometheus + Grafana + Loki when you want history and dashboards.
+
+---
