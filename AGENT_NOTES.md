@@ -135,10 +135,22 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - **2026-09-07**: Priority order for writing: skeleton/build first (so the deliverable exists early), then Part I and II
   (foundations + infra are most valuable), then Part III (service reviews — the "review" heart of the guide), then Part IV.
   If interrupted, whatever exists is already a coherent, published guide.
+- **2026-09-07 (final)**: Large single `Write`/heredoc calls were repeatedly lost to interruptions (ch03, 08, 12, 15,
+  20, 31 pt4). Writing in ~1,000–2,500-word `cat >>` pieces with a push after each was the reliable pattern; verifying
+  `git log` + `wc -w` + `tail` of the target file at every session start avoided duplicate appends. Keep this pattern.
+- **2026-09-07 (final)**: Part IV chapters (31–34) reference specific version tags in compose examples (Immich v1.135.x,
+  Traefik v3.4, Grafana 12, Prometheus v3.4) to demonstrate pinning; these will rot and are acceptable to bump.
 
 ## Next steps (keep this current!)
 
-1. Create build.py + site/ template, README.md, and a stub 00-introduction.md; run build; push. (Deliverable exists early.)
-2. Write chapters in order 00 → 34. After each chapter: build, commit, push, tick the box above.
-3. When all chapters are done: consistency pass on cross-links, then polish.
-4. User action eventually: enable GitHub Pages (Settings → Pages → main → /docs).
+**STATUS: COMPLETE (2026-09-07).** All 35 chapters (00–34) written; `build.py` runs with zero `WARN broken chapter link`;
+`SELF-HOSTING-GUIDE.md` (~125k words) and `docs/` (36 pages) regenerated and pushed at the final build commit.
+
+Remaining/optional work for any future session (none is required for the deliverable):
+
+1. **User action**: enable GitHub Pages → Settings → Pages → Deploy from branch → `main` → `/docs`.
+2. Optional polish passes: (a) read each chapter for consistency of service names/ports against 34-appendix;
+   (b) spot-check Mermaid diagrams render (they use standard `flowchart` syntax; no exotic features);
+   (c) refresh version-specific numbers (Immich tag, Traefik/Grafana versions in ch31) if the guide is revisited later.
+3. If a chapter is edited: `pip install -q markdown pymdown-extensions && python3 build.py`, then commit `guide/`,
+   `docs/`, and `SELF-HOSTING-GUIDE.md` together and push to `main`.

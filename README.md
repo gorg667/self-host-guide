@@ -28,7 +28,7 @@ The build has no network dependency. `docs/` is committed so the site is live im
 
 ## Contributing / status
 
-Work in progress; see [`AGENT_NOTES.md`](AGENT_NOTES.md) for the chapter status table and conventions.
+All 35 chapters are complete (~125,000 words). Corrections and updates are welcome as issues or pull requests; see [`AGENT_NOTES.md`](AGENT_NOTES.md) for the chapter list, writing conventions and build notes.
 
 ## Licence
 
