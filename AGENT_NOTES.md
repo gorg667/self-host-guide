@@ -61,8 +61,8 @@ Workflow per chapter:
 Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full pass) · `[R]` reviewed/polished
 
 ### Part I — Foundations
-- [ ] 00-introduction.md — What self-hosting is, why, who this is for, philosophy, how to use the guide, responsibilities
-- [ ] 01-planning.md — Goals, tiers (starter/intermediate/advanced), budget, power/noise/space, requirements, 3-2-1 mindset
+- [x] 00-introduction.md — What self-hosting is, why, who this is for, philosophy, how to use the guide, responsibilities
+- [x] 01-planning.md — Goals, tiers (starter/intermediate/advanced), budget, power/noise/space, requirements, 3-2-1 mindset
 - [ ] 02-hardware.md — Mini PCs, used enterprise, SBCs, NAS, DIY builds, drives (CMR/SMR, NAS drives), RAM/ECC, NICs, switches, UPS, racks, GPUs
 - [ ] 03-networking.md — IP/subnets, VLANs, DHCP/DNS, NAT/port forwarding, CGNAT, IPv6, firewalls, router OS (OPNsense/pfSense/OpenWrt/UniFi/MikroTik), segmentation
 - [ ] 04-os-and-hypervisors.md — Proxmox VE, TrueNAS SCALE, Unraid, Debian/Ubuntu, NixOS, XCP-ng, Harvester; LXC vs VM; comparison matrix; Proxmox install walkthrough
@@ -104,10 +104,10 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [ ] 34-appendix.md — Glossary, port reference, checklists, compose cheat-sheet
 
 ### Build system / web adaptation
-- [ ] build.py (concat + static site)
-- [ ] site/template.html, site/style.css, site/app.js (sidebar nav, per-page TOC, search, dark mode, mermaid, copy buttons)
-- [ ] README.md
-- [ ] docs/ generated
+- [x] build.py (concat + static site) — implemented and tested
+- [x] site/template.html, site/style.css, site/app.js (sidebar nav, per-page TOC, search, dark mode, mermaid, copy buttons)
+- [x] README.md
+- [x] docs/ generated (regenerated on every build)
 
 ## Decisions & reasoning log
 

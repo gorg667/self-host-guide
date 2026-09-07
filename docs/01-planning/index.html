@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planning Your Home Lab — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li class="active"><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 01 · ~3,358 words · 15 min read</div>
+    <article class="prose">
+      <h1 id="planning-your-home-lab">Planning Your Home Lab<a class="headerlink" href="#planning-your-home-lab" title="Permanent link">#</a></h1>
+<p>The most expensive mistakes in self-hosting are made before any hardware is bought. This chapter is about the decisions that come first: what you actually want, how big to build, what it will cost in money and electricity and time, and where it will physically live. Read it even if you already own hardware — the questions still apply.</p>
+<h2 id="start-with-the-services-not-the-hardware">Start with the services, not the hardware<a class="headerlink" href="#start-with-the-services-not-the-hardware" title="Permanent link">#</a></h2>
+<p>The correct order is: decide what you want to <em>do</em>, derive the requirements, then choose hardware. The common order is the reverse, and it produces either a machine that cannot transcode 4K when the family wants to watch a film, or a 48-core dual-socket server that idles at 250 W running a Pi-hole.</p>
+<p>Write down — actually write down — the services you intend to run in the first six months. Be honest and be specific. "Media server" is not specific; "Jellyfin, serving two simultaneous 1080p streams, occasionally one 4K HEVC stream to a TV that cannot direct-play it" is specific, and it tells you that you need a CPU with a hardware video encoder (see <a href="../15-media/">Chapter 15</a>).</p>
+<p>Then, for each service, note four things:</p>
+<ol>
+<li><strong>Compute</strong>: is it idle most of the time (almost everything), or does it need sustained CPU or a GPU (transcoding, AI inference, game servers, photo ML)?</li>
+<li><strong>Memory</strong>: most containers need 50–500 MB; a few (Nextcloud with its database, Immich with machine learning, GitLab, Home Assistant with many integrations, any LLM) need gigabytes.</li>
+<li><strong>Storage</strong>: capacity, growth rate, and whether it is <em>precious</em> (irreplaceable photos and documents) or <em>replaceable</em> (media you could re-acquire). This distinction drives your entire backup design.</li>
+<li><strong>Availability</strong>: what happens if it is down for a day? If the answer is "nothing," it can go on the same box as everything else. If the answer is "the house has no DNS and nobody can browse the web," it needs redundancy or at least a fallback.</li>
+</ol>
+<p>A typical first list looks like this:</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Compute</th>
+<th>RAM</th>
+<th>Storage</th>
+<th>If down for a day</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pi-hole / AdGuard</td>
+<td>negligible</td>
+<td>100 MB</td>
+<td>negligible</td>
+<td>Whole household loses DNS — needs a fallback</td>
+</tr>
+<tr>
+<td>Jellyfin</td>
+<td>bursty; transcoding needs iGPU</td>
+<td>500 MB–2 GB</td>
+<td>Media library: 2–20 TB, replaceable</td>
+<td>Annoying</td>
+</tr>
+<tr>
+<td>Immich</td>
+<td>ML bursts on upload</td>
+<td>2–4 GB</td>
+<td>Photos: 200 GB–2 TB, <strong>precious</strong></td>
+<td>Phone keeps photos locally, fine</td>
+</tr>
+<tr>
+<td>Vaultwarden</td>
+<td>negligible</td>
+<td>50 MB</td>
+<td>tiny, <strong>precious</strong></td>
+<td>Clients cache the vault, fine</td>
+</tr>
+<tr>
+<td>Home Assistant</td>
+<td>light</td>
+<td>1–2 GB</td>
+<td>small, precious (config)</td>
+<td>Lights still work via switches, automations stop</td>
+</tr>
+<tr>
+<td>Nextcloud / Syncthing</td>
+<td>light</td>
+<td>1 GB</td>
+<td>Documents: 50–500 GB, <strong>precious</strong></td>
+<td>Annoying</td>
+</tr>
+<tr>
+<td>Uptime Kuma</td>
+<td>negligible</td>
+<td>100 MB</td>
+<td>tiny</td>
+<td>Nothing</td>
+</tr>
+</tbody>
+</table>
+<p>Sum the RAM (this one comes to ~8 GB with headroom), note the single "needs hardware transcode" requirement, note the split between precious and replaceable storage, and you have a hardware spec: a mini PC with an Intel iGPU, 16 GB RAM, a small SSD for the OS and containers, and a separate storage solution. That is a far more useful conclusion than "I should probably get a server."</p>
+<h2 id="the-three-tiers">The three tiers<a class="headerlink" href="#the-three-tiers" title="Permanent link">#</a></h2>
+<p>Throughout this guide, recommendations are grouped into three tiers. They are not rigid and most labs sit between two of them, but naming them makes it easier to talk about trade-offs. <a href="../31-reference-architectures/">Chapter 31</a> gives a complete blueprint for each.</p>
+<h3 id="tier-1-starter">Tier 1 — Starter<a class="headerlink" href="#tier-1-starter" title="Permanent link">#</a></h3>
+<p><strong>One machine, ~10–25 W, USD 150–500 all in.</strong> A mini PC (Intel N100/N150 or a used business desktop like a Lenovo ThinkCentre Tiny or Dell OptiPlex Micro), 16 GB RAM, an NVMe SSD for the system, and one or two USB or internal drives for data. Runs Debian or Ubuntu with Docker Compose, or a turnkey OS like CasaOS/Cosmos/Umbrel for people who want a GUI.</p>
+<p>Good for: 5–20 containers, a household of 1–4, media streaming, photos, files, password manager, DNS, home automation.</p>
+<p>Limitations: no storage redundancy (so backups are <em>not optional</em>), one point of failure, limited to what an iGPU can transcode.</p>
+<p>This is where almost everyone should start, and where a large fraction of happy self-hosters stay forever.</p>
+<h3 id="tier-2-intermediate">Tier 2 — Intermediate<a class="headerlink" href="#tier-2-intermediate" title="Permanent link">#</a></h3>
+<p><strong>Two to three machines, ~40–100 W, USD 600–2,000.</strong> Typically a compute node (a more capable mini PC or small-form-factor desktop running Proxmox) plus a dedicated NAS (TrueNAS, Unraid, or a commercial Synology/QNAP/UGREEN unit) with 4–8 drives in a redundant array, plus perhaps a Raspberry Pi or second mini PC for critical low-power services (DNS, VPN endpoint, monitoring) that should stay up when the main box is being rebuilt. A managed switch with VLANs and a proper router/firewall (OPNsense or similar).</p>
+<p>Good for: 20–60 services, a household of several people plus extended family, network segmentation, proper backup targets, some VMs alongside containers.</p>
+<p>Limitations: still a single site; more things to update; power bill becomes noticeable.</p>
+<h3 id="tier-3-advanced">Tier 3 — Advanced<a class="headerlink" href="#tier-3-advanced" title="Permanent link">#</a></h3>
+<p><strong>A rack or a shelf full of it, 100–400 W+, USD 2,000–10,000+.</strong> Multiple hypervisor nodes (often clustered Proxmox with shared or replicated storage), 10 GbE or faster between nodes, a dedicated storage server with dozens of terabytes, a UPS that can carry the load through a real outage, a discrete GPU or two for AI workloads and transcoding, possibly a Kubernetes cluster because you want to learn it, and often a small VPS in the cloud as an ingress point and off-site backup target.</p>
+<p>Good for: learning enterprise patterns, high availability, heavy AI/ML, serving dozens of users, running a small business.</p>
+<p>Limitations: it is a part-time job. Electricity alone at 300 W is roughly USD 300–800 per year depending on where you live. Noise and heat become real problems. Complexity compounds.</p>
+<div class="admonition warning">
+<p class="admonition-title">Tier 3 is a destination, not a starting point</p>
+<p>Almost nobody who starts at Tier 3 is still running it two years later. Almost everybody who starts at Tier 1 and grows to Tier 3 because their needs demanded it is still running it. Grow because you must, not because you can.</p>
+</div>
+<h2 id="budget-the-full-picture">Budget: the full picture<a class="headerlink" href="#budget-the-full-picture" title="Permanent link">#</a></h2>
+<p>Hardware is the visible cost and usually not the largest one over a five-year horizon. Budget for all of it.</p>
+<h3 id="capital-costs">Capital costs<a class="headerlink" href="#capital-costs" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Compute.</strong> USD 100–300 for a used business mini PC with 16 GB RAM; USD 150–250 for a new N100/N150 box; USD 400–900 for a capable Ryzen or Core mini PC with 32–64 GB; USD 300–1,500 for a self-built SFF or tower.</li>
+<li><strong>Storage.</strong> As of 2026, roughly USD 15–25 per TB for NAS-grade hard drives (cheaper per TB at larger capacities, 16–24 TB drives being the sweet spot), USD 50–80 per TB for consumer NVMe SSDs. Plan for the number of drives your redundancy scheme needs, not the number you would like to have (see <a href="../06-storage/">Chapter 6</a>).</li>
+<li><strong>NAS enclosure or case.</strong> USD 0 (use the mini PC's bays) to USD 300–800 (4–8 bay commercial NAS or a DIY case with hot-swap bays).</li>
+<li><strong>Networking.</strong> USD 0 if you use the ISP router, USD 100–250 for a decent managed switch and a small firewall box. More for Wi-Fi access points, 10 GbE, or PoE.</li>
+<li><strong>UPS.</strong> USD 100–250 for a 600–1,000 VA line-interactive unit adequate for a Tier 1–2 lab. Essential once you have a ZFS pool or anything else that dislikes unclean shutdowns. See <a href="../29-power-cost-environment/">Chapter 29</a>.</li>
+<li><strong>Miscellaneous.</strong> Cables, a USB-to-serial adapter, a spare SSD, a label maker. Budget USD 50–100 and you will spend it.</li>
+</ul>
+<h3 id="recurring-costs">Recurring costs<a class="headerlink" href="#recurring-costs" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Electricity.</strong> The dominant recurring cost. Compute the annual cost as <code>watts × 8.76 × price_per_kWh</code>. A 15 W mini PC at USD 0.15/kWh is USD 20/year. A 150 W tower is USD 197/year. At European prices (USD 0.30–0.40/kWh) double those figures. <a href="../29-power-cost-environment/">Chapter 29</a> covers measurement and reduction.</li>
+<li><strong>Off-site backup storage.</strong> USD 5–7 per TB per month for Backblaze B2 or similar; a Hetzner Storage Box is cheaper at volume (roughly USD 4/month for 1 TB, USD 13/month for 5 TB as of 2026). A second machine at a friend's house costs electricity there and a favour.</li>
+<li><strong>Domain name.</strong> USD 10–15/year. You want one; it makes TLS certificates trivial (see <a href="../07-reverse-proxy-tls/">Chapter 7</a>).</li>
+<li><strong>VPS</strong> (optional). USD 4–6/month for a small instance that acts as a public ingress point if you are behind CGNAT, or as a Headscale/Netbird coordinator, or as an Uptime Kuma instance watching your home from outside.</li>
+<li><strong>Drive replacements.</strong> Assume a 2–5% annual failure rate per drive. With six drives, expect to replace one roughly every three to five years. Budget the cost of one drive per year and you will usually be under.</li>
+<li><strong>Your time.</strong> Genuinely the largest cost. A Tier 1 lab needs perhaps two hours a month once stable. Tier 2 needs four to eight. Tier 3 can easily consume every weekend if you let it.</li>
+</ul>
+<h3 id="a-five-year-cost-example">A five-year cost example<a class="headerlink" href="#a-five-year-cost-example" title="Permanent link">#</a></h3>
+<p>Tier 1, a mini PC (USD 250) with two 8 TB drives (USD 320) and a small UPS (USD 120), drawing 20 W average at USD 0.20/kWh, with 1 TB of off-site backup and a domain:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hardware (one-time)</td>
+<td>USD 690</td>
+</tr>
+<tr>
+<td>Electricity (5 years)</td>
+<td>USD 175</td>
+</tr>
+<tr>
+<td>Off-site backup (5 years, ~USD 6/mo)</td>
+<td>USD 360</td>
+</tr>
+<tr>
+<td>Domain (5 years)</td>
+<td>USD 65</td>
+</tr>
+<tr>
+<td>One drive replacement</td>
+<td>USD 160</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>USD 1,450</strong></td>
+</tr>
+</tbody>
+</table>
+<p>For comparison, 2 TB of mainstream cloud storage plus a streaming service plus a password manager subscription for the same household over five years is in the region of USD 1,500–2,500, and you would own nothing at the end of it. Self-hosting is not a way to save large amounts of money, but at Tier 1 it roughly breaks even while giving you vastly more capability and control. At Tier 3 it is a hobby with hobby-sized costs, and that is fine as long as you know it.</p>
+<h2 id="power-heat-noise-and-space">Power, heat, noise, and space<a class="headerlink" href="#power-heat-noise-and-space" title="Permanent link">#</a></h2>
+<p>These four are related and usually underestimated.</p>
+<p><strong>Power</strong> determines the electricity bill and the size of UPS you need. Modern mini PCs idle at 6–15 W. A used enterprise 1U or 2U server idles at 80–200 W <em>before</em> you add drives, and its fans are designed for a data centre. The single most impactful hardware decision for your running costs is choosing low-idle-power components. <a href="../02-hardware/">Chapter 2</a> and <a href="../29-power-cost-environment/">Chapter 29</a> go into detail.</p>
+<p><strong>Heat</strong> follows power: every watt becomes heat. 20 W is nothing. 300 W in a closet with no airflow will cook drives (which want to stay under about 40 °C for longevity) and eventually the room. If you are going beyond Tier 1, think about where the hot air goes.</p>
+<p><strong>Noise</strong> is the factor that gets hardware evicted from living spaces. A mini PC is silent or nearly so. A 4-bay NAS with hard drives produces a low hum and occasional clicking that most people tolerate in an office but not a bedroom. An enterprise server sounds like a hair dryer at idle and a jet engine under load; it needs a garage, basement, or a dedicated room. Check reviews for measured dB figures and be sceptical of anything described as "quiet" without a number.</p>
+<p><strong>Space</strong>: a mini PC fits behind a monitor. A NAS is the size of a toaster. A rack is a piece of furniture that needs floor space, clearance for airflow, and ideally a solid floor (a populated 24U rack can weigh 100–200 kg). Racks are wonderful for organisation and cable management and genuinely unnecessary for Tiers 1 and 2. If you want one anyway, a 12U wall-mount or a short open-frame rack is much more livable than a full-height enclosed cabinet.</p>
+<div class="admonition tip">
+<p class="admonition-title">Where to put it</p>
+<p>The ideal location has: a wired Ethernet run back to your router (or is next to it), a power outlet that is not shared with a space heater or a vacuum cleaner, ambient temperature under about 27 °C year-round, no direct sunlight, low humidity, and is somewhere you will not trip over it. A closet with a door that can be left ajar, a utility room, or a basement shelf are common. Avoid attics (temperature swings) and the floor of anywhere that could flood.</p>
+</div>
+<h2 id="internet-connection-realities">Internet connection realities<a class="headerlink" href="#internet-connection-realities" title="Permanent link">#</a></h2>
+<p>Your home lab's usefulness from outside the house depends on your internet connection in ways that are worth understanding before you plan remote access.</p>
+<p><strong>Upload bandwidth</strong> is the ceiling for anything you serve remotely: streaming a 4K film from home to a hotel needs 20–40 Mbps sustained upload. Many cable and DSL connections offer 10–40 Mbps up. Fibre often gives you symmetric 100 Mbps to 1 Gbps and changes what is practical. Check your actual measured upload, not the advertised figure.</p>
+<p><strong>Public IPv4 address</strong>: increasingly, ISPs put residential customers behind <em>carrier-grade NAT</em> (CGNAT), meaning you share a public IPv4 address with other customers and cannot forward ports at all. Cellular/5G home internet is almost always CGNAT. Some ISPs will give you a real public IP on request or for a small fee. If you are behind CGNAT, you can still do everything in this guide — but you will use a mesh VPN or a tunnel rather than port forwarding (see <a href="../08-remote-access-vpn/">Chapter 8</a>). Find out which you have before designing your remote access. The test: compare the WAN IP your router reports with the IP a site like <code>ifconfig.me</code> shows. If they differ, you are behind CGNAT (or a double NAT of your own making).</p>
+<p><strong>IPv6</strong>: many ISPs now provide native IPv6, which gives every device a globally routable address and sidesteps CGNAT entirely for IPv6-capable clients. It is worth enabling and understanding (<a href="../03-networking/">Chapter 3</a>), though you cannot rely on every remote network you connect from having IPv6.</p>
+<p><strong>Dynamic IP</strong>: most residential connections have a public IP that changes occasionally. This is a minor problem solved with dynamic DNS (<a href="../09-dns-adblock/">Chapter 9</a>).</p>
+<p><strong>ISP terms of service</strong>: some ISPs prohibit "running servers" on residential connections. In practice this is almost never enforced against personal home labs with modest traffic, but it is worth reading your ToS (<a href="../30-legal-ethical/">Chapter 30</a>). Business connections cost more and typically permit servers and include a static IP.</p>
+<p><strong>Data caps</strong>: if your ISP has one, off-site backups and remote streaming count against it. Initial backup seeding of several terabytes can blow through a monthly cap in a day.</p>
+<h2 id="decide-your-risk-posture-early">Decide your risk posture early<a class="headerlink" href="#decide-your-risk-posture-early" title="Permanent link">#</a></h2>
+<p>Two questions determine much of your design:</p>
+<h3 id="what-happens-if-this-all-disappears">What happens if this all disappears?<a class="headerlink" href="#what-happens-if-this-all-disappears" title="Permanent link">#</a></h3>
+<p>Divide your data into categories and decide the recovery requirement for each:</p>
+<ul>
+<li><strong>Irreplaceable</strong> (family photos, personal documents, the password vault, years of notes): must survive a fire, theft, or ransomware. This <em>requires</em> an off-site copy, tested regularly. There is no shortcut.</li>
+<li><strong>Painful to lose</strong> (service configuration, databases, Home Assistant history, Git repositories): should be backed up nightly, off-site if practical. Losing a week of it is annoying, not catastrophic.</li>
+<li><strong>Replaceable</strong> (a media library that could be re-ripped or re-downloaded, Linux ISOs, Docker images): back up if convenient and cheap; otherwise accept the loss. Do not spend USD 500 protecting data you could recreate for USD 50 in time.</li>
+</ul>
+<p>Then design storage and backups (<a href="../06-storage/">Chapter 6</a> and <a href="../11-backups/">Chapter 11</a>) around these categories rather than treating all data the same. Most people over-protect their media library and under-protect their photos.</p>
+<h3 id="what-happens-if-this-is-compromised">What happens if this is compromised?<a class="headerlink" href="#what-happens-if-this-is-compromised" title="Permanent link">#</a></h3>
+<p>Think about what an attacker who got onto your network — via an exposed service, a phishing email on a family laptop, or a cheap IoT device with a backdoor — could reach. If the answer is "everything, because it's all on one flat network with default passwords," then network segmentation and a proper authentication layer should be early priorities rather than afterthoughts. <a href="../03-networking/">Chapter 3</a> covers VLANs; <a href="../13-security/">Chapter 13</a> covers the rest.</p>
+<p>A useful mental framing: <strong>exposure is a cost you pay for convenience.</strong> Every service exposed to the internet is a continuous liability. A mesh VPN gives you nearly the same convenience with a fraction of the exposure. Choose exposure deliberately, for services that genuinely need it (a public website, a service used by people who cannot install a VPN client), and put the rest behind the VPN.</p>
+<h2 id="choose-your-abstraction-level">Choose your abstraction level<a class="headerlink" href="#choose-your-abstraction-level" title="Permanent link">#</a></h2>
+<p>There is a spectrum from "turnkey appliance" to "bare Linux and a text editor," and where you sit on it determines both how much you learn and how much you can break.</p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Examples</th>
+<th>Learning</th>
+<th>Control</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Commercial NAS with app store</td>
+<td>Synology DSM, QNAP QTS, UGREEN UGOS</td>
+<td>Low</td>
+<td>Low</td>
+<td>Lowest</td>
+</tr>
+<tr>
+<td>Turnkey self-hosting OS</td>
+<td>Umbrel, CasaOS, Cosmos, YunoHost, TrueNAS Apps, Unraid Community Apps</td>
+<td>Low–Medium</td>
+<td>Medium</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Linux + Docker Compose (+ a GUI like Portainer/Dockge)</td>
+<td>Debian, Ubuntu</td>
+<td>Medium–High</td>
+<td>High</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Hypervisor + VMs/containers</td>
+<td>Proxmox VE, XCP-ng</td>
+<td>High</td>
+<td>Very high</td>
+<td>Medium–High</td>
+</tr>
+<tr>
+<td>Declarative / IaC</td>
+<td>NixOS, Ansible-managed hosts, k3s with GitOps</td>
+<td>Very high</td>
+<td>Very high</td>
+<td>High up front, low later</td>
+</tr>
+</tbody>
+</table>
+<p>This guide's centre of gravity is <strong>Linux + Docker Compose</strong>, optionally on Proxmox, because it is the level at which the enormous majority of self-hosting documentation, community help, and project support is written. Turnkey systems are fine for getting started and for people who want an appliance; they are less fine when something breaks and the abstraction gets in the way. <a href="../04-os-and-hypervisors/">Chapter 4</a> compares the options in depth.</p>
+<div class="admonition note">
+<p class="admonition-title">It is fine to not want to learn</p>
+<p>Some people want a photo backup box that works, not a hobby. For them, a Synology or UGREEN NAS with Immich installed via Docker is a legitimate and good answer, and this guide's infrastructure chapters are largely optional. Be honest about which person you are.</p>
+</div>
+<h2 id="time-commitment-and-the-sustainability-check">Time commitment and the sustainability check<a class="headerlink" href="#time-commitment-and-the-sustainability-check" title="Permanent link">#</a></h2>
+<p>Before buying anything, run the following thought experiment. Imagine it is eighteen months from now. You have moved house, or changed jobs, or had a child, or simply lost interest. Your lab is still running because the family depends on it. Something breaks.</p>
+<ul>
+<li>Can you fix it in an evening with the documentation you wrote?</li>
+<li>Can you restore from backup if you cannot fix it?</li>
+<li>Could you hand it to a technically competent friend with your notes and have them keep it running?</li>
+<li>If you were to shut it all down, could you get the data out in a standard format and move it elsewhere in a weekend?</li>
+</ul>
+<p>If the honest answer to any of these is no, the design is too complex or the documentation is too thin for your circumstances. Simplify. The best home lab is the one that is still running — quietly, boringly, reliably — in five years.</p>
+<h2 id="a-planning-checklist">A planning checklist<a class="headerlink" href="#a-planning-checklist" title="Permanent link">#</a></h2>
+<p>Before proceeding to hardware:</p>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Listed the specific services for the first six months, with rough RAM/CPU/storage/availability notes.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Classified data as irreplaceable / painful / replaceable and know the approximate volume of each.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Chosen a tier and know roughly what it costs in hardware, electricity, and time.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Know whether you have a public IPv4 address, CGNAT, and/or native IPv6.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Measured your upload bandwidth.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Picked a physical location with power, wired Ethernet, cooling, and tolerance for the noise level of your chosen hardware.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Decided how much you want to expose to the internet (ideally: as little as possible) and how you will do remote access instead.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Decided your abstraction level: appliance, turnkey OS, Docker on Linux, or hypervisor.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Registered a domain name (or decided you will).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Have a plan — even a rough one — for off-site backup of irreplaceable data from day one.</li>
+</ul>
+<p>With this done, <a href="../02-hardware/">Chapter 2</a> will feel like shopping with a list rather than browsing with a credit card.</p>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../00-introduction/">← 00. Introduction: What Self-Hosting Is and Why It Matters</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/01-planning.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#start-with-the-services-not-the-hardware">Start with the services, not the hardware</a></li>
+<li><a href="#the-three-tiers">The three tiers</a><ul>
+<li><a href="#tier-1-starter">Tier 1 — Starter</a></li>
+<li><a href="#tier-2-intermediate">Tier 2 — Intermediate</a></li>
+<li><a href="#tier-3-advanced">Tier 3 — Advanced</a></li>
+</ul>
+</li>
+<li><a href="#budget-the-full-picture">Budget: the full picture</a><ul>
+<li><a href="#capital-costs">Capital costs</a></li>
+<li><a href="#recurring-costs">Recurring costs</a></li>
+<li><a href="#a-five-year-cost-example">A five-year cost example</a></li>
+</ul>
+</li>
+<li><a href="#power-heat-noise-and-space">Power, heat, noise, and space</a></li>
+<li><a href="#internet-connection-realities">Internet connection realities</a></li>
+<li><a href="#decide-your-risk-posture-early">Decide your risk posture early</a><ul>
+<li><a href="#what-happens-if-this-all-disappears">What happens if this all disappears?</a></li>
+<li><a href="#what-happens-if-this-is-compromised">What happens if this is compromised?</a></li>
+</ul>
+</li>
+<li><a href="#choose-your-abstraction-level">Choose your abstraction level</a></li>
+<li><a href="#time-commitment-and-the-sustainability-check">Time commitment and the sustainability check</a></li>
+<li><a href="#a-planning-checklist">A planning checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
