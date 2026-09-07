@@ -103,3 +103,105 @@ A Go-based enterprise file platform with a polished UI, workspaces, fine-grained
 | Upgrade burden | High (majors twice/yr, one at a time) | Low | Medium | Low |
 | Licence | AGPL | Apache 2.0 | AGPL (server) / proprietary Pro | Proprietary (free tier) |
 | Best for | Full household suite | Fast files-only | Sync performance | Web UI over an existing folder |
+
+## Peer-to-peer sync: Syncthing
+
+**Syncthing** is a different thing entirely and one of the best pieces of software in self-hosting. It synchronises folders **directly between your devices** — laptop, desktop, phone, NAS — with no central server required, over an encrypted protocol, using a global discovery and relay network (which you can self-host) to find peers behind NAT. Every device holds a full copy. Conflicts produce `.sync-conflict` files rather than silent overwrites. **File versioning** (trash-can, simple, staggered, external) on any device keeps old copies. Send-only, receive-only, and send-receive folder modes; ignore patterns; per-folder rescan intervals with inotify; bandwidth limits; a web UI per device; Android app (the official one was discontinued from the Play Store in late 2024 — **Syncthing-Fork** on F-Droid/Play is the maintained one); iOS via **Möbius Sync** (third-party, paid).
+
+**Where it fits:** keeping a documents folder identical on three computers; pushing phone photos to the NAS (as a Syncthing folder that Immich then watches as an external library, or that PhotoPrism imports); syncing an **Obsidian** or **KeePassXC** database across devices ([Chapter 18](18-notes-productivity.md), [Chapter 21](21-passwords-secrets.md)); replicating a folder to a friend's machine as a poor man's off-site copy (with versioning on their end). Include the NAS as an always-on peer so devices that are never online simultaneously still converge.
+
+**Where it does not:** it is *sync*, not *backup* — a deletion (or ransomware encryption) propagates everywhere; versioning mitigates but does not replace [Chapter 11](11-backups.md). No web-based file access or sharing links (it moves files; it does not serve them). No selective sync on mobile beyond folder granularity. Many small files or huge trees are fine; very large single files that change constantly (VM images, databases) are not a good fit.
+
+**Pick it:** always, for something. Almost every self-hoster runs Syncthing for at least one folder. It is complementary to Nextcloud, not a competitor — Nextcloud for sharing and web access, Syncthing for device convergence.
+
+## Document management: Paperless-ngx
+
+**Paperless-ngx** turns paper into a searchable archive: scan (or photograph, or email, or drop into a consume folder) a document; it OCRs it (Tesseract, any language), extracts the date, auto-assigns a **correspondent**, **document type**, and **tags** using machine learning that trains on your corrections, stores the original plus an archived PDF/A, and makes everything full-text searchable. Custom fields, workflows (rules that fire on consumption or tagging), storage paths (organise files on disk by year/correspondent), sharing links, a solid mobile-friendly web UI, the **Paperless Mobile** app (Android/iOS) and **Swift Paperless** (iOS) for scanning directly, mail fetching (poll an inbox for attachments), OIDC login, permissions per user/group, and an API. Python/Django with Postgres (or SQLite) and Redis; ~500 MB–1 GB RAM; Tika + Gotenberg containers optional for Office documents.
+
+It is the standard for a reason: after a month of use it *learns* — new bank statements get tagged and filed without intervention. Feed it every letter, bill, receipt, contract, and manual; throw the paper away (where legally permitted). Pair with a document scanner that can save to a network folder or email (Brother ADS series, Fujitsu/Ricoh ScanSnap via a computer, or the phone app).
+
+Alternatives: **Papra** (2025, a lighter, simpler take on document archiving), **Docspell** (similar goals, Scala/Elm, smaller community), **Mayan EDMS** (heavyweight enterprise DMS), **Teedy** (Java, lighter), **Paperless-AI** and **Paperless-GPT** (companions that use an LLM — local via Ollama or remote — to title, tag, and summarise documents; genuinely useful add-ons), **Stirling PDF** (below) for manipulation, **Nextcloud** with full-text search for people who want documents in their drive rather than a DMS. **Paperless-ngx** remains the recommendation.
+
+```yaml
+services:
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
+    restart: unless-stopped
+    depends_on: [broker, db]
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_DBPASS: ${PAPERLESS_DB_PASSWORD}
+      PAPERLESS_URL: https://paperless.example.com
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET}
+      PAPERLESS_OCR_LANGUAGE: eng
+      PAPERLESS_OCR_LANGUAGES: deu fra          # extra languages to install
+      PAPERLESS_TIME_ZONE: Europe/London
+      PAPERLESS_FILENAME_FORMAT: "{{ created_year }}/{{ correspondent }}/{{ title }}"
+      USERMAP_UID: "1000"
+      USERMAP_GID: "1000"
+    volumes:
+      - ./data:/usr/src/paperless/data             # index, ML model, SQLite if used (precious)
+      - /mnt/tank/documents/paperless/media:/usr/src/paperless/media   # originals + archive (precious)
+      - /mnt/tank/documents/paperless/export:/usr/src/paperless/export
+      - /mnt/tank/documents/paperless/consume:/usr/src/paperless/consume  # drop scans here
+    networks: [proxy, default]
+  broker:
+    image: redis:7-alpine
+    restart: unless-stopped
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment: { POSTGRES_DB: paperless, POSTGRES_USER: paperless, POSTGRES_PASSWORD: "${PAPERLESS_DB_PASSWORD}" }
+    volumes: ["/mnt/fast/paperless-db:/var/lib/postgresql/data"]
+```
+
+Back up `media/` (the documents) *and* the database *and* `data/`; the `document_exporter` management command produces a complete, restorable export and is the recommended backup format — run it nightly to a folder that your file backup then picks up.
+
+## PDF tooling: Stirling PDF
+
+**Stirling PDF** is a web app with ~50 PDF operations — merge, split, rotate, compress, OCR, convert to/from images and Office formats, sign, redact, add watermarks, remove pages, repair, flatten, compare, extract images, and more — running locally so nothing is uploaded to a random website. Java, ~500 MB with all features (a slimmer image exists), optional login and OIDC. Every household needs this at some point; it replaces a dozen sketchy online tools. **Gotenberg** (an API for document → PDF conversion, used by Paperless) and **BentoPDF** are alternatives with different focuses.
+
+## Office suites in the browser
+
+For collaborative editing of documents, spreadsheets, and presentations inside Nextcloud/OpenCloud/Seafile:
+
+**Collabora Online** — LibreOffice in the browser (the CODE container is the free "Development Edition," fully functional with a connection-count nag). Best fidelity with ODF and good with Office formats; the interface is LibreOffice's, which some find dated; heavier (~1–2 GB RAM). Integrates natively with Nextcloud via the "Nextcloud Office" app, and is what AIO bundles.
+
+**OnlyOffice Docs** — a Microsoft-Office-like interface with excellent DOCX/XLSX/PPTX fidelity (it uses OOXML natively), real-time co-editing, and a Community Edition limited to 20 simultaneous connections (fine at home). Integrates with Nextcloud, OpenCloud, Seafile, and standalone. Lighter than Collabora; the licensing (AGPL for Docs; some features Enterprise-only) and the company's history draw occasional criticism. **Pick OnlyOffice if** your household lives in .docx/.xlsx; **Collabora if** you prefer ODF and LibreOffice.
+
+**CryptPad** — end-to-end encrypted collaborative documents, spreadsheets, kanban, forms, and whiteboards, with the server never seeing plaintext. A separate platform (not a Nextcloud plugin) with its own accounts and sharing. The right choice for privacy-sensitive collaboration with people outside the household; less integrated.
+
+**Etherpad** and **HedgeDoc** are real-time collaborative *text* editors (plain and Markdown respectively) — lightweight, instant, no accounts needed for a shared pad; see [Chapter 18](18-notes-productivity.md).
+
+## Web file browsers and quick sharing
+
+Sometimes you just want a web UI on a directory.
+
+- **FileBrowser** — a single Go binary that serves a folder tree with upload/download/edit/preview, multiple users with scoped roots and permissions, and share links. Light, fast, done. The **FileBrowser Quantum** fork adds indexing/search and OIDC. The right tool for "give the family a web view of the NAS share."
+- **Copyparty** — a remarkable single-file Python server: HTTP(S) file server with upload (resumable, deduplicated), WebDAV, FTP, SMB, TFTP, an audio player with transcoding, thumbnails, search, per-folder permissions, and zero dependencies. Runs on anything. Extremely fast at accepting uploads from many devices. The Swiss Army knife.
+- **Sharry**, **Pingvin Share**, **Send** (the community fork of Firefox Send), **Gokapi**, **PsiTransfer**, **Dumbdrop**, **Erugo** — "upload a file, get an expiring link" tools for sending large files to people. Pingvin Share and Sharry are the most polished; Send offers E2EE.
+- **PairDrop / Snapdrop** — AirDrop-in-a-browser for devices on the same network; self-hostable; wonderful for phone-to-laptop transfers.
+- **SFTPGo** — a full-featured SFTP/FTPS/WebDAV/HTTP file server with virtual users, quotas, S3/Azure/GCS backends, a web admin and client UI, and event hooks. The professional answer when you need to give external parties SFTP access.
+- **Dufs**, **miniserve**, **Caddy `file_server browse`** — one-liners for a read-only directory listing.
+- **SMB/NFS** remain the right answer for LAN access from desktops ([Chapter 6](06-storage.md)); web browsers are for phones, remote access, and sharing.
+
+## Recommendations
+
+- **A household drive with web UI, sharing, and mobile apps:** Nextcloud (accept the weight, tune it, pin the major). If you only need files and want speed: **OpenCloud**.
+- **Device convergence:** Syncthing, with the NAS as an always-on peer and versioning on.
+- **Paper and PDFs:** Paperless-ngx (+ Paperless-AI if you run Ollama); Stirling PDF alongside.
+- **Browser office editing:** OnlyOffice for Microsoft-format households, Collabora for LibreOffice/ODF; CryptPad for E2EE collaboration with outsiders.
+- **A web view on a directory:** FileBrowser or Copyparty. **Sending big files to people:** Pingvin Share.
+- Keep the *canonical* copy of files on the NAS filesystem where every tool (and every backup) can see them; let Nextcloud/Syncthing/Paperless be views and workflows on top, not opaque vaults — which is the one real argument against Seafile.
+
+## Checklist
+
+- [ ] Files live on redundant storage as plain files; the platform's data directory and database are on local disk and backed up ([Chapter 11](11-backups.md)).
+- [ ] Nextcloud (if used): major pinned; Redis and cron configured; admin warnings cleared; `.well-known` redirects at the proxy; mobile auto-upload tested.
+- [ ] Syncthing: NAS as always-on peer; versioning on for important folders; device IDs verified out-of-band; discovery/relay settings understood.
+- [ ] Paperless: consume folder wired to the scanner; `document_exporter` nightly; media + DB + data in backup.
+- [ ] Office suite reachable by the drive platform over the internal network with the correct public URL configured.
+- [ ] Share links and public file tools behind the reverse proxy; upload limits raised at the proxy for large files.
+- [ ] Nothing that stores SQLite (Syncthing index, Paperless SQLite mode, FileBrowser DB) lives on NFS.
