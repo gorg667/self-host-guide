@@ -71,3 +71,90 @@ The proprietary middle option: the codebase Jellyfin forked from, still develope
 | Best for | Most self-hosters | Non-technical households sharing widely | Neither camp |
 
 Many people run **both** Jellyfin and Plex against the same library — Jellyfin for themselves, Plex for a parent who needs the Roku app to work with zero explanation. Read-only library mounts make this harmless.
+
+## Hardware transcoding
+
+Transcoding — decoding a video and re-encoding it in real time to a format or bitrate the client can handle — is the CPU-hungriest thing a home server does. A software transcode of a 4K HEVC stream can saturate eight cores; a hardware transcode on an Intel iGPU uses almost nothing. This is why [Chapter 2](02-hardware.md) insists on Intel Quick Sync.
+
+**When transcoding happens:** the client cannot decode the codec (HEVC/H.265 on an older TV; AV1 on almost anything older than 2023); the container is unsupported (MKV in a browser → remux, which is cheap, or transcode); subtitles are image-based (PGS) and need burning in — this forces a *video* transcode and is the most common surprise; the audio codec is unsupported (TrueHD/DTS-HD on a phone → audio-only transcode, cheap); or the bandwidth setting on the client is below the file's bitrate (remote streaming).
+
+**When it does not:** direct play. Most modern TVs and phones direct-play H.264 and HEVC in MP4/MKV with AAC/AC3 audio. A library encoded that way needs almost no transcoding. Tdarr (below) can normalise a library to that profile.
+
+**Hardware options:**
+
+| | Intel Quick Sync (iGPU / Arc) | NVIDIA NVENC | AMD VAAPI/AMF | Apple VideoToolbox |
+|---|---|---|---|---|
+| Simultaneous streams | 5–10+ on a modern iGPU; more on Arc | Consumer cards had a 3–5 session driver limit; **lifted to 8 in 2023**; patchable further | Several | Several |
+| Codecs | H.264, HEVC, VP9, **AV1 (11th gen+, Arc)** encode/decode | H.264, HEVC, AV1 (40-series+) | H.264, HEVC, AV1 (RDNA 3+) | H.264, HEVC |
+| Quality per bitrate | Very good (Arc: excellent) | Very good | Good, improving | Good |
+| HDR → SDR tone mapping | Yes (OpenCL/VPP) | Yes | Yes | Yes |
+| Idle power | ~0 (it's in the CPU) | 10–30 W for a discrete card | ~0 (iGPU) | n/a |
+| Linux/Docker friction | **Lowest** (`/dev/dri`) | Medium (container toolkit) | Low–medium | Mac only |
+| Cost | Included, or Arc A310 ~USD 100 | USD 150+ | Included | Mac |
+
+**Recommendation:** an Intel CPU from 8th gen onward (10th+ for HEVC 10-bit, 11th+ for AV1 decode, Arc for AV1 encode) or an Arc A310/A380 in any machine. Pass `/dev/dri` into the container, add the `render` group, enable QSV in the server's transcoding settings, tick every codec the hardware supports, enable tone mapping, and test with a 4K HDR file on a phone. `intel_gpu_top` on the host shows the engine in use.
+
+## The *arr automation stack
+
+The "*arr" applications are a family of .NET tools that automate acquiring and organising media: you tell them what you want, they monitor indexers for it, send it to a download client, and when it arrives they rename it, move it into your library with a consistent naming scheme, and notify your media server to scan. They share a common UI lineage and configuration model.
+
+- **Sonarr** — TV series. Monitors series, grabs episodes as they air (or the back catalogue), handles seasons, specials, upgrades to better quality.
+- **Radarr** — films. Same model.
+- **Lidarr** — music (albums/artists via MusicBrainz).
+- **Readarr** — books and audiobooks (development stalled in 2024–2025; **Bookshelf** and others are forks; many users moved to Calibre-Web-Automated's book downloader or LazyLibrarian).
+- **Prowlarr** — the **indexer manager**: configure your indexers (Usenet indexers, torrent trackers, public indexers) *once* here and it syncs them to every other *arr. Replaced Jackett for most people (Jackett is still maintained and Prowlarr can use it as a fallback).
+- **Bazarr** — subtitles: watches Sonarr/Radarr libraries and fetches subtitles from OpenSubtitles, Subscene alternatives, and others in your languages.
+- **Whisparr** (adult content), **Mylar3** (comics), **Kapowarr** (comics), **Lidarr** alternatives (**Headphones**, **Bliss** for tagging).
+- **Recyclarr** — syncs **TRaSH Guides** quality profiles and custom formats into Sonarr/Radarr, so your quality preferences (prefer x265 web-dl, avoid low-quality groups, score HDR correctly) are expert-maintained rather than hand-built.
+- **Unpackerr** — extracts archived downloads so the *arrs can import them.
+- **Autobrr** — IRC announce-based grabbing for private trackers; niche, powerful.
+- **Huntarr**, **Cleanuparr**, **Decluttarr** — newer helpers that hunt missing items or clean stalled downloads.
+- **Maintainerr** — rules-based library cleanup ("delete films nobody has watched in 6 months and that were requested via Jellyseerr").
+
+**The single most important setup concept is the TRaSH Guides folder structure.** All *arrs and the download client must see the *same* filesystem path for downloads and media so that imports are **hardlinks** (instant, no extra space, seeding continues) rather than copies. That means one bind mount — `/mnt/data:/data` — into every container, with `/data/torrents/{movies,tv}`, `/data/usenet/{movies,tv}`, and `/data/media/{movies,tv,music}` underneath, all on the *same filesystem*. Two separate mounts (`/downloads` and `/movies`) force copies and double your disk usage. TRaSH Guides (trash-guides.info) is the canonical reference for *arr configuration and should be read before setting anything up.
+
+```yaml
+# media/compose.yaml (excerpt — the pattern, not every option)
+x-arr: &arr
+  restart: unless-stopped
+  environment:
+    PUID: "1000"
+    PGID: "1000"
+    TZ: Europe/London
+  networks: [proxy, default]
+
+services:
+  prowlarr:
+    <<: *arr
+    image: lscr.io/linuxserver/prowlarr:latest
+    volumes: ["./config/prowlarr:/config"]
+  sonarr:
+    <<: *arr
+    image: lscr.io/linuxserver/sonarr:latest
+    volumes: ["./config/sonarr:/config", "/mnt/data:/data"]
+  radarr:
+    <<: *arr
+    image: lscr.io/linuxserver/radarr:latest
+    volumes: ["./config/radarr:/config", "/mnt/data:/data"]
+  bazarr:
+    <<: *arr
+    image: lscr.io/linuxserver/bazarr:latest
+    volumes: ["./config/bazarr:/config", "/mnt/data/media:/data/media"]
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:latest
+    restart: unless-stopped
+    user: 1000:1000
+    volumes: ["./config/recyclarr:/config"]
+    environment: { TZ: Europe/London }
+```
+
+## Requests: Jellyseerr, Overseerr, Ombi
+
+Your household should not need to log into Radarr. A **request system** gives them a Netflix-like browse-and-request UI: search for a film, click request, it goes to Radarr, and they get a notification when it is available.
+
+- **Jellyseerr** — the fork of Overseerr with Jellyfin and Emby support (and Plex). Users log in with their Jellyfin account; per-user quotas and approval rules; notifications via email, Discord, Telegram, ntfy, Gotify, webhooks; a discover page with trending/popular; watchlist sync. **The standard choice** for Jellyfin users and works fine with Plex too.
+- **Overseerr** — the original, Plex-only. Still excellent; Jellyseerr has superseded it for most.
+- **Ombi** — the older, more configurable request system with Plex/Emby/Jellyfin support, music requests via Lidarr, and a more dated UI. Still maintained.
+- **Seerr** — the 2025 reunification: Overseerr and Jellyseerr merging into one project. Watch for it.
+- **Doplarr**, **Requestrr** — Discord bots for requests.
+- **Wizarr** — invitation and onboarding for new users: sends them a link, creates their Jellyfin/Plex account, walks them through installing the apps and Jellyseerr. Lovely for sharing with family.
