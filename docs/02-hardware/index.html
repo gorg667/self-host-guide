@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hardware: Choosing What to Run It On — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li class="active"><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 02 · ~5,705 words · 25 min read</div>
+    <article class="prose">
+      <h1 id="hardware-choosing-what-to-run-it-on">Hardware: Choosing What to Run It On<a class="headerlink" href="#hardware-choosing-what-to-run-it-on" title="Permanent link">#</a></h1>
+<p>Hardware is where planning meets a credit card. This chapter covers every category of machine people run home labs on — mini PCs, used business desktops, used enterprise servers, single-board computers, commercial NAS units, and DIY builds — with honest trade-offs, followed by the components that matter most: storage drives, memory, network interfaces, switches, UPS units, racks, and GPUs.</p>
+<p>The headline recommendation, stated once here and justified below: <strong>for most people in 2026, the right first machine is a low-power x86 mini PC with an Intel iGPU, 16–32 GB of RAM, and an NVMe SSD, paired with a separate storage solution sized to your data.</strong> Everything else in this chapter is about when and why to deviate from that.</p>
+<h2 id="guiding-principles">Guiding principles<a class="headerlink" href="#guiding-principles" title="Permanent link">#</a></h2>
+<p><strong>Idle power is the number that matters.</strong> Your lab will spend 95% of its life idle. A machine that idles at 8 W costs USD 10–25 a year to run; one that idles at 120 W costs USD 150–400. Over five years the difference pays for the machine several times over. Always look for measured idle power figures in reviews, and be suspicious of any spec sheet that lists only TDP (which is a thermal design figure, not a consumption figure).</p>
+<p><strong>Used business hardware is the value sweet spot.</strong> Corporations lease desktops for three years and dump them by the pallet. A three-year-old Lenovo ThinkCentre M-series Tiny, Dell OptiPlex Micro, or HP EliteDesk/ProDesk Mini with an 8th-gen or newer Intel Core i5, 16 GB of RAM, and a 256 GB NVMe sells for USD 100–200. These machines are quiet, sip power (8–15 W idle), have Intel Quick Sync for transcoding, and are extraordinarily reliable. The community calls them "TinyMiniMicro" after a well-known review series.</p>
+<p><strong>Buy ECC when it is cheap, don't agonise when it isn't.</strong> Covered in detail below; the short version is that ECC memory is a nice-to-have for a home ZFS NAS, not a requirement, and the internet has spent far too much energy arguing otherwise.</p>
+<p><strong>Buy drives for the workload, not the brand.</strong> CMR vs SMR matters far more than Seagate vs Western Digital. Details below.</p>
+<p><strong>Do not buy enterprise rack servers as a first machine.</strong> They are cheap on eBay for a reason: they are loud, hot, power-hungry, and their hardware RAID controllers and proprietary parts make them awkward. They are wonderful for learning enterprise patterns and for people with a basement and a tolerance for a USD 40/month electricity bump. They are a terrible choice for a first lab.</p>
+<h2 id="category-1-mini-pcs">Category 1: Mini PCs<a class="headerlink" href="#category-1-mini-pcs" title="Permanent link">#</a></h2>
+<p>The mini PC category has exploded since roughly 2022, driven by Intel's N-series (N100, N150, N305, N355) and AMD's Ryzen mobile chips finding their way into palm-sized boxes from dozens of mostly Chinese brands (Beelink, GMKtec, Minisforum, Aoostar, Trigkey, and many others) plus the established players (Intel NUC — now made by ASUS — Lenovo, Dell, HP).</p>
+<h3 id="intel-n100-n150-n305-n355-boxes">Intel N100 / N150 / N305 / N355 boxes<a class="headerlink" href="#intel-n100-n150-n305-n355-boxes" title="Permanent link">#</a></h3>
+<p>The Intel N100 (and its refresh, the N150) is a four-core, four-thread part with no hyperthreading, a 6 W TDP, and a surprisingly capable iGPU with Quick Sync that handles multiple simultaneous 4K HEVC/AV1 transcodes. Boxes built around it sell for USD 130–220 with 16 GB of RAM and a 500 GB SSD. They idle at 6–10 W.</p>
+<p>The N305 and N355 are the eight-core siblings with roughly double the multi-threaded performance for USD 80–150 more. Worth it if you plan to run more than about 20 containers or anything CPU-bound.</p>
+<p><strong>Good for:</strong> Tier 1 labs, dedicated DNS/VPN/monitoring node, Home Assistant, media serving with hardware transcoding, small NAS duty (some models have 2–4 SATA bays or two NVMe slots).</p>
+<p><strong>Watch out for:</strong></p>
+<ul>
+<li>Most N100 boards officially support only 16 GB of single-channel DDR4/DDR5 in one SODIMM slot. 32 GB SODIMMs generally <em>work</em> but are not guaranteed. The single-channel memory is a real bottleneck for memory-bandwidth-heavy work (AI inference, heavy databases).</li>
+<li>Cheap brands ship with cheap SSDs and cheap RAM. Budget to replace both, or buy barebones.</li>
+<li>Some units have poor thermal design and will throttle under sustained load. Look for reviews that test sustained performance.</li>
+<li>Firmware quality varies enormously; some have BIOS bugs affecting power states (which hurts idle power) or PCIe ASPM. The Intel-branded and major-OEM units are more predictable.</li>
+<li>2.5 GbE is now standard; some boxes have two or four ports and are marketed as firewall appliances. They make excellent OPNsense boxes.</li>
+</ul>
+<h3 id="ryzen-and-core-mini-pcs-the-performance-tier">Ryzen and Core mini PCs (the performance tier)<a class="headerlink" href="#ryzen-and-core-mini-pcs-the-performance-tier" title="Permanent link">#</a></h3>
+<p>Minisforum, Beelink, GMKtec and others sell boxes around AMD Ryzen 7/9 mobile parts (7840HS, 8845HS, AI 9 HX 370, and successors) or Intel Core Ultra chips. These have 8–16 cores, support 64–96 GB of dual-channel RAM, have two or three NVMe slots, and often include USB4/Thunderbolt and 2.5 GbE ×2. They idle at 10–20 W and cost USD 400–900 barebones.</p>
+<p><strong>Good for:</strong> Proxmox hosts running many VMs, Tier 2 compute nodes, anything memory-hungry. Ryzen's iGPU (RDNA 3 in the 7840/8845 generation) transcodes competently via VAAPI, though Intel Quick Sync remains the more reliable choice for Jellyfin/Plex.</p>
+<p><strong>Watch out for:</strong> Ryzen mobile boxes have historically had more fiddly Linux support for iGPU passthrough and power management than Intel; this has improved a lot but check the community forums for your specific model. AMD's ECC story on these platforms is non-existent.</p>
+<h3 id="intel-nuc-and-oem-ultra-small-form-factor">Intel NUC and OEM ultra-small-form-factor<a class="headerlink" href="#intel-nuc-and-oem-ultra-small-form-factor" title="Permanent link">#</a></h3>
+<p>The Intel NUC line (now ASUS NUC) and the OEM "1-litre" machines (Lenovo ThinkCentre Tiny, Dell OptiPlex Micro, HP EliteDesk Mini) are the reliable, boring, well-documented option. New units cost more than the Chinese boxes for the same spec; used units cost less. They have proper firmware, vPro/AMT remote management on some models (a poor man's IPMI), and are supported by every Linux distribution without drama.</p>
+<p><strong>Watch out for:</strong> used units often come with the minimum RAM and a small SSD; budget for upgrades. Many OEM Tiny/Micro units have a single 2.5" SATA bay plus one NVMe slot; storage expansion means USB or a NAS.</p>
+<h3 id="mini-pc-as-nas">Mini PC as NAS?<a class="headerlink" href="#mini-pc-as-nas" title="Permanent link">#</a></h3>
+<p>A growing sub-category (Aoostar, Beelink ME mini, Ugreen NASync DXP, TerraMaster F-series, Minisforum N5) puts an N100/N305/Ryzen board in a case with 2–6 drive bays. These blur the line between mini PC and NAS and are excellent Tier 1–2 all-in-one machines when running TrueNAS, Unraid, or plain Debian.</p>
+<h2 id="category-2-used-business-desktops-small-form-factor-and-towers">Category 2: Used business desktops (small form factor and towers)<a class="headerlink" href="#category-2-used-business-desktops-small-form-factor-and-towers" title="Permanent link">#</a></h2>
+<p>One step up from the 1-litre Tiny units are the SFF (small form factor) and MT (mini tower) versions of the same corporate lines: Dell OptiPlex SFF/Tower, Lenovo ThinkCentre M-series SFF, HP EliteDesk/ProDesk SFF, and — very popular in the homelab community — the Lenovo ThinkStation P-series and Dell Precision workstations, and HP Z-series.</p>
+<p><strong>Why they are excellent:</strong> an SFF gives you a real PCIe slot or two (for a 10 GbE NIC, an HBA, or a small GPU), 2–3 internal 3.5"/2.5" drive bays, four RAM slots (64–128 GB), and still idles at 15–30 W. Used 8th–12th gen Core i5/i7 SFFs cost USD 120–300. Entry workstations (ThinkStation P340/P350/P360, Dell Precision 3640/3650/3660) add Xeon-E or Core options with ECC support on some configurations.</p>
+<p><strong>Watch out for:</strong> proprietary PSUs with limited wattage and odd connectors (adding a GPU may be impossible), limited drive bays (SFF usually maxes out at two 3.5" drives), and low-profile PCIe slots only. Check the exact model's spec sheet.</p>
+<h2 id="category-3-used-enterprise-servers">Category 3: Used enterprise servers<a class="headerlink" href="#category-3-used-enterprise-servers" title="Permanent link">#</a></h2>
+<p>Dell PowerEdge (R720, R730, R740, T-series towers), HPE ProLiant (DL360/DL380 Gen9/Gen10, ML towers), Lenovo/IBM System x, and Supermicro chassis are available used from USD 200 to USD 1,500 depending on generation. They offer dual sockets with 20–56 cores, 128–768 GB of registered ECC RAM, 8–24 hot-swap drive bays, redundant power supplies, and real out-of-band management (iDRAC, iLO, IPMI).</p>
+<p><strong>Why people buy them:</strong> the specs per dollar are absurd, they are built for 24/7 operation, hot-swap everything is genuinely convenient, IPMI is wonderful, and running one teaches you how real data centres work.</p>
+<p><strong>Why people regret them:</strong></p>
+<ul>
+<li><strong>Power.</strong> A dual-socket R730 with a few drives idles at 100–150 W. That is USD 130–500 a year. Older generations (R710, DL380 G7) are worse and should be avoided entirely.</li>
+<li><strong>Noise.</strong> 1U servers are unbearable in living space — 40–60 dB at idle, screaming under load. 2U is better, towers (T-series, ML-series) are quite tolerable. Fan-speed hacks exist for some models via IPMI.</li>
+<li><strong>Heat.</strong> Every watt is heat in the room.</li>
+<li><strong>Hardware RAID.</strong> Enterprise controllers (PERC, Smart Array) in RAID mode hide disks from the OS, which is exactly what you do not want for ZFS. Most can be flashed to "IT mode" (pass-through) or replaced with an LSI 9211/9300-series HBA for USD 20–40; budget the time to research your model.</li>
+<li><strong>Proprietary parts.</strong> Drive caddies, PSUs, and fans are vendor-specific. Some vendors (HPE notably) lock firmware updates behind support contracts.</li>
+<li><strong>Old CPUs are slow per-core.</strong> A 2014-era Xeon E5-2680v3 has 12 cores but each is slower than a modern N100 core. Single-threaded tasks feel sluggish.</li>
+</ul>
+<p><strong>If you want one anyway:</strong> a tower (Dell T340/T350/T440, HPE ML350 Gen10) or a 2U (R730xd, DL380 Gen10) with a single CPU populated, an IT-mode HBA, and the fans on a quiet profile is livable in a basement or garage. Gen10/14th-gen (Skylake-SP) or newer is the sensible floor for power efficiency and remaining useful life.</p>
+<h2 id="category-4-single-board-computers">Category 4: Single-board computers<a class="headerlink" href="#category-4-single-board-computers" title="Permanent link">#</a></h2>
+<p>The Raspberry Pi launched a thousand home labs, and it remains a fine choice for specific roles — but it is no longer the default it once was.</p>
+<h3 id="raspberry-pi-5">Raspberry Pi 5<a class="headerlink" href="#raspberry-pi-5" title="Permanent link">#</a></h3>
+<p>The Pi 5 (4 or 8 GB, and 16 GB as of 2025) is a real computer: quad-core Cortex-A76, a PCIe 2.0 lane (used via HAT for NVMe), Gigabit Ethernet, USB 3. It idles at about 3 W and costs USD 60–120 plus case, power supply, and storage. The official M.2 HAT+ or third-party NVMe HATs make it robust; <strong>do not run a Pi from a microSD card for anything you care about</strong> — they wear out and corrupt.</p>
+<p><strong>Good for:</strong> Pi-hole/AdGuard, a WireGuard or Tailscale exit node, Home Assistant (very well supported), Uptime Kuma, a secondary DNS, Zigbee/Z-Wave coordinator host, a small Kubernetes learning cluster.</p>
+<p><strong>Not good for:</strong> media transcoding (no hardware encoder), anything x86-only (some Docker images have no ARM builds, though this is now rare), anything needing more than 8–16 GB RAM, NAS duty with multiple drives.</p>
+<p>The cost argument for the Pi has largely evaporated: a Pi 5 8 GB with case, PSU, and an NVMe HAT and SSD costs USD 130–160, and an N100 mini PC with 16 GB and a 500 GB SSD costs about the same while being several times faster and having a transcoder. The Pi's advantages are now its 3 W idle, its GPIO, its size, and its exceptional documentation and community.</p>
+<h3 id="other-sbcs">Other SBCs<a class="headerlink" href="#other-sbcs" title="Permanent link">#</a></h3>
+<p>Orange Pi, Radxa Rock, ODROID, Banana Pi, and the Rockchip RK3588 boards (Orange Pi 5, Rock 5B) offer more cores, more RAM (up to 32 GB), and sometimes NVMe and 2.5 GbE at competitive prices. Software support is the weak point: kernels lag, images are vendor-specific, and hardware acceleration is often half-working. For a lab, they are for people who enjoy that kind of fight. The ODROID-H series is an exception — it is an x86 (Intel N-series) board in SBC form and is popular as a low-power NAS board.</p>
+<h2 id="category-5-commercial-nas-appliances">Category 5: Commercial NAS appliances<a class="headerlink" href="#category-5-commercial-nas-appliances" title="Permanent link">#</a></h2>
+<p>Synology, QNAP, and newer entrants (UGREEN, TerraMaster, Asustor) sell finished boxes with 2–12 bays, a polished OS, mobile apps, and an app store.</p>
+<p><strong>Synology</strong> has long been the default recommendation for "I want a NAS that just works." DSM is excellent, Synology Photos and Drive are genuinely good, Hyper Backup and Snapshot Replication are solid. Downsides: the hardware is weak and expensive for what it is (many current models still ship with years-old Celeron or Ryzen embedded parts and 2–4 GB of RAM), and as of 2025 Synology moved to requiring Synology-branded drives on Plus-series models for full functionality — a decision that alienated much of the enthusiast community and is worth checking the current state of before buying.</p>
+<p><strong>QNAP</strong> offers stronger hardware for the money (2.5 GbE standard, more RAM, HDMI out on some), a less polished OS, and a worse security track record — several ransomware campaigns have specifically targeted internet-exposed QNAP units. Never expose a QNAP (or any NAS) directly to the internet.</p>
+<p><strong>UGREEN NASync</strong> arrived in 2024 with strong hardware (Intel N-series or Core i5, 8–16 GB, 2.5/10 GbE, NVMe slots) at aggressive prices and an OS that is improving rapidly. Notably, UGREEN officially permits installing third-party OSes (TrueNAS, Unraid, Proxmox), making them attractive as DIY NAS hardware with a warranty.</p>
+<p><strong>TerraMaster and Asustor</strong> are similar propositions: decent hardware, less mature software, both tolerant of third-party OS installs.</p>
+<p><strong>Should you buy one?</strong> If you want an appliance and are willing to pay a premium for the software, Synology remains good (drive-lock caveat noted). If you want the hardware and will run TrueNAS or Unraid, UGREEN is the current value pick. If you want to learn and have the time, a DIY NAS (below) is cheaper and more capable.</p>
+<h2 id="category-6-diy-builds">Category 6: DIY builds<a class="headerlink" href="#category-6-diy-builds" title="Permanent link">#</a></h2>
+<p>Building your own gives you complete control over power, noise, expansion, and drive count. The two common patterns:</p>
+<h3 id="the-low-power-nas-build">The low-power NAS build<a class="headerlink" href="#the-low-power-nas-build" title="Permanent link">#</a></h3>
+<p>A Micro-ATX or ITX board with an efficient CPU (Intel Core i3-12100/13100/14100 or i5 non-K, or the Intel N-series on an ITX board), 16–64 GB RAM, a case with 6–12 drive bays (Fractal Design Node 304/804, Jonsbo N2/N3/N4/N5, Sagittarius, the venerable Fractal Define R5/7 with extra drive cages), a Gold or Platinum PSU sized <em>small</em> (a 450–550 W unit runs more efficiently at low load than an 850 W unit), and an LSI HBA if you need more SATA ports than the board provides. Such a build idles at 20–35 W with drives spun down and costs USD 500–900 before drives.</p>
+<p>Intel 12th–14th gen with an iGPU is the community favourite here because Quick Sync is excellent, the C-state power management is good (C8–C10 idle achievable with care), and the platform is well-understood. See <a href="../29-power-cost-environment/">Chapter 29</a> for tuning.</p>
+<h3 id="the-computevirtualisation-build">The compute/virtualisation build<a class="headerlink" href="#the-computevirtualisation-build" title="Permanent link">#</a></h3>
+<p>A Ryzen 7/9 or Core i7/i9 on a board with plenty of PCIe lanes, 64–128 GB RAM, several NVMe drives, a 2.5 or 10 GbE NIC, and space for a GPU. This is a Proxmox host or a workstation-class machine for AI work. Idle power is 40–80 W depending on discipline. If you want ECC, AMD Ryzen on a board that supports it (many ASRock and some ASUS boards do — check the QVL) with unbuffered ECC UDIMMs is the affordable path; Intel restricts ECC to Xeon-E/W and a few Core parts on W680 boards.</p>
+<div class="admonition tip">
+<p class="admonition-title">The 'one big box' vs 'compute + NAS' decision</p>
+<p>Combining compute and storage in one machine (a DIY NAS running Proxmox or TrueNAS with apps) is simpler and cheaper. Separating them means you can reboot or rebuild the compute node without taking storage offline, and keeps your data on a machine that changes rarely. Tier 1: one box. Tier 2: usually two. Tier 3: definitely two or more.</p>
+</div>
+<h2 id="storage-drives">Storage drives<a class="headerlink" href="#storage-drives" title="Permanent link">#</a></h2>
+<p>This section matters more than any other in the chapter. Drives are where your data lives, they are the component most likely to fail, and the market is full of traps.</p>
+<h3 id="hard-drives-cmr-vs-smr">Hard drives: CMR vs SMR<a class="headerlink" href="#hard-drives-cmr-vs-smr" title="Permanent link">#</a></h3>
+<p>This is the single most important thing to know when buying hard drives.</p>
+<p><strong>CMR (Conventional Magnetic Recording)</strong> writes tracks side by side. Performance is consistent for reads and writes. <strong>SMR (Shingled Magnetic Recording)</strong> overlaps tracks like roof shingles to increase density. Reads are fine; <em>sustained writes</em> are catastrophically slow once the drive's small CMR cache area fills, because rewriting one track means rewriting all the tracks that overlap it.</p>
+<p>SMR drives in a RAID or ZFS array are a disaster: a rebuild/resilver, which is a sustained multi-terabyte write, can take days instead of hours, and the drive may time out and get kicked from the array during the process — leading to a second "failure" and potential data loss. Western Digital was caught quietly shipping SMR drives in its WD Red NAS line in 2020 and was sued over it; the industry now generally discloses.</p>
+<p><strong>Rule: for any array, buy only CMR drives.</strong> Currently CMR lines include WD Red Plus and Red Pro, Seagate IronWolf and IronWolf Pro, Toshiba N300, and essentially all enterprise drives (WD Ultrastar/Gold, Seagate Exos, Toshiba MG-series). SMR lines to avoid for arrays: WD Red (non-Plus), WD Blue at many capacities, Seagate Barracuda at many capacities, most "archive" drives. Manufacturers publish CMR/SMR lists; check the specific model number, not the product line.</p>
+<h3 id="which-hard-drive-tier">Which hard drive tier?<a class="headerlink" href="#which-hard-drive-tier" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Examples</th>
+<th>Warranty</th>
+<th>Workload rating</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Desktop</td>
+<td>WD Blue, Seagate Barracuda</td>
+<td>2 yr</td>
+<td>~55 TB/yr</td>
+<td>Often SMR. Avoid for arrays.</td>
+</tr>
+<tr>
+<td>NAS</td>
+<td>WD Red Plus, Seagate IronWolf, Toshiba N300</td>
+<td>3 yr</td>
+<td>180 TB/yr</td>
+<td>CMR. Fine for home NAS. Rotational vibration sensors.</td>
+</tr>
+<tr>
+<td>NAS Pro</td>
+<td>WD Red Pro, IronWolf Pro</td>
+<td>5 yr</td>
+<td>300–550 TB/yr</td>
+<td>7200 rpm, louder, slightly more power.</td>
+</tr>
+<tr>
+<td>Enterprise</td>
+<td>WD Ultrastar / Gold, Seagate Exos, Toshiba MG</td>
+<td>5 yr</td>
+<td>550 TB/yr</td>
+<td>Often <em>cheaper per TB</em> than NAS Pro. Louder. Best value at 16–24 TB.</td>
+</tr>
+</tbody>
+</table>
+<p>Enterprise drives are frequently the best buy for a home NAS: they are CMR, have five-year warranties, and because they are sold in volume to data centres they are often cheaper per terabyte than the consumer NAS lines. The downsides are noise (idle seek chatter is audible) and slightly higher power (7–9 W active, 5–6 W idle). Check reputable price trackers (diskprices.com is the community standard) and buy from a seller with a real return policy.</p>
+<p><strong>Shucking</strong> — buying external USB drives (WD Elements/My Book, Seagate Expansion) and removing the internal drive — used to be the cheapest route to CMR enterprise-class drives. It still sometimes is, but the discount has narrowed, warranties become murky, and some shucked WD drives need a 3.3 V pin mod (tape over pin 3) to spin up in some backplanes. It is a hobby within a hobby.</p>
+<p><strong>Refurbished and recertified drives</strong> from reputable sellers (ServerPartDeals and similar) offer manufacturer-recertified enterprise drives at 30–50% discounts with 2–5 year seller warranties. Community experience is largely positive; the key is buying from a seller who honours the warranty. Reasonable for replaceable data with parity protection; think twice for a single-copy archive of family photos.</p>
+<h3 id="how-many-drives-what-capacity">How many drives, what capacity?<a class="headerlink" href="#how-many-drives-what-capacity" title="Permanent link">#</a></h3>
+<p>Buy fewer, larger drives. Six 8 TB drives cost more, draw more power, and have more failure points than three 16 TB drives with the same usable capacity under RAIDZ1/RAID5. Larger drives do take longer to rebuild (a 20 TB drive resilvers in roughly 24–36 hours), which is the argument for two-drive redundancy (RAIDZ2/RAID6) at large capacities. <a href="../06-storage/">Chapter 6</a> covers the arithmetic.</p>
+<p>Buy from at least two different batches or vendors when buying a set. Drives from the same batch have correlated failure characteristics.</p>
+<h3 id="ssds">SSDs<a class="headerlink" href="#ssds" title="Permanent link">#</a></h3>
+<p><strong>Boot/OS and container storage</strong>: any decent NVMe SSD (Samsung 980/990 Pro, WD SN770/SN850X, Crucial P3 Plus/T500, Kingston KC3000, SK Hynix P41/P44) is fine. 500 GB–1 TB is plenty. Docker images and container volumes on NVMe make everything feel snappy.</p>
+<p><strong>Databases and VM storage</strong>: endurance matters. Look at the TBW (terabytes written) rating; consumer drives are 300–1,200 TBW, enterprise drives are 3,000–20,000+. Used enterprise SATA/U.2/M.2 SSDs (Intel D3-S4510/S4610, Samsung PM883/PM893/PM9A3, Micron 5300/7450) are excellent value on eBay and have power-loss protection, which consumer drives lack.</p>
+<p><strong>ZFS special vdevs, SLOG, L2ARC</strong>: only enterprise drives with power-loss protection are appropriate for SLOG; a consumer drive here can <em>lose</em> the data it was meant to protect. Most home labs do not need any of these; see <a href="../06-storage/">Chapter 6</a>.</p>
+<p><strong>All-flash NAS</strong>: with 4 TB NVMe drives at USD 200–300 and 8 TB at USD 500–800, all-flash storage for everything but bulk media is now practical. Silence, low power, and speed are the payoff; cost per TB is 4–6× spinning rust.</p>
+<div class="admonition warning">
+<p class="admonition-title">QLC and DRAM-less SSDs</p>
+<p>Cheap SSDs use QLC NAND and omit the DRAM cache. They are fine for a boot drive and for read-heavy media, and terrible for sustained writes and for anything database-like; write speed can fall below that of a hard drive once the SLC cache fills. For anything but the most cost-constrained cold storage, prefer TLC with DRAM.</p>
+</div>
+<h3 id="smart-and-drive-health">SMART and drive health<a class="headerlink" href="#smart-and-drive-health" title="Permanent link">#</a></h3>
+<p>Every drive reports Self-Monitoring, Analysis and Reporting Technology data. The attributes that predict failure most reliably are <strong>Reallocated Sectors Count (5)</strong>, <strong>Current Pending Sector Count (197)</strong>, <strong>Offline Uncorrectable (198)</strong>, and <strong>UDMA CRC Error Count (199, usually a cable problem)</strong>. Any non-zero and rising value on 5, 197, or 198 means the drive is dying; replace it. Run <code>smartctl -a /dev/sdX</code> (from <code>smartmontools</code>) and set up automated monitoring with Scrutiny (<a href="../12-monitoring/">Chapter 12</a>). Schedule a long self-test monthly.</p>
+<h2 id="memory">Memory<a class="headerlink" href="#memory" title="Permanent link">#</a></h2>
+<p><strong>How much?</strong> 16 GB runs a Tier 1 lab comfortably. 32 GB runs a Tier 2 Docker host with room. 64 GB+ is for Proxmox hosts running several VMs, ZFS with large ARC, or AI workloads. RAM is cheap; over-provision.</p>
+<p><strong>ZFS and RAM.</strong> The old "1 GB per TB" rule is a myth for home use (it originated with deduplication, which you should not enable). ZFS uses free RAM as a read cache (ARC) and gives it back when needed. 8 GB is a workable minimum; 16 GB is comfortable; more just makes the cache bigger.</p>
+<h3 id="ecc-the-eternal-argument">ECC: the eternal argument<a class="headerlink" href="#ecc-the-eternal-argument" title="Permanent link">#</a></h3>
+<p>Error-Correcting Code memory detects and corrects single-bit errors caused by cosmic rays, electrical noise, and marginal hardware. Without it, a flipped bit in RAM can silently corrupt data before it is written to disk — and ZFS's checksums cannot help, because ZFS will faithfully checksum the corrupted data.</p>
+<p>The community argument: "ZFS without ECC is dangerous" (a stance popularised on the FreeNAS forums circa 2013) versus "ECC is nice but the risk is overstated for home use" (the more measured modern view, which is also essentially Matt Ahrens' — ZFS co-creator — position: ZFS without ECC is no <em>worse</em> than any other filesystem without ECC, and the "scrub of death" scenario is a myth).</p>
+<p>Practical guidance:</p>
+<ul>
+<li>ECC is genuinely better. If it costs you little to get it, get it.</li>
+<li>ECC is available cheaply on: used workstations and servers (registered DIMMs are very cheap used), AMD Ryzen on supporting motherboards with unbuffered ECC UDIMMs (verify with <code>dmidecode</code> and <code>edac-util</code> that it actually works — some boards accept ECC DIMMs without enabling ECC), and Intel Xeon-E / W680 platforms.</li>
+<li>ECC is essentially unavailable on: mini PCs, N-series boards, laptops, most consumer Intel desktop boards.</li>
+<li>If your only option is a mini PC without ECC, run ZFS or Btrfs anyway. Checksumming filesystems still protect against the far more common failure modes — bit rot on disk, bad cables, failing drives — which happen orders of magnitude more often than RAM-induced corruption.</li>
+<li>Do not let the absence of ECC stop you from starting. Do not let its presence make you complacent about backups.</li>
+</ul>
+<h2 id="network-interfaces-and-switches">Network interfaces and switches<a class="headerlink" href="#network-interfaces-and-switches" title="Permanent link">#</a></h2>
+<p><strong>1 GbE</strong> is the baseline and remains adequate for most Tier 1 labs: it moves 110 MB/s, faster than most spinning drives sustain and enough for several simultaneous 4K streams.</p>
+<p><strong>2.5 GbE</strong> has become standard on mini PCs and mid-range motherboards and is the sensible current sweet spot. Unmanaged 2.5 GbE switches cost USD 50–100 for 5–8 ports; managed ones with VLAN support USD 100–250. Realtek 2.5 GbE chipsets (RTL8125) are ubiquitous and fine on Linux with a modern kernel; Intel i225/i226 had teething issues in early revisions but are stable now.</p>
+<p><strong>10 GbE</strong> is for moving large files between a NAS and a workstation, for storage networks between hypervisor nodes, and for all-flash arrays. Used Intel X520/X710 or Mellanox ConnectX-3/4 SFP+ cards cost USD 20–60; direct-attach copper (DAC) cables connect two machines without a switch. Switches with a few SFP+ ports (MikroTik CRS305/CRS309/CRS310, TP-Link TL-SX3008F, Zyxel, QNAP) cost USD 130–300. Note that 10GBase-T (RJ45) draws 2–5 W per port and runs hot; SFP+ with DAC or fibre is cooler and cheaper for short runs.</p>
+<p><strong>Managed switches</strong>: you want one as soon as you want VLANs (<a href="../03-networking/">Chapter 3</a>). Popular choices: MikroTik (excellent hardware, RouterOS/SwOS have a learning curve), TP-Link Omada and Ubiquiti UniFi (controller-based, polished, popular), Netgear (fine, boring), Zyxel, and used enterprise (Cisco, Brocade/Ruckus ICX, Aruba — cheap, loud fans, CLI-driven, fantastic for learning). PoE ports are worth having if you plan Wi-Fi access points or cameras.</p>
+<h2 id="uninterruptible-power-supplies">Uninterruptible power supplies<a class="headerlink" href="#uninterruptible-power-supplies" title="Permanent link">#</a></h2>
+<p>A UPS gives you two things: continuity through brief outages and flicker (very common), and time to shut down cleanly during longer ones. The second matters enormously for storage: ZFS and Btrfs are robust against power loss by design, but drives with write caches, hardware RAID without a battery, and any database mid-transaction are not.</p>
+<p><strong>Sizing</strong>: measure your lab's draw (a plug-in power meter is USD 15–25), add 30% headroom, and buy a UPS whose <em>watt</em> rating (not VA — VA is roughly watts × 1.6 for these units) exceeds it. A Tier 1 lab at 30 W wants a 600–850 VA unit, which will run it for an hour or more. A Tier 2 lab at 100 W wants 1,000–1,500 VA for 15–30 minutes.</p>
+<p><strong>Type</strong>: line-interactive (APC Back-UPS Pro, CyberPower CP-series, Eaton 5E/5S) is right for home labs. Pure sine wave output is preferable for active-PFC power supplies (which is every modern PSU). Standby/offline units are cheaper and adequate for a mini PC. Online/double-conversion is overkill and inefficient for a home.</p>
+<p><strong>Communication</strong>: the UPS must talk to your servers so they shut down before the battery dies. USB is standard; the <strong>NUT</strong> (Network UPS Tools) daemon runs on one machine as master and notifies others over the network. <a href="../29-power-cost-environment/">Chapter 29</a> has a NUT walkthrough. Some UPS units have a network management card slot; the cards are useful but cost more than the UPS.</p>
+<p><strong>Batteries</strong> last 3–5 years and are user-replaceable (USD 30–80). Lithium-ion UPS units (Eaton, CyberPower) are appearing with longer battery life and lower weight at a price premium.</p>
+<p>Brands: APC (Schneider) and Eaton are the safe defaults; CyberPower is the value pick and its Linux support (via NUT or <code>pwrstat</code>) is good. Avoid no-name units.</p>
+<h2 id="racks-and-mounting">Racks and mounting<a class="headerlink" href="#racks-and-mounting" title="Permanent link">#</a></h2>
+<p>You do not need a rack until you have three or more rack-mount devices. Before that, a shelf, a wire rack from a hardware store, or an IKEA Lack table (the "Lack rack" — its inner width almost exactly fits 19" equipment — is a decades-old community joke that actually works) is fine.</p>
+<p>When you do: a <strong>wall-mount 6–12U</strong> for a switch, patch panel, and a couple of shallow devices; an <strong>open-frame 4-post 12–25U</strong> for a mix of servers and shelves; an <strong>enclosed cabinet</strong> only if you need dust protection or noise dampening (and note that enclosed cabinets restrict airflow). Rack depth matters — many home-lab-friendly cases and used servers are 60–75 cm deep; short-depth racks will not fit them. Check before buying either.</p>
+<p>Rack shelves let you mount mini PCs, NAS units, and anything else non-rack-format. Rack-mount PDUs are convenient; a smart PDU with per-outlet switching is a luxury that pays for itself the first time you need to power-cycle a hung machine remotely.</p>
+<h2 id="gpus">GPUs<a class="headerlink" href="#gpus" title="Permanent link">#</a></h2>
+<p>For most self-hosters, the integrated GPU in an Intel CPU is the only GPU needed: Quick Sync handles transcoding for Jellyfin/Plex/Emby, and Frigate can use OpenVINO on the iGPU for object detection. Discrete GPUs enter the picture for three reasons:</p>
+<p><strong>Transcoding at scale.</strong> An Intel Arc A310/A380 (USD 90–130, single-slot, low-profile options exist, ~5–20 W) adds AV1 encode and a second Quick Sync engine to any machine, including AMD-based ones. This is the best transcoding upgrade available.</p>
+<p><strong>Local AI.</strong> Large language models, image generation, speech models, and photo ML (Immich's smart search, Frigate's detection) benefit enormously from a GPU. Here VRAM is the constraint that matters: LLM size in parameters × bytes per parameter at your quantisation ≈ VRAM needed. A 7–8 B parameter model at 4-bit fits in 6 GB; a 14 B model needs 10–12 GB; 32 B needs 20–24 GB; 70 B needs 40+ GB or two cards. NVIDIA has the most mature software stack (CUDA is what everything targets first); the used RTX 3090 (24 GB, USD 600–800) and RTX 3060 12 GB (USD 200–250) are perennial value picks, and the RTX 4060 Ti 16 GB and 5060 Ti 16 GB are efficient mid-range choices. AMD's ROCm works for many workloads (Ollama, llama.cpp, Stable Diffusion) and the RX 7900 XTX at 24 GB is cheaper than NVIDIA equivalents; Intel Arc works via IPEX/SYCL for llama.cpp and Ollama with less polish. Apple Silicon Macs with unified memory (a Mac Mini/Studio with 64–192 GB) are an unconventional but effective LLM server. <a href="../23-ai-llm/">Chapter 23</a> covers all of this in depth.</p>
+<p><strong>Passing through to a VM or game-streaming.</strong> A GPU passed to a Windows VM for a Sunshine/Moonlight streaming setup (<a href="../24-gaming/">Chapter 24</a>), or to a Linux desktop VM. Requires IOMMU support (nearly universal now) and some Proxmox configuration.</p>
+<p><strong>Power and PCIe.</strong> A discrete GPU adds 10–30 W at idle and hundreds under load, and needs a real PCIe slot and often a PSU upgrade. Older NVIDIA cards (pre-Turing) idle poorly under Linux without <code>nvidia-persistenced</code> and tuning. Decide whether a GPU belongs in the always-on server or in a separate machine that sleeps when not in use.</p>
+<h2 id="sample-builds">Sample builds<a class="headerlink" href="#sample-builds" title="Permanent link">#</a></h2>
+<p>Three concrete configurations, with approximate 2026 prices, as anchors.</p>
+<h3 id="starter-silent-all-in-one-usd-350-drives">Starter: silent all-in-one, ~USD 350 + drives<a class="headerlink" href="#starter-silent-all-in-one-usd-350-drives" title="Permanent link">#</a></h3>
+<ul>
+<li>Used Lenovo ThinkCentre M920q / Dell OptiPlex 7080 Micro, Core i5-8500T or better, 16 GB → USD 130–180</li>
+<li>Upgrade: 32 GB DDR4 SODIMM kit → USD 50; 1 TB NVMe → USD 60</li>
+<li>Storage: two 8 TB CMR drives in a two-bay USB 3 enclosure (Terramaster D2-310 or similar) as a mirrored Btrfs/ZFS pool → USD 320 + USD 80</li>
+<li>UPS: CyberPower CP600/CP850 → USD 80–110</li>
+<li>Idle: ~15 W. Runs Debian + Docker with 20–30 containers, Jellyfin with Quick Sync, Immich, Nextcloud, Vaultwarden, AdGuard.</li>
+</ul>
+<h3 id="intermediate-separate-compute-and-storage-usd-1200-drives">Intermediate: separate compute and storage, ~USD 1,200 + drives<a class="headerlink" href="#intermediate-separate-compute-and-storage-usd-1200-drives" title="Permanent link">#</a></h3>
+<ul>
+<li>Compute: Minisforum/Beelink Ryzen 7 8845HS or Intel Core Ultra mini PC, 64 GB, 2× 1 TB NVMe → USD 550–700; runs Proxmox.</li>
+<li>NAS: Jonsbo N3 (8-bay) with Intel i3-12100, 32 GB, a 500 GB NVMe boot drive, an efficient 450 W PSU → USD 450–550; runs TrueNAS SCALE with 4–6 × 16–20 TB enterprise drives in RAIDZ2.</li>
+<li>Network: MikroTik CRS310-8G+2S+ (2.5 GbE ×8, SFP+ ×2) → USD 200; a small N100 dual-NIC box for OPNsense → USD 150.</li>
+<li>UPS: 1,000–1,500 VA → USD 150–220.</li>
+<li>Idle: 60–90 W total.</li>
+</ul>
+<h3 id="advanced-clustered-usd-30006000">Advanced: clustered, ~USD 3,000–6,000<a class="headerlink" href="#advanced-clustered-usd-30006000" title="Permanent link">#</a></h3>
+<ul>
+<li>3× compute nodes (mini PCs or SFF workstations with 64–128 GB, dual 2.5 or 10 GbE) in a Proxmox cluster with Ceph or ZFS replication.</li>
+<li>Storage server: 12–24 bay chassis (Supermicro 846, Fractal Define 7 XL, or a rack-mount Rosewill/Sliger) with Xeon-E or Ryzen ECC, 64–128 GB, HBA, 10 GbE, 8–16 drives.</li>
+<li>GPU node: a workstation or SFF with an RTX 3090/4090 or a pair of 16–24 GB cards for AI.</li>
+<li>Network: 10 GbE SFP+ switch as core, 2.5 GbE PoE access switch, OPNsense on dedicated hardware or as a VM with NIC passthrough.</li>
+<li>UPS: 2–3 kVA online or line-interactive, possibly with extended battery.</li>
+<li>Rack: 18–25U four-post, PDU, patch panel.</li>
+<li>Idle: 200–400 W. Electricity becomes a line item you notice.</li>
+</ul>
+<h2 id="buying-checklist">Buying checklist<a class="headerlink" href="#buying-checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Idle power figure known from a measured review, not inferred from TDP.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Transcoding requirement confirmed against CPU/iGPU capability (Intel Quick Sync for Jellyfin/Plex is the safe choice).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> RAM capacity ceiling and slot count checked; ECC decision made consciously.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Every hard drive confirmed CMR by model number.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Drive count and capacity derived from the redundancy scheme in <a href="../06-storage/">Chapter 6</a>, not the reverse.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> SSD endurance adequate for the workload (databases/VMs want TLC with DRAM, ideally enterprise with PLP).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Network ports match the switch you have or plan to buy.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> UPS sized to measured draw plus headroom, with USB or network communication to the host.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Physical location can handle the noise and heat of what you are buying.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Budget includes the boring things: cables, a spare drive, a power meter.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../01-planning/">← 01. Planning Your Home Lab</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/02-hardware.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#guiding-principles">Guiding principles</a></li>
+<li><a href="#category-1-mini-pcs">Category 1: Mini PCs</a><ul>
+<li><a href="#intel-n100-n150-n305-n355-boxes">Intel N100 / N150 / N305 / N355 boxes</a></li>
+<li><a href="#ryzen-and-core-mini-pcs-the-performance-tier">Ryzen and Core mini PCs (the performance tier)</a></li>
+<li><a href="#intel-nuc-and-oem-ultra-small-form-factor">Intel NUC and OEM ultra-small-form-factor</a></li>
+<li><a href="#mini-pc-as-nas">Mini PC as NAS?</a></li>
+</ul>
+</li>
+<li><a href="#category-2-used-business-desktops-small-form-factor-and-towers">Category 2: Used business desktops (small form factor and towers)</a></li>
+<li><a href="#category-3-used-enterprise-servers">Category 3: Used enterprise servers</a></li>
+<li><a href="#category-4-single-board-computers">Category 4: Single-board computers</a><ul>
+<li><a href="#raspberry-pi-5">Raspberry Pi 5</a></li>
+<li><a href="#other-sbcs">Other SBCs</a></li>
+</ul>
+</li>
+<li><a href="#category-5-commercial-nas-appliances">Category 5: Commercial NAS appliances</a></li>
+<li><a href="#category-6-diy-builds">Category 6: DIY builds</a><ul>
+<li><a href="#the-low-power-nas-build">The low-power NAS build</a></li>
+<li><a href="#the-computevirtualisation-build">The compute/virtualisation build</a></li>
+</ul>
+</li>
+<li><a href="#storage-drives">Storage drives</a><ul>
+<li><a href="#hard-drives-cmr-vs-smr">Hard drives: CMR vs SMR</a></li>
+<li><a href="#which-hard-drive-tier">Which hard drive tier?</a></li>
+<li><a href="#how-many-drives-what-capacity">How many drives, what capacity?</a></li>
+<li><a href="#ssds">SSDs</a></li>
+<li><a href="#smart-and-drive-health">SMART and drive health</a></li>
+</ul>
+</li>
+<li><a href="#memory">Memory</a><ul>
+<li><a href="#ecc-the-eternal-argument">ECC: the eternal argument</a></li>
+</ul>
+</li>
+<li><a href="#network-interfaces-and-switches">Network interfaces and switches</a></li>
+<li><a href="#uninterruptible-power-supplies">Uninterruptible power supplies</a></li>
+<li><a href="#racks-and-mounting">Racks and mounting</a></li>
+<li><a href="#gpus">GPUs</a></li>
+<li><a href="#sample-builds">Sample builds</a><ul>
+<li><a href="#starter-silent-all-in-one-usd-350-drives">Starter: silent all-in-one, ~USD 350 + drives</a></li>
+<li><a href="#intermediate-separate-compute-and-storage-usd-1200-drives">Intermediate: separate compute and storage, ~USD 1,200 + drives</a></li>
+<li><a href="#advanced-clustered-usd-30006000">Advanced: clustered, ~USD 3,000–6,000</a></li>
+</ul>
+</li>
+<li><a href="#buying-checklist">Buying checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
