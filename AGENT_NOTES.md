@@ -23,6 +23,9 @@ Constraints from the user:
 3. If `git push` fails on auth, call the `setup_github_environment` tool.
 4. Read the STATUS table below; continue with the first unchecked chapter.
 5. A chapter that was being written when the session died is LOST unless it is on disk — always check `ls guide/`.
+6. **WRITE CHAPTERS IN ~1,000–1,500 WORD PIECES via `cat >> file <<'EOF'` in Bash, pushing after EACH piece.** Large single
+   `Write` tool calls have been interrupted and lost three times (ch03, ch08, ch12). Small appends + immediate push is the
+   only pattern that has proven safe. Build (`python3 build.py`) only needs to run when a chapter completes.
 
 ## Repository layout
 
