@@ -83,7 +83,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 09-dns-adblock.md — Pi-hole, AdGuard Home, Blocky, Technitium, Unbound, DoH/DoT, local records, HA DNS
 - [x] 10-identity-sso.md — Authelia, Authentik, Keycloak, Zitadel, Pocket ID, LLDAP, Kanidm; forward-auth; OIDC; passkeys
 - [x] 11-backups.md — 3-2-1, Restic, Borg, Kopia, Duplicati, PBS, ZFS replication (sanoid/syncoid), rclone, B2/Storage Box, restore testing, DB dumps
-- [ ] 12-monitoring.md — Prometheus/Grafana, Uptime Kuma, Gatus, Netdata, Beszel, Loki, Dozzle, Zabbix, Scrutiny, ntfy/Gotify/Apprise, Healthchecks
+- [x] 12-monitoring.md — Prometheus/Grafana, Uptime Kuma, Gatus, Netdata, Beszel, Loki, Dozzle, Zabbix, Scrutiny, ntfy/Gotify/Apprise, Healthchecks
 - [ ] 13-security.md — Threat model, SSH, fail2ban, CrowdSec, firewalls, Docker hardening, secrets, Wazuh, checklists
 
 ### Part III — Application services (reviews by category)

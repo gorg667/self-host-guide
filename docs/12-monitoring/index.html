@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitoring, Logging, and Alerting — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li class="active"><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 12 · ~3,283 words · 14 min read</div>
+    <article class="prose">
+      <h1 id="monitoring-logging-and-alerting">Monitoring, Logging, and Alerting<a class="headerlink" href="#monitoring-logging-and-alerting" title="Permanent link">#</a></h1>
+<p>The difference between a hobbyist and an operator is who finds out first when something breaks. Without monitoring, your family tells you the photos app is down, you discover the disk filled up three days ago, and you learn about the failing drive when the second one fails. With it, your phone buzzes at 03:10 with "backup job missed," you fix it before breakfast, and nobody else ever knows. This chapter covers the three layers — <strong>uptime checks</strong> (is it responding?), <strong>metrics</strong> (how is it behaving over time?), and <strong>logs</strong> (what exactly happened?) — and the <strong>notification</strong> layer that makes any of it useful. It compares Uptime Kuma, Gatus, Prometheus and Grafana, Netdata, Beszel, Zabbix, Loki, Dozzle, Scrutiny, and the notification services ntfy, Gotify, and Apprise, and ends with the alerts a home lab should actually have.</p>
+<h2 id="principles">Principles<a class="headerlink" href="#principles" title="Permanent link">#</a></h2>
+<p><strong>Alert on symptoms, not causes.</strong> "Jellyfin is not responding on HTTPS" is actionable. "CPU is at 85%" is not — CPU at 85% during a transcode is normal. Start with a handful of alerts that mean <em>something is actually wrong for a user</em>, then add cause-level alerts only when you have been bitten by a specific failure.</p>
+<p><strong>Fewer alerts you act on beat many you ignore.</strong> Alert fatigue is real. If an alert fires and you do nothing, delete it or raise its threshold.</p>
+<p><strong>Monitor from outside.</strong> A monitor running on the same host as the services cannot tell you the host is down. Put at least one check on a different machine — a Raspberry Pi, a USD 4 VPS, a free tier of a hosted monitor — that watches the lab from the outside.</p>
+<p><strong>Dead-man's switches for scheduled jobs.</strong> Backups, certificate renewals, scrubs: things that <em>should</em> run. You cannot alert on a job that never started unless something <em>expects</em> a heartbeat. Healthchecks-style push monitors solve this.</p>
+<p><strong>Keep the monitoring stack simpler than what it monitors.</strong> A three-container Prometheus stack watching four containers is inverted. Scale monitoring with the lab.</p>
+<pre class="mermaid">flowchart LR
+    subgraph collect[&quot;Collect&quot;]
+        UK[Uptime Kuma / Gatus&lt;br/&gt;HTTP, TCP, DNS, ping]
+        PM[Prometheus / Netdata / Beszel&lt;br/&gt;metrics]
+        LK[Loki / Dozzle&lt;br/&gt;logs]
+        SC[Scrutiny&lt;br/&gt;SMART]
+    end
+    subgraph alert[&quot;Alert&quot;]
+        AM[Alertmanager / built-in]
+    end
+    subgraph notify[&quot;Notify&quot;]
+        N[ntfy / Gotify / Apprise&lt;br/&gt;→ phone]
+    end
+    UK --&gt; AM --&gt; N
+    PM --&gt; AM
+    SC --&gt; N
+    Backups[Backup jobs] --&gt;|heartbeat| HC[Healthchecks] --&gt; N</pre>
+<h2 id="layer-1-uptime-and-status">Layer 1: Uptime and status<a class="headerlink" href="#layer-1-uptime-and-status" title="Permanent link">#</a></h2>
+<h3 id="uptime-kuma">Uptime Kuma<a class="headerlink" href="#uptime-kuma" title="Permanent link">#</a></h3>
+<p>The self-hosted uptime monitor that everyone runs. Monitor types: HTTP(S) (with keyword and JSON-query matching), TCP port, ping, DNS, Docker container status, push (dead-man's switch), gRPC, MQTT, database connection (Postgres/MySQL/Redis/Mongo), game servers (Steam), and more. Per-monitor intervals and retries, maintenance windows, certificate-expiry warnings, 90+ notification providers (ntfy, Gotify, Telegram, Discord, Slack, email, Pushover, Apprise, webhooks…), and <strong>public status pages</strong> you can share with the household. Single container, SQLite (MariaDB optional in v2), ~100–200 MB RAM. Beautiful.</p>
+<p><strong>Strengths:</strong> the most approachable monitoring tool in existence; the push monitor doubles as a Healthchecks replacement for backup jobs; status pages are a nice touch for family-facing services; the Docker monitor catches crashed containers.</p>
+<p><strong>Weaknesses:</strong> it is a UI-configured tool — monitors live in the database, not in a file (v2 adds an API; community tools like <code>uptime-kuma-api</code> and Terraform providers exist). It scales to a few hundred monitors, not thousands. Its own host is a single point of failure (run a second instance elsewhere watching the first, or a hosted external check).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">uptime-kuma</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">louislam/uptime-kuma:2</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uptime-kuma</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/app/data</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/docker.sock:/var/run/docker.sock:ro</span><span class="w">   </span><span class="c1"># for Docker container monitors (or use a socket proxy)</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;127.0.0.1:3001:3001&quot;</span>
+</code></pre></div>
+<h3 id="gatus">Gatus<a class="headerlink" href="#gatus" title="Permanent link">#</a></h3>
+<p>The config-as-code alternative: a YAML file lists endpoints and conditions (<code>[STATUS] == 200</code>, <code>[RESPONSE_TIME] &lt; 500</code>, <code>[CERTIFICATE_EXPIRATION] &gt; 48h</code>, <code>[BODY].status == UP</code>), alerting providers, and a status page is generated automatically. Very light (~20 MB), stateless (results in SQLite or Postgres optionally), trivially versioned and deployed identically on two hosts. Supports HTTP, TCP, ICMP, DNS, STARTTLS, WebSocket, and external push endpoints.</p>
+<p><strong>Pick Gatus if:</strong> you want your monitors in Git and you already lean config-as-code. <strong>Pick Uptime Kuma if:</strong> you want to click.</p>
+<h3 id="healthchecks">Healthchecks<a class="headerlink" href="#healthchecks" title="Permanent link">#</a></h3>
+<p>The dead-man's switch as a service, self-hostable (Python/Django). Each check has a URL; your cron job/backup script curls it on success (<code>curl -fsS -m 10 --retry 5 https://hc.example.com/ping/uuid</code>); if the ping does not arrive within the period plus grace time, it alerts. Cron-expression schedules, start/fail signals, per-check integrations, badges, a clean UI. Also available hosted (healthchecks.io, free tier of 20 checks). Uptime Kuma's push monitor does the same thing with less nuance; Healthchecks is worth running if you have more than a handful of scheduled jobs.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<p><strong>Statping-ng</strong>, <strong>Kener</strong> and <strong>Upptime</strong> (status pages; Upptime runs entirely on GitHub Actions and is a neat external monitor for a public service), <strong>Cachet</strong> (status page), <strong>Changedetection.io</strong> (not uptime — watches web pages for changes; <a href="../25-misc-apps/">Chapter 25</a>), <strong>Peekaping</strong>, <strong>Tianji</strong> (uptime + analytics + telemetry in one), <strong>checkmk</strong> and <strong>Nagios/Icinga</strong> (the enterprise ancestors; heavy, still capable).</p>
+<h2 id="layer-2-metrics">Layer 2: Metrics<a class="headerlink" href="#layer-2-metrics" title="Permanent link">#</a></h2>
+<p>Metrics are numbers over time: CPU, RAM, disk, network, temperatures, container stats, ZFS ARC hit rate, Postgres connections, Jellyfin active streams. They answer "is this getting worse," "when did it change," and "what is normal."</p>
+<h3 id="prometheus-grafana-exporters-alertmanager">Prometheus + Grafana (+ exporters + Alertmanager)<a class="headerlink" href="#prometheus-grafana-exporters-alertmanager" title="Permanent link">#</a></h3>
+<p>The industry-standard stack and the most powerful option. <strong>Prometheus</strong> scrapes HTTP endpoints exposing metrics every 15–60 seconds and stores them in its time-series database; <strong>exporters</strong> expose the metrics — <code>node_exporter</code> (host: CPU/RAM/disk/network/temps), <code>cAdvisor</code> (per-container), <code>smartctl_exporter</code>, <code>zfs_exporter</code>, <code>blackbox_exporter</code> (probes), <code>postgres_exporter</code>, <code>pve_exporter</code> (Proxmox), <code>unpoller</code> (UniFi), <code>speedtest_exporter</code>, and hundreds more, plus native <code>/metrics</code> endpoints in Traefik, Caddy, Immich, Jellyfin (via plugin), Home Assistant, Gitea, MinIO, Pi-hole (via exporter), AdGuard (via exporter), Blocky (native); <strong>Grafana</strong> builds dashboards and (since v8+) does alerting itself; <strong>Alertmanager</strong> routes and deduplicates Prometheus alerts. Resource use: Prometheus 200 MB–1 GB depending on retention and cardinality; Grafana ~150 MB.</p>
+<p><strong>Strengths:</strong> you can measure anything; the dashboard ecosystem (grafana.com/dashboards — import by ID: 1860 for Node Exporter Full, 193 for Docker, 10347 for Proxmox) means good dashboards in minutes; PromQL is a real query language; alert rules are files in Git; it is a professional skill.</p>
+<p><strong>Weaknesses:</strong> it is four or five containers before you have a single graph; exporters per service add up; PromQL and Alertmanager routing have learning curves; long-term retention needs planning (default 15 days; extend with <code>--storage.tsdb.retention.time=90d</code> and disk, or ship to <strong>VictoriaMetrics</strong>/<strong>Thanos</strong>/<strong>Mimir</strong>). For a Tier 1 lab it is overkill; for Tier 2+ it is the right foundation.</p>
+<p><strong>VictoriaMetrics</strong> deserves a mention as a drop-in Prometheus replacement that uses a fraction of the RAM and disk with the same query language and exporter ecosystem. Many home labs have switched.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># monitoring/compose.yaml (minimal)</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">prometheus</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prom/prometheus:latest</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;--config.file=/etc/prometheus/prometheus.yml&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;--storage.tsdb.retention.time=90d&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./prometheus.yml:/etc/prometheus/prometheus.yml:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./rules:/etc/prometheus/rules:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prom-data:/prometheus</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;127.0.0.1:9090:9090&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">node-exporter</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prom/node-exporter:latest</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host</span>
+<span class="w">    </span><span class="nt">pid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;--path.rootfs=/host&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/:/host:ro,rslave&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">cadvisor</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcr.io/cadvisor/cadvisor:latest</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">devices</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/dev/kmsg&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/:/rootfs:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run:/var/run:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/sys:/sys:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/docker/:/var/lib/docker:ro</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;127.0.0.1:8081:8080&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">grafana</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana/grafana:latest</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">GF_SECURITY_ADMIN_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${GRAFANA_PASSWORD}</span>
+<span class="w">      </span><span class="nt">GF_SERVER_ROOT_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://grafana.example.com</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;grafana-data:/var/lib/grafana&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;127.0.0.1:3000:3000&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">prom-data</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">  </span><span class="nt">grafana-data</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+</code></pre></div>
+<h3 id="netdata">Netdata<a class="headerlink" href="#netdata" title="Permanent link">#</a></h3>
+<p>A per-host agent that auto-discovers everything (hundreds of collectors: system, Docker, Postgres, Nginx, ZFS, SMART, sensors, systemd units…) and renders <strong>per-second</strong> real-time dashboards with zero configuration, plus built-in anomaly detection and pre-configured health alarms. Install it and you have a detailed dashboard in sixty seconds. Agents can stream to a central "parent" for multi-host views; Netdata Cloud (hosted, free tier) adds cross-node dashboards and mobile notifications — optional; the agent works fully offline.</p>
+<p><strong>Strengths:</strong> the zero-config real-time view is unmatched for troubleshooting "what is happening <em>right now</em>"; sane default alarms; Prometheus-compatible export if you want long-term storage elsewhere.</p>
+<p><strong>Weaknesses:</strong> heavier than it looks (~150–300 MB RAM per host, noticeable CPU on tiny boxes at per-second granularity — tune <code>update every</code>); the default local retention is short; the push toward Netdata Cloud in the UI annoys some; long-term trends and custom dashboards are Grafana's domain, not Netdata's.</p>
+<h3 id="beszel">Beszel<a class="headerlink" href="#beszel" title="Permanent link">#</a></h3>
+<p>A 2024 arrival that filled a gap: a <strong>lightweight, multi-host, Docker-aware</strong> monitor with a clean UI, a tiny agent per host (~10 MB), CPU/RAM/disk/network/temperature/GPU per host and per container, configurable alerts (CPU, RAM, disk, bandwidth, temperature, status) delivered via any Shoutrrr URL (ntfy, Gotify, Discord…), OIDC login, and a hub that runs on PocketBase (~50 MB). It is not Prometheus — you cannot query arbitrary metrics — but for "show me all my hosts and containers and alert me when one misbehaves" it is nearly perfect and takes five minutes.</p>
+<p><strong>Pick Beszel if:</strong> you have several hosts and want an overview with alerts without running the Prometheus stack. It has quickly become the Tier 1–2 default.</p>
+<h3 id="zabbix-librenms-and-the-enterprise-tools">Zabbix, LibreNMS, and the enterprise tools<a class="headerlink" href="#zabbix-librenms-and-the-enterprise-tools" title="Permanent link">#</a></h3>
+<p><strong>Zabbix</strong> does everything — metrics, alerting, SNMP, agents, templates for every vendor, maps, escalations — with a web UI that looks like 2010 and a Postgres/MySQL backend that wants a real server. If you work with it professionally, run it at home. <strong>LibreNMS</strong> and <strong>Observium</strong> are the network-device (SNMP) specialists — excellent for switches and routers, especially MikroTik or enterprise gear, and worth running alongside a host-metrics stack if you have a real network.</p>
+<h3 id="glances-btop-cockpit-and-built-ins">Glances, btop, Cockpit, and built-ins<a class="headerlink" href="#glances-btop-cockpit-and-built-ins" title="Permanent link">#</a></h3>
+<p><strong>Glances</strong> and <strong>btop</strong> are terminal system monitors (Glances also serves a web UI/API) — a quick look at one machine. <strong>Cockpit</strong> is Red Hat's web console for a single Linux host: status, logs, storage (with the 45Drives ZFS plugin), Podman containers, libvirt VMs, terminal. <strong>Proxmox, TrueNAS, and Unraid</strong> each ship graphs and basic alerting (Proxmox's notification system since 8.1 supports Gotify, webhooks, and matchers; TrueNAS has dozens of alert services). For a Tier 1 all-in-one, these plus Uptime Kuma and Scrutiny may be all the monitoring you need.</p>
+<h3 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Uptime Kuma</th>
+<th>Gatus</th>
+<th>Beszel</th>
+<th>Netdata</th>
+<th>Prometheus+Grafana</th>
+<th>Zabbix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Layer</td>
+<td>Uptime</td>
+<td>Uptime</td>
+<td>Host/container metrics</td>
+<td>Host metrics (real-time)</td>
+<td>Everything (metrics)</td>
+<td>Everything</td>
+</tr>
+<tr>
+<td>Config</td>
+<td>UI</td>
+<td>YAML</td>
+<td>UI</td>
+<td>Auto + files</td>
+<td>YAML + UI (Grafana)</td>
+<td>UI</td>
+</tr>
+<tr>
+<td>Multi-host</td>
+<td>Yes (probes)</td>
+<td>Yes (probes)</td>
+<td><strong>Yes (agents)</strong></td>
+<td>Yes (parent/child)</td>
+<td>Yes (scrape)</td>
+<td>Yes (agents/SNMP)</td>
+</tr>
+<tr>
+<td>Per-container</td>
+<td>Docker status</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+<td>Yes</td>
+<td>Yes (cAdvisor)</td>
+<td>Via templates</td>
+</tr>
+<tr>
+<td>Alerting</td>
+<td>Built-in, 90+ providers</td>
+<td>Built-in</td>
+<td>Built-in (Shoutrrr)</td>
+<td>Built-in alarms</td>
+<td>Alertmanager/Grafana</td>
+<td>Built-in</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>~150 MB</td>
+<td>~20 MB</td>
+<td>~50 MB hub + 10 MB/agent</td>
+<td>~200 MB/host</td>
+<td>~500 MB–1.5 GB stack</td>
+<td>~1 GB+</td>
+</tr>
+<tr>
+<td>Learning curve</td>
+<td>None</td>
+<td>Low</td>
+<td>None</td>
+<td>None</td>
+<td>High</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Everyone</td>
+<td>Config-as-code</td>
+<td>Multi-host overview</td>
+<td>Live troubleshooting</td>
+<td>Deep observability</td>
+<td>Enterprise/SNMP</td>
+</tr>
+</tbody>
+</table>
+<h2 id="layer-3-logs">Layer 3: Logs<a class="headerlink" href="#layer-3-logs" title="Permanent link">#</a></h2>
+<p>Metrics tell you <em>that</em> something is wrong; logs tell you <em>what</em>. At home, most log investigation is "show me the last 200 lines of this container" — and the right tool for that is small.</p>
+<h3 id="dozzle">Dozzle<a class="headerlink" href="#dozzle" title="Permanent link">#</a></h3>
+<p>A real-time log viewer for Docker: one container, connects to the Docker socket (or a remote agent on other hosts), shows every container's logs in a browser with search, filtering, multi-container split view, and basic container stats. No storage — it streams what Docker has. ~20 MB RAM. Authentication built in (simple users or forward-auth). It is the first thing you open when something misbehaves, and for most Tier 1–2 labs it is all the log tooling needed.</p>
+<h3 id="grafana-loki-promtail-alloy">Grafana Loki (+ Promtail / Alloy)<a class="headerlink" href="#grafana-loki-promtail-alloy" title="Permanent link">#</a></h3>
+<p>The log counterpart to Prometheus: <strong>Loki</strong> stores logs indexed by labels (not full-text, which keeps it cheap); <strong>Promtail</strong> (deprecated in favour of <strong>Grafana Alloy</strong>) or the <strong>Docker Loki logging driver</strong> ships logs to it; Grafana queries them with LogQL alongside metrics on the same dashboard. Retention for weeks or months, alerting on log patterns ("more than 5 <code>authentication failed</code> in 5 minutes"), correlation with metrics. ~200–500 MB RAM. Run it when you want <em>history</em> and <em>alerting</em> on logs, not just a live view.</p>
+<h3 id="others_1">Others<a class="headerlink" href="#others_1" title="Permanent link">#</a></h3>
+<p><strong>Graylog</strong> (the full-featured log platform — Elasticsearch/OpenSearch + MongoDB; heavy, powerful, enterprise-flavoured), <strong>the ELK/OpenSearch stack</strong> (heavier still), <strong>VictoriaLogs</strong> (the lightweight Loki alternative from the VictoriaMetrics team, gaining fast), <strong>Seq</strong> (structured logs, free tier), <strong>GoAccess</strong> (web-server log analytics in a terminal or HTML), <strong>Logdy</strong>, <strong>journald + <code>journalctl</code></strong> (systemd's own log store is perfectly good for host logs; <code>journalctl -u docker -f</code>), <strong>syslog-ng/rsyslog</strong> to a central host (the old way; still fine for network devices that speak syslog — OPNsense, switches, APs).</p>
+<p><strong>Log rotation</strong> is the operational essential: Docker's default json-file driver grows without bound unless <code>max-size</code> is set in <code>daemon.json</code> (<a href="../05-containers/">Chapter 5</a>). Full root filesystems from container logs are the most common "everything broke" cause on Docker hosts.</p>
+<h2 id="drive-health-scrutiny">Drive health: Scrutiny<a class="headerlink" href="#drive-health-scrutiny" title="Permanent link">#</a></h2>
+<p><strong>Scrutiny</strong> collects SMART data from every drive on every host (a collector container per host with <code>/dev</code> access, or a single collector on the NAS), stores history in InfluxDB, and presents a dashboard applying <strong>Backblaze's observed failure-rate thresholds</strong> to each attribute — so instead of "SMART: PASSED" (which drives report right up to death), you see "Reallocated Sectors: 12 — 6% of drives with this value failed within a year." Alerts via any Shoutrrr URL when an attribute crosses a threshold or a self-test fails. Essential for anything with more than two drives. Set <code>smartd</code> to run the actual self-tests (short weekly, long monthly); Scrutiny reads the results.</p>
+<h2 id="notifications">Notifications<a class="headerlink" href="#notifications" title="Permanent link">#</a></h2>
+<p>None of the above matters if you do not see it. The self-hosted push-notification services:</p>
+<h3 id="ntfy">ntfy<a class="headerlink" href="#ntfy" title="Permanent link">#</a></h3>
+<p>A pub/sub HTTP notification service: <code>curl -d "Backup failed" ntfy.example.com/alerts</code> sends a push to every phone subscribed to the <code>alerts</code> topic. Open-source server (Go, tiny), excellent Android and iOS apps (iOS via APNs relay through ntfy.sh, or a self-hosted relay), priority levels, tags/emoji, attachments, action buttons, scheduled delivery, access control (per-topic ACLs, tokens), email forwarding, and an ecosystem: supported natively by Uptime Kuma, Gatus, Beszel, Scrutiny, Backrest, Healthchecks, Proxmox (via webhook), Home Assistant, Grafana (via webhook), Watchtower/Diun, CrowdSec, and anything that can <code>curl</code>. <strong>The default choice.</strong> Also available hosted at ntfy.sh (free, public topics — use a random topic name).</p>
+<h3 id="gotify">Gotify<a class="headerlink" href="#gotify" title="Permanent link">#</a></h3>
+<p>The older alternative: a Go server with a web UI, application tokens, and an Android app (no official iOS app — third-party clients exist). Simpler model (applications push to your account, no topics), WebSocket delivery, plugins. Proxmox supports it natively. Solid; ntfy has largely overtaken it in features and mobile support.</p>
+<h3 id="apprise">Apprise<a class="headerlink" href="#apprise" title="Permanent link">#</a></h3>
+<p>Not a notification <em>service</em> but a <strong>notification router</strong> (Python library + CLI + API container): one call fans out to 100+ services — ntfy, Gotify, Telegram, Discord, Slack, Matrix, email, SMS gateways, Pushover, Home Assistant, and more — via URL-style configuration. Useful when a tool supports only webhooks or only one notification type and you want it to reach several places. <strong>Shoutrrr</strong> is the Go equivalent embedded in Beszel, Watchtower, Scrutiny.</p>
+<h3 id="pushover-telegram-discord-matrix-email">Pushover, Telegram, Discord, Matrix, email<a class="headerlink" href="#pushover-telegram-discord-matrix-email" title="Permanent link">#</a></h3>
+<p><strong>Pushover</strong> (USD 5 one-time per platform) is a hosted service with the most reliable delivery and a clean API — many self-hosters use it despite not being self-hosted because it simply works. <strong>Telegram bots</strong> and <strong>Discord webhooks</strong> are free, universal, and slightly awkward for alerting (channels fill with noise). <strong>Matrix</strong> if you self-host it (<a href="../20-communication/">Chapter 20</a>). <strong>Email</strong> as the fallback everyone has — via your own SMTP relay or a transactional provider (Resend, SMTP2GO, Brevo free tiers) since home IPs cannot send mail reliably.</p>
+<p><strong>Recommendation:</strong> ntfy, self-hosted, behind the reverse proxy, with topics <code>alerts</code> (high priority, phone buzzes), <code>info</code> (silent), and one per family member for their things. Everything in the lab points at it.</p>
+<h2 id="the-alerts-a-home-lab-should-have">The alerts a home lab should have<a class="headerlink" href="#the-alerts-a-home-lab-should-have" title="Permanent link">#</a></h2>
+<p>A concrete starting set, ordered by value:</p>
+<ol>
+<li><strong>Backup did not run / did not complete</strong> — Healthchecks or Uptime Kuma push; grace period of a few hours. The single most important alert.</li>
+<li><strong>Backup size anomaly</strong> — Backrest/Borgmatic hook comparing snapshot size to the previous; catches the empty-mount problem.</li>
+<li><strong>Drive SMART attribute crossed threshold / self-test failed</strong> — Scrutiny.</li>
+<li><strong>ZFS pool degraded or errors</strong> — <code>zed</code> (ZFS Event Daemon, ships with ZFS; configure <code>ZED_EMAIL_ADDR</code> or a script that posts to ntfy) or TrueNAS alerts; Prometheus <code>zfs_exporter</code> rule.</li>
+<li><strong>Disk over 85% full</strong> — Beszel/Netdata/node_exporter rule; on the Docker host root filesystem especially.</li>
+<li><strong>Service unreachable</strong> — Uptime Kuma HTTP check per user-facing service (the <em>external</em> URL through the proxy, so DNS and TLS are tested too), with 2–3 retries to avoid flapping.</li>
+<li><strong>Container down/restarting</strong> — Uptime Kuma Docker monitor or Beszel status; <code>restart: unless-stopped</code> will restart-loop a broken container silently otherwise.</li>
+<li><strong>Certificate expiring within 14 days</strong> — Uptime Kuma/Gatus built in; catches a broken ACME renewal before it becomes an outage.</li>
+<li><strong>Host unreachable</strong> — from the <em>external</em> monitor (a Pi, a VPS, or a hosted check): ping and one HTTPS check.</li>
+<li><strong>UPS on battery / low battery</strong> — NUT <code>upsmon</code> notifications (<a href="../29-power-cost-environment/">Chapter 29</a>).</li>
+<li><strong>Unusual login</strong> — SSH login notifications (a PAM hook posting to ntfy), IdP admin logins, CrowdSec decisions (<a href="../13-security/">Chapter 13</a>).</li>
+<li><strong>Temperature</strong> — CPU over 85 °C sustained, drives over 45 °C.</li>
+<li><strong>Available updates</strong> — Diun/Watchtower notifications for images; <code>apt</code> unattended-upgrades mail; Proxmox update notifications. Low priority topic.</li>
+</ol>
+<p>Notice what is not on the list: CPU %, RAM %, network throughput, load average. Watch them on a dashboard; do not alert on them until you have a specific reason.</p>
+<h2 id="recommendations-by-tier">Recommendations by tier<a class="headerlink" href="#recommendations-by-tier" title="Permanent link">#</a></h2>
+<p><strong>Tier 1:</strong> Uptime Kuma (with push monitors for backup jobs) + Scrutiny + ntfy. Dozzle for logs. Optionally Beszel for a pretty overview. Everything in four small containers. One external check from a free hosted monitor or a friend's Uptime Kuma.</p>
+<p><strong>Tier 2:</strong> add Beszel across all hosts (or Netdata if you prefer real-time depth), Healthchecks for scheduled jobs, <code>zed</code> and <code>smartd</code> configured to notify. Consider Prometheus + Grafana if you enjoy dashboards or want history. An external monitor on a VPS or Pi.</p>
+<p><strong>Tier 3:</strong> Prometheus (or VictoriaMetrics) + Grafana + Alertmanager as the core, exporters everywhere, Loki (or VictoriaLogs) for logs with alert rules, Uptime Kuma or Gatus for black-box checks, Scrutiny, ntfy with routing by severity, dashboards per concern, and a second Prometheus instance or an external monitor watching the first.</p>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> A notification channel (ntfy) reaches your phone; tested with a manual message.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Every scheduled job (backups, scrubs, cert renewal, sync) reports to a dead-man's switch.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Every user-facing service has an uptime check via its external URL.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> SMART monitored by Scrutiny; self-tests scheduled; ZFS <code>zed</code> alerts configured.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Disk-full alert on every host (especially Docker root and the backup target).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> At least one monitor runs <em>outside</em> the lab and checks that the lab is reachable.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Container restarts and crashes are visible (Docker monitor or Beszel).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Docker log rotation configured; a log viewer (Dozzle) available.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Alerts reviewed monthly: anything ignored twice is deleted or re-tuned.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Monitoring configuration (Gatus YAML, Prometheus rules, Kuma data dir) is in backups.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../11-backups/">← 11. Backups: The Chapter That Matters Most</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/12-monitoring.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#principles">Principles</a></li>
+<li><a href="#layer-1-uptime-and-status">Layer 1: Uptime and status</a><ul>
+<li><a href="#uptime-kuma">Uptime Kuma</a></li>
+<li><a href="#gatus">Gatus</a></li>
+<li><a href="#healthchecks">Healthchecks</a></li>
+<li><a href="#others">Others</a></li>
+</ul>
+</li>
+<li><a href="#layer-2-metrics">Layer 2: Metrics</a><ul>
+<li><a href="#prometheus-grafana-exporters-alertmanager">Prometheus + Grafana (+ exporters + Alertmanager)</a></li>
+<li><a href="#netdata">Netdata</a></li>
+<li><a href="#beszel">Beszel</a></li>
+<li><a href="#zabbix-librenms-and-the-enterprise-tools">Zabbix, LibreNMS, and the enterprise tools</a></li>
+<li><a href="#glances-btop-cockpit-and-built-ins">Glances, btop, Cockpit, and built-ins</a></li>
+<li><a href="#comparison">Comparison</a></li>
+</ul>
+</li>
+<li><a href="#layer-3-logs">Layer 3: Logs</a><ul>
+<li><a href="#dozzle">Dozzle</a></li>
+<li><a href="#grafana-loki-promtail-alloy">Grafana Loki (+ Promtail / Alloy)</a></li>
+<li><a href="#others_1">Others</a></li>
+</ul>
+</li>
+<li><a href="#drive-health-scrutiny">Drive health: Scrutiny</a></li>
+<li><a href="#notifications">Notifications</a><ul>
+<li><a href="#ntfy">ntfy</a></li>
+<li><a href="#gotify">Gotify</a></li>
+<li><a href="#apprise">Apprise</a></li>
+<li><a href="#pushover-telegram-discord-matrix-email">Pushover, Telegram, Discord, Matrix, email</a></li>
+</ul>
+</li>
+<li><a href="#the-alerts-a-home-lab-should-have">The alerts a home lab should have</a></li>
+<li><a href="#recommendations-by-tier">Recommendations by tier</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
