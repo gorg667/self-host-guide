@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNS and Network-Wide Ad Blocking — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li class="active"><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 09 · ~3,357 words · 15 min read</div>
+    <article class="prose">
+      <h1 id="dns-and-network-wide-ad-blocking">DNS and Network-Wide Ad Blocking<a class="headerlink" href="#dns-and-network-wide-ad-blocking" title="Permanent link">#</a></h1>
+<p>DNS is the service everything else depends on and the one most people never think about until it breaks. Running your own resolver gives you three things: <strong>network-wide ad and tracker blocking</strong> for every device including the ones that cannot run a blocker (smart TVs, consoles, IoT), <strong>local names</strong> for your services (the split-horizon DNS that makes the reverse-proxy-with-real-certificates pattern work), and <strong>privacy</strong> — your ISP no longer sees every domain your household visits. This chapter compares Pi-hole, AdGuard Home, Blocky, Technitium, and Unbound, explains recursive versus forwarding resolution and encrypted DNS, and covers the operational side: redundancy (because when DNS is down, <em>everything</em> is down), DHCP integration, and dynamic DNS for your public address.</p>
+<h2 id="how-dns-resolution-works-briefly">How DNS resolution works, briefly<a class="headerlink" href="#how-dns-resolution-works-briefly" title="Permanent link">#</a></h2>
+<p>When a device asks for <code>photos.example.com</code>, its configured <strong>resolver</strong> answers. Two kinds:</p>
+<ul>
+<li>A <strong>forwarding resolver</strong> (Pi-hole, AdGuard Home by default, your router) checks its cache and, if it does not know, asks an <strong>upstream</strong> resolver — Cloudflare <code>1.1.1.1</code>, Quad9 <code>9.9.9.9</code>, Google <code>8.8.8.8</code>, your ISP — and relays the answer. The upstream sees every query.</li>
+<li>A <strong>recursive resolver</strong> (Unbound, Knot Resolver, BIND, PowerDNS Recursor) does the work itself: asks a root server for <code>.com</code>, asks the <code>.com</code> servers for <code>example.com</code>, asks <code>example.com</code>'s nameservers for <code>photos</code>. No single upstream sees your full query history; each authoritative server sees only its slice. Slightly slower on a cold cache (tens of milliseconds), then equal.</li>
+</ul>
+<p><strong>DNSSEC</strong> cryptographically validates answers so a poisoned response is rejected; recursive resolvers do it natively, forwarders rely on the upstream. <strong>Encrypted DNS</strong> — DNS-over-TLS (DoT, port 853), DNS-over-HTTPS (DoH, port 443), DNS-over-QUIC (DoQ, port 853/UDP) — protects the query on the wire between you and the upstream. Plain DNS on port 53 is unencrypted; on your own LAN that is acceptable, across the internet it is not.</p>
+<p>A common and good home architecture: <strong>blocker (Pi-hole/AdGuard) → Unbound (recursive) on the same machine</strong>. The blocker filters and serves local names; Unbound resolves the rest itself. No upstream sees your queries, DNSSEC is validated, and ad blocking is network-wide. Alternative: blocker → encrypted upstream (Quad9 over DoT) — simpler, still private from the ISP, one trusted third party.</p>
+<h2 id="the-blockers">The blockers<a class="headerlink" href="#the-blockers" title="Permanent link">#</a></h2>
+<h3 id="pi-hole">Pi-hole<a class="headerlink" href="#pi-hole" title="Permanent link">#</a></h3>
+<p>The project that made network-wide ad blocking a household word (2015). A DNS forwarder (built on <code>dnsmasq</code>, forked as <code>FTL</code>) with blocklists, a web dashboard showing every query, per-client statistics, and — since <strong>v6 (February 2025)</strong> — a rewritten core that dropped the PHP/lighttpd dependency, added a REST API, native HTTPS for the admin UI, and folded most of what used to require config-file editing into the UI. Runs on anything: Raspberry Pi, Docker, an LXC, a VM. Uses ~50 MB RAM.</p>
+<p><strong>Strengths:</strong> the largest community and the most tutorials; the dashboard is excellent for understanding what your network is doing; group management lets you apply different blocklists to different clients (unblock everything for the work laptop, block hard on the kids' tablets); built-in DHCP server (handy — it means Pi-hole knows every client's hostname); local DNS records and CNAMEs in the UI; conditional forwarding to your router for reverse lookups; <code>pihole -up</code> and it stays out of your way.</p>
+<p><strong>Weaknesses:</strong> no encrypted upstream built in — you pair it with Unbound (recursive) or <code>cloudflared</code>/<code>dnscrypt-proxy</code>/<code>stubby</code> (DoH/DoT forwarder), which is one more container. No wildcard local records in the UI (v6 supports <code>dnsmasq</code> config lines for it — <code>address=/example.com/10.0.20.5</code>). No DNS rewrites by regex (blocking by regex, yes). Per-client DoH/DoT to <em>clients</em> is not supported (nor does it matter much on a LAN). The v6 migration surprised some users; if you see old tutorials referencing <code>/etc/lighttpd</code>, they predate it.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pihole</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pihole/pihole:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pihole</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;53:53/tcp&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;53:53/udp&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;127.0.0.1:8053:80/tcp&quot;</span><span class="w">      </span><span class="c1"># admin UI via reverse proxy</span>
+<span class="w">      </span><span class="c1"># - &quot;67:67/udp&quot;                # only if using Pi-hole&#39;s DHCP (needs NET_ADMIN and host or macvlan networking)</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">TZ</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Europe/London</span>
+<span class="w">      </span><span class="nt">FTLCONF_webserver_api_password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${PIHOLE_PASSWORD}</span>
+<span class="w">      </span><span class="nt">FTLCONF_dns_upstreams</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">127.0.0.1#5335</span><span class="w">   </span><span class="c1"># Unbound sidecar below; or 9.9.9.9;149.112.112.112</span>
+<span class="w">      </span><span class="nt">FTLCONF_dns_listeningMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">all</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./etc-pihole:/etc/pihole</span>
+<span class="w">    </span><span class="nt">cap_add</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">NET_ADMIN</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">unbound</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mvance/unbound:latest</span><span class="w">       </span><span class="c1"># or klutchell/unbound; both well-maintained</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unbound</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;service:pihole&quot;</span><span class="w">     </span><span class="c1"># share Pi-hole&#39;s namespace so 127.0.0.1#5335 works</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./unbound:/opt/unbound/etc/unbound</span>
+</code></pre></div>
+<h3 id="adguard-home">AdGuard Home<a class="headerlink" href="#adguard-home" title="Permanent link">#</a></h3>
+<p>AdGuard's open-source (GPLv3) DNS server, a single Go binary with a modern web UI. Functionally a superset of Pi-hole for most people: blocklists (AdGuard's own syntax plus hosts files), per-client settings, parental controls and safe search, query log, statistics — <strong>plus</strong> built-in <strong>encrypted upstreams</strong> (DoH, DoT, DoQ, DNSCrypt, all configurable in the UI, with parallel or load-balanced querying), built-in <strong>encrypted listeners</strong> (serve DoH/DoT/DoQ to your own clients — useful for phones off-network via a mesh VPN, or Android's Private DNS setting), <strong>DNS rewrites</strong> (including <code>*.example.com → 10.0.20.5</code> wildcards, in the UI), and a DHCP server. Uses ~40–80 MB RAM.</p>
+<p><strong>Strengths:</strong> encrypted upstreams and wildcard rewrites in the UI are exactly the two things Pi-hole makes you work for; a single binary with no dependencies; excellent on low-power hardware; the client identification (by IP, MAC, or ClientID for DoH/DoT clients) is more flexible. Actively developed by a company with a commercial product built on the same engine.</p>
+<p><strong>Weaknesses:</strong> the dashboard is less granular than Pi-hole's (no per-client "top blocked" breakdowns as rich, though it has improved); the community is smaller (still large); the blocklist syntax differences occasionally matter; upstream recursion still requires Unbound alongside if you want no third party at all. AdGuard as a company sells a VPN and ad-blocker — some prefer a purely community project.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">adguardhome</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">adguard/adguardhome:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">adguardhome</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;53:53/tcp&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;53:53/udp&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;127.0.0.1:3000:3000/tcp&quot;</span><span class="w">   </span><span class="c1"># first-run setup wizard</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;127.0.0.1:8080:80/tcp&quot;</span><span class="w">     </span><span class="c1"># admin UI after setup, via reverse proxy</span>
+<span class="w">      </span><span class="c1"># - &quot;853:853/tcp&quot;             # DoT listener, if serving encrypted DNS to clients</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./work:/opt/adguardhome/work</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./conf:/opt/adguardhome/conf</span>
+</code></pre></div>
+<h3 id="blocky">Blocky<a class="headerlink" href="#blocky" title="Permanent link">#</a></h3>
+<p>A Go DNS proxy configured entirely by a <strong>YAML file</strong> — no web UI, no query database by default (optional Prometheus metrics and Grafana dashboards, or logging to a database/CSV). Blocklists, allowlists, per-client-group filtering, custom DNS (with wildcards), conditional forwarding, encrypted upstreams (DoH/DoT), caching with prefetching, and about 20 MB RAM. It starts in a second and its configuration lives in Git like everything else.</p>
+<p><strong>Pick it if:</strong> you want your DNS blocker to be infrastructure-as-code, you already run Prometheus/Grafana for observability, and you do not want a stateful UI. Popular with the Kubernetes and NixOS crowds and with people running two or three redundant instances from one config file.</p>
+<p><strong>Watch out for:</strong> no UI means no quick "why was this blocked" without querying logs/metrics; smaller community.</p>
+<h3 id="technitium-dns-server">Technitium DNS Server<a class="headerlink" href="#technitium-dns-server" title="Permanent link">#</a></h3>
+<p>A full <strong>authoritative + recursive + forwarding</strong> DNS server (C#/.NET, cross-platform) with a web UI, blocklists, DoH/DoT/DoQ on both sides, DNSSEC signing and validation, zone management (primary/secondary zones, dynamic updates, zone transfers), split-horizon via "APP" plugins, DHCP, query logging, clustering via zone transfer. It is what you run when you want <em>one</em> piece of software to be the blocker, the recursive resolver, and the authoritative server for <code>home.arpa</code> with proper zones — and you want a UI for all of it.</p>
+<p><strong>Pick it if:</strong> you want the most complete feature set in one package, or you want to learn real DNS (zones, records, SOA, transfers) with a UI that exposes them. It is quietly excellent and under-appreciated.</p>
+<p><strong>Watch out for:</strong> heavier (~150 MB RAM with .NET); the UI is dense; one primary developer.</p>
+<h3 id="unbound-and-knot-resolver-bind-powerdns">Unbound (and Knot Resolver, BIND, PowerDNS)<a class="headerlink" href="#unbound-and-knot-resolver-bind-powerdns" title="Permanent link">#</a></h3>
+<p><strong>Unbound</strong> is the recursive resolver most people pair with Pi-hole or AdGuard. Small, fast, secure (NLnet Labs), DNSSEC-validating, with local-data directives for static records and, since 1.x, RPZ support for blocklists (so Unbound <em>alone</em> can do basic blocking without a frontend, if you do not need a dashboard). Its config is a text file; it has no UI. On OPNsense it is the default resolver with a UI, blocklists ("Unbound DNS Blocklist" feature), and host overrides — for many OPNsense users, <strong>Unbound on the firewall is the whole DNS solution</strong> and no Pi-hole is needed.</p>
+<p><strong>Knot Resolver</strong> (CZ.NIC) is the other modern recursive resolver, scriptable in Lua, excellent performance. <strong>BIND 9</strong> is the reference implementation of everything, still the right answer for people who need a full authoritative server and know it. <strong>PowerDNS</strong> (Recursor + Authoritative + dnsdist) is the ISP-grade modular choice; PowerDNS-Admin gives it a UI. <strong>CoreDNS</strong> is the Kubernetes cluster DNS and rarely used elsewhere at home. <strong>dnsmasq</strong> is the tiny DHCP+DNS forwarder inside most routers, OpenWrt, and Pi-hole.</p>
+<h3 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Pi-hole</th>
+<th>AdGuard Home</th>
+<th>Blocky</th>
+<th>Technitium</th>
+<th>Unbound (alone)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Type</td>
+<td>Forwarder + blocker</td>
+<td>Forwarder + blocker</td>
+<td>Forwarder + blocker</td>
+<td>Full DNS server</td>
+<td>Recursive resolver</td>
+</tr>
+<tr>
+<td>Web UI</td>
+<td>Yes (excellent stats)</td>
+<td>Yes (modern)</td>
+<td>No (YAML + metrics)</td>
+<td>Yes (dense)</td>
+<td>No (OPNsense wraps it)</td>
+</tr>
+<tr>
+<td>Encrypted upstream built in</td>
+<td>No (add Unbound/cloudflared)</td>
+<td><strong>Yes</strong> (DoH/DoT/DoQ)</td>
+<td>Yes (DoH/DoT)</td>
+<td>Yes</td>
+<td>DoT yes; recursion is the point</td>
+</tr>
+<tr>
+<td>Serve DoH/DoT to clients</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>Yes</td>
+<td>DoT yes</td>
+</tr>
+<tr>
+<td>Wildcard local records</td>
+<td>Via dnsmasq config line</td>
+<td><strong>Yes (UI)</strong></td>
+<td>Yes (YAML)</td>
+<td>Yes (zones)</td>
+<td>Yes (<code>local-zone</code>)</td>
+</tr>
+<tr>
+<td>Per-client rules</td>
+<td>Groups (good)</td>
+<td>Yes</td>
+<td>Client groups</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>DHCP server</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Authoritative zones</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+<td>Limited (<code>local-data</code>)</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>~50 MB</td>
+<td>~60 MB</td>
+<td>~20 MB</td>
+<td>~150 MB</td>
+<td>~30 MB</td>
+</tr>
+<tr>
+<td>Config as code</td>
+<td>Partial (teleporter export; v6 TOML)</td>
+<td>YAML file (editable)</td>
+<td><strong>Fully</strong></td>
+<td>Partial (API)</td>
+<td>Fully</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Beginners; best dashboard</td>
+<td>Most people; encrypted DNS + wildcards in UI</td>
+<td>GitOps/Prometheus users</td>
+<td>One-server-does-everything; learning DNS</td>
+<td>Recursion behind a blocker; OPNsense users</td>
+</tr>
+</tbody>
+</table>
+<h2 id="blocklists">Blocklists<a class="headerlink" href="#blocklists" title="Permanent link">#</a></h2>
+<p>The blocker is only as good as its lists. Guidance that has stabilised over the years:</p>
+<ul>
+<li><strong>Start with one curated list, not twenty.</strong> <strong>Hagezi's</strong> lists (Multi Normal / Pro / Pro++ / Ultimate, in increasing aggressiveness) and <strong>OISD</strong> (Big / Small) are the modern community standards: well-maintained, deduplicated, low false-positive rates, with a "Pro" or "Big" tier that blocks most ads and trackers without breaking sites. Steven Black's unified hosts is the classic and still good. The old approach of stacking twenty lists with a million entries produced more breakage than blocking.</li>
+<li><strong>Add targeted lists</strong> for specific goals: Hagezi's <strong>TIF</strong> (threat intelligence feeds — malware, phishing), a <strong>native tracker</strong> list for your device brands (Samsung/LG TVs, Xiaomi, Apple, Windows telemetry — Hagezi publishes these per vendor), a <strong>DoH bypass</strong> list (blocks known DoH servers so devices with hardcoded DoH — some TVs, browsers — fall back to your resolver).</li>
+<li><strong>Allowlist, don't disable.</strong> When something breaks, find the blocked domain in the query log and allowlist it. Common ones: <code>s.youtube.com</code> (history), <code>spclient.wg.spotify.com</code>, <code>app-measurement.com</code> (some apps refuse to work), Microsoft/Xbox/PlayStation telemetry domains that games need, <code>clients4.google.com</code>.</li>
+<li><strong>Update lists weekly</strong> (the default in every blocker).</li>
+<li><strong>Know what you cannot block</strong>: YouTube ads (served from the same domains as video), Twitch ads, in-app ads that use the app's own API domain, and anything on a device that hardcodes <code>8.8.8.8</code> — for that last one, <strong>redirect or block outbound port 53</strong> at the firewall so every device is forced through your resolver (<a href="../03-networking/">Chapter 3</a>). DoH-hardcoded devices need the DoH blocklist plus, ideally, firewall blocking of known DoH IPs.</li>
+</ul>
+<h2 id="local-dns-and-the-reverse-proxy-pattern">Local DNS and the reverse-proxy pattern<a class="headerlink" href="#local-dns-and-the-reverse-proxy-pattern" title="Permanent link">#</a></h2>
+<p>This is where DNS meets <a href="../07-reverse-proxy-tls/">Chapter 7</a>. You want <code>*.example.com</code> to resolve to your reverse proxy's LAN IP for every device on the network and via VPN.</p>
+<p><strong>AdGuard Home:</strong> Filters → DNS rewrites → add <code>*.example.com</code> → <code>10.0.20.5</code>. Done. Individual overrides (<code>nas.example.com</code> → <code>10.0.20.10</code>) take precedence over the wildcard.</p>
+<p><strong>Pi-hole v6:</strong> Settings → Local DNS Records for individual hosts. For a wildcard, add to <code>/etc/dnsmasq.d/99-wildcard.conf</code> (or the v6 <code>misc.dnsmasq_lines</code> setting): <code>address=/example.com/10.0.20.5</code>. Note this also captures <code>example.com</code> itself; if your public site lives there, add an explicit record for it.</p>
+<p><strong>Blocky:</strong> <code>customDNS: mapping: example.com: 10.0.20.5</code> — matches the domain and all subdomains.</p>
+<p><strong>Unbound:</strong> <code>local-zone: "example.com." redirect</code> + <code>local-data: "example.com. A 10.0.20.5"</code> — the <code>redirect</code> type applies to all subdomains. Or, on OPNsense, Services → Unbound → Overrides → Host Override with a wildcard (<code>*</code> host).</p>
+<p><strong>Technitium:</strong> create a primary zone <code>example.com</code> with an <code>A</code> record for <code>*</code>.</p>
+<p>For <strong>device hostnames</strong> (<code>nas.home.arpa</code>), the DHCP server's lease table is the source: Pi-hole/AdGuard/Technitium as DHCP server register leases automatically; if the router is DHCP, enable <strong>conditional forwarding</strong> (Pi-hole: Settings → DNS → Conditional forwarding; AdGuard: "private reverse DNS servers" + "use private reverse DNS resolvers") so the blocker asks the router to resolve <code>.lan</code> names and reverse lookups, and the query log shows hostnames instead of IPs.</p>
+<h2 id="redundancy-dns-must-not-have-a-single-point-of-failure">Redundancy: DNS must not have a single point of failure<a class="headerlink" href="#redundancy-dns-must-not-have-a-single-point-of-failure" title="Permanent link">#</a></h2>
+<p>When your only DNS server is on a Docker host that you reboot for updates, every device in the house loses the internet for the duration — and the household learns to hate your lab. Rules:</p>
+<ol>
+<li><strong>Run two resolvers on two physical machines.</strong> A Raspberry Pi or an N100 box as the second is ideal — something you never reboot on a whim. Hand out both via DHCP.</li>
+<li><strong>Understand that DHCP "secondary DNS" is not failover.</strong> Clients pick either server arbitrarily and may stick to one; if the two have different blocklists or local records, behaviour becomes inconsistent. <strong>Keep both identical.</strong> Tools: <strong>Gravity Sync</strong> (deprecated with Pi-hole v6) / <strong>Nebula Sync</strong> (Pi-hole v6 sync via the API), <strong>Orbital Sync</strong>; for AdGuard Home, <strong>AdGuardHome-Sync</strong>; for Blocky, the same YAML file on both hosts; for Technitium, secondary zones and cluster sync. Or run both as identical containers from the same Compose file on two hosts and deploy changes to both.</li>
+<li><strong>Alternatively, a floating IP with keepalived</strong>: two resolvers, one virtual IP (VRRP) that moves to whichever is alive. Clients see one address. Slightly more setup, cleanest client experience. This is what the OPNsense HA (CARP) crowd gets for free.</li>
+<li><strong>Do not use a public resolver as the "secondary."</strong> Clients will use it some of the time and your blocking becomes random.</li>
+<li><strong>Keep the DNS host lean.</strong> Don't put the resolver on the same machine as the media server that you rebuild monthly.</li>
+</ol>
+<h2 id="encrypted-dns-for-your-own-clients">Encrypted DNS for your own clients<a class="headerlink" href="#encrypted-dns-for-your-own-clients" title="Permanent link">#</a></h2>
+<p>On the LAN, plain port 53 to your resolver is fine. Off the LAN, your phone on cellular uses whatever DNS the carrier hands out — your blocking and local names disappear. Options:</p>
+<ul>
+<li><strong>Mesh VPN with split DNS</strong> (<a href="../08-remote-access-vpn/">Chapter 8</a>) — the recommended approach: Tailscale/NetBird tell the device to use your resolver for everything (or for your domain), traffic is inside the tunnel, no exposure needed.</li>
+<li><strong>Serve DoT/DoH publicly</strong> from AdGuard Home or Technitium behind your reverse proxy, and configure Android's "Private DNS" (DoT hostname) or iOS's DNS profile (via a <code>.mobileconfig</code>, or an app like DNSecure) to point at it. Works everywhere without a VPN; exposes your resolver to the internet (rate-limit it; it is not authenticated, so anyone can use it — AdGuard's ClientID feature <code>clientid.dns.example.com</code> gives per-device identification and can be combined with allow-listing known ClientIDs).</li>
+<li><strong>A hosted filtered resolver</strong> (NextDNS, Control D, AdGuard DNS) as a fallback for devices you cannot VPN. Not self-hosting, but pragmatic.</li>
+</ul>
+<h2 id="dynamic-dns">Dynamic DNS<a class="headerlink" href="#dynamic-dns" title="Permanent link">#</a></h2>
+<p>If your public IP changes and you need a name for it (plain WireGuard, Headscale at home, an exposed reverse proxy, a game server), a <strong>DDNS</strong> client updates a DNS record whenever the IP changes. Every router OS has a DDNS client for the common providers; in Docker, <strong>ddns-updater</strong> (qdm12) supports dozens of providers with a status UI; <strong>cloudflare-ddns</strong> variants for Cloudflare specifically; <strong>inadyn</strong> and <strong>ddclient</strong> are the traditional CLI tools. Point a hostname (<code>home.example.com</code>) at your IP; everything else CNAMEs to it. Update interval of 5 minutes is plenty. With a mesh VPN and no exposed services, you do not need DDNS at all.</p>
+<h2 id="operational-notes">Operational notes<a class="headerlink" href="#operational-notes" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Port 53 conflicts.</strong> Ubuntu's <code>systemd-resolved</code> listens on <code>127.0.0.53:53</code>, which blocks Docker from publishing <code>0.0.0.0:53</code>. Fix: disable the stub listener (<code>DNSStubListener=no</code> in <code>/etc/systemd/resolved.conf</code>, then <code>ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf</code>), or bind the container to the host's LAN IP only (<code>10.0.20.5:53:53</code>).</li>
+<li><strong>The DNS host must not depend on itself.</strong> Set the Docker host's own <code>/etc/resolv.conf</code> to the router or a public resolver, not to the Pi-hole container it runs — otherwise, when Docker is down, the host cannot resolve <code>ghcr.io</code> to pull the image to bring Pi-hole back.</li>
+<li><strong>Real client IPs.</strong> A blocker in Docker bridge mode sees every query from the Docker gateway IP, killing per-client stats. Fix with <code>network_mode: host</code> (simplest; the container binds port 53 on the host directly) or a macvlan network giving it its own LAN IP (<a href="../05-containers/">Chapter 5</a>).</li>
+<li><strong>TTL and caching.</strong> Blockers cache; Unbound caches (enable <code>prefetch: yes</code> and <code>serve-expired: yes</code> for snappier browsing). Local record changes may take a minute to propagate to clients that cached the old answer.</li>
+<li><strong>Logging and privacy.</strong> The query log is a complete record of everyone's browsing. Set retention appropriately (Pi-hole: Settings → Privacy; AdGuard: Settings → General → query log retention), or anonymise, and think about who in the household can see the dashboard.</li>
+<li><strong>Test it:</strong> from a client, <code>nslookup doubleclick.net</code> should return <code>0.0.0.0</code> (or NXDOMAIN); <code>nslookup photos.example.com</code> should return your proxy's LAN IP; <code>dig +dnssec example.com</code> via Unbound should show the <code>ad</code> flag; <code>dnsleaktest.com</code> should show only your resolver's upstream (or nothing but your ISP's IP if fully recursive).</li>
+</ul>
+<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Default:</strong> AdGuard Home (encrypted upstreams and wildcard rewrites in the UI) → Unbound recursive, or straight to Quad9/Cloudflare over DoT if you prefer fewer containers. Two instances on two machines, synced with AdGuardHome-Sync. Hagezi Pro + TIF lists.</li>
+<li><strong>If you love the dashboard or already know it:</strong> Pi-hole v6 + Unbound. Two instances, Nebula Sync.</li>
+<li><strong>If you run OPNsense:</strong> Unbound on the firewall with the built-in blocklists and host overrides may be all you need — it is one fewer thing to run, and the firewall is the one box that is always on.</li>
+<li><strong>If your config lives in Git:</strong> Blocky.</li>
+<li><strong>If you want one server to rule them all (blocking + recursion + real zones):</strong> Technitium.</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> A self-hosted resolver handed out via DHCP to every VLAN; the router's DNS pointed at it too (or the router itself is the resolver).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Upstream is recursive (Unbound) or encrypted (DoT/DoH); plain-53 to a public resolver is not the upstream.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A curated blocklist (Hagezi/OISD) plus threat-intel; not twenty overlapping lists.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> <code>*.example.com</code> (or explicit records) → reverse proxy; device hostnames resolvable via DHCP integration or conditional forwarding.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Two resolvers on two physical machines, kept identical by a sync tool or shared config; DHCP hands out both (or a keepalived VIP).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> The DNS host's own <code>resolv.conf</code> does not point at its own container.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Outbound port 53/853 from other devices blocked or redirected at the firewall so hardcoded DNS cannot bypass you; DoH blocklist enabled.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Remote devices get your DNS via mesh VPN split DNS (preferred) or a rate-limited DoT/DoH listener.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Query log retention set consciously.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> DDNS configured if — and only if — you have a public IP that something needs to find.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../08-remote-access-vpn/">← 08. Remote Access and VPNs</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/09-dns-adblock.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#how-dns-resolution-works-briefly">How DNS resolution works, briefly</a></li>
+<li><a href="#the-blockers">The blockers</a><ul>
+<li><a href="#pi-hole">Pi-hole</a></li>
+<li><a href="#adguard-home">AdGuard Home</a></li>
+<li><a href="#blocky">Blocky</a></li>
+<li><a href="#technitium-dns-server">Technitium DNS Server</a></li>
+<li><a href="#unbound-and-knot-resolver-bind-powerdns">Unbound (and Knot Resolver, BIND, PowerDNS)</a></li>
+<li><a href="#comparison">Comparison</a></li>
+</ul>
+</li>
+<li><a href="#blocklists">Blocklists</a></li>
+<li><a href="#local-dns-and-the-reverse-proxy-pattern">Local DNS and the reverse-proxy pattern</a></li>
+<li><a href="#redundancy-dns-must-not-have-a-single-point-of-failure">Redundancy: DNS must not have a single point of failure</a></li>
+<li><a href="#encrypted-dns-for-your-own-clients">Encrypted DNS for your own clients</a></li>
+<li><a href="#dynamic-dns">Dynamic DNS</a></li>
+<li><a href="#operational-notes">Operational notes</a></li>
+<li><a href="#recommendations">Recommendations</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

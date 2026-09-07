@@ -80,7 +80,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 ### Part II — Core infrastructure services
 - [x] 07-reverse-proxy-tls.md — NPM, Traefik, Caddy, Nginx, HAProxy, Pangolin, SWAG; Let's Encrypt DNS-01, wildcard, internal CA, split DNS
 - [x] 08-remote-access-vpn.md — WireGuard, Tailscale/Headscale, Netbird, ZeroTier, OpenVPN, Cloudflare Tunnel, Pangolin; CGNAT; VPS relay
-- [ ] 09-dns-adblock.md — Pi-hole, AdGuard Home, Blocky, Technitium, Unbound, DoH/DoT, local records, HA DNS
+- [x] 09-dns-adblock.md — Pi-hole, AdGuard Home, Blocky, Technitium, Unbound, DoH/DoT, local records, HA DNS
 - [ ] 10-identity-sso.md — Authelia, Authentik, Keycloak, Zitadel, Pocket ID, LLDAP, Kanidm; forward-auth; OIDC; passkeys
 - [ ] 11-backups.md — 3-2-1, Restic, Borg, Kopia, Duplicati, PBS, ZFS replication (sanoid/syncoid), rclone, B2/Storage Box, restore testing, DB dumps
 - [ ] 12-monitoring.md — Prometheus/Grafana, Uptime Kuma, Gatus, Netdata, Beszel, Loki, Dozzle, Zabbix, Scrutiny, ntfy/Gotify/Apprise, Healthchecks
