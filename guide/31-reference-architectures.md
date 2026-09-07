@@ -191,3 +191,351 @@ networks:
 ```
 
 After the wizard, set the web UI to port 80 inside the container (or leave 3000 and adjust the Caddyfile), add the DNS rewrite `*.home.example.com → 192.168.1.10`, and choose upstreams (`https://dns.quad9.net/dns-query` or `tls://one.one.one.one`).
+
+**`/srv/stacks/media/compose.yaml`** — Jellyfin with Intel Quick Sync:
+
+```yaml
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    user: "1000:1000"
+    group_add: ["render", "video"]        # or the numeric GIDs from `getent group render video`
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      JELLYFIN_PublishedServerUrl: https://jellyfin.home.example.com
+    volumes:
+      - /srv/appdata/jellyfin/config:/config
+      - /srv/appdata/jellyfin/cache:/cache
+      - /srv/media:/media:ro
+    networks: [proxy]
+
+networks:
+  proxy:
+    external: true
+```
+
+**`/srv/stacks/photos/compose.yaml`** — Immich (pin the version; Immich moves fast and its release notes contain breaking changes):
+
+```yaml
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    container_name: immich-server
+    restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri              # hardware transcoding for videos
+    volumes:
+      - /srv/photos/library:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    env_file: .env
+    depends_on: [immich-redis, immich-db]
+    networks: [proxy, immich]
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    container_name: immich-ml
+    restart: unless-stopped
+    volumes:
+      - /srv/appdata/immich/model-cache:/cache
+    env_file: .env
+    networks: [immich]
+
+  immich-redis:
+    image: docker.io/valkey/valkey:8-bookworm
+    container_name: immich-redis
+    restart: unless-stopped
+    healthcheck:
+      test: redis-cli ping || exit 1
+    networks: [immich]
+
+  immich-db:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+    container_name: immich-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - /srv/appdata/immich/postgres:/var/lib/postgresql/data
+    shm_size: 128mb
+    networks: [immich]
+
+networks:
+  proxy:
+    external: true
+  immich:
+```
+
+`.env`:
+
+```dotenv
+IMMICH_VERSION=v1.135.3
+DB_PASSWORD=change-me-long-random
+DB_USERNAME=postgres
+DB_DATABASE_NAME=immich
+DB_HOSTNAME=immich-db
+REDIS_HOSTNAME=immich-redis
+TZ=Europe/Berlin
+```
+
+**`/srv/stacks/vault/compose.yaml`** — Vaultwarden:
+
+```yaml
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      DOMAIN: https://vault.home.example.com
+      SIGNUPS_ALLOWED: "false"          # set true for the first account, then back to false
+      ADMIN_TOKEN: ${VW_ADMIN_TOKEN}   # generate with: vaultwarden hash  (argon2)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_FROM: vault@example.com
+      SMTP_USERNAME: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASS}
+      SMTP_SECURITY: starttls
+      SMTP_PORT: 587
+    volumes:
+      - /srv/appdata/vaultwarden:/data
+    networks: [proxy]
+
+networks:
+  proxy:
+    external: true
+```
+
+**`/srv/stacks/cloud/compose.yaml`** — Nextcloud AIO is simpler on Proxmox; on a single Docker host the plain image with Postgres and Redis is more transparent:
+
+```yaml
+services:
+  nextcloud:
+    image: nextcloud:31-apache
+    container_name: nextcloud
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: nextcloud-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NC_DB_PASSWORD}
+      REDIS_HOST: nextcloud-redis
+      NEXTCLOUD_TRUSTED_DOMAINS: cloud.home.example.com
+      OVERWRITEPROTOCOL: https
+      OVERWRITECLIURL: https://cloud.home.example.com
+      TRUSTED_PROXIES: 172.16.0.0/12
+      PHP_MEMORY_LIMIT: 1G
+      PHP_UPLOAD_LIMIT: 16G
+    volumes:
+      - /srv/appdata/nextcloud/html:/var/www/html
+      - /srv/appdata/nextcloud/data:/var/www/html/data
+    depends_on: [nextcloud-db, nextcloud-redis]
+    networks: [proxy, nextcloud]
+
+  nextcloud-cron:
+    image: nextcloud:31-apache
+    container_name: nextcloud-cron
+    restart: unless-stopped
+    entrypoint: /cron.sh
+    volumes:
+      - /srv/appdata/nextcloud/html:/var/www/html
+      - /srv/appdata/nextcloud/data:/var/www/html/data
+    depends_on: [nextcloud-db, nextcloud-redis]
+    networks: [nextcloud]
+
+  nextcloud-db:
+    image: postgres:16-alpine
+    container_name: nextcloud-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NC_DB_PASSWORD}
+    volumes:
+      - /srv/appdata/nextcloud/postgres:/var/lib/postgresql/data
+    networks: [nextcloud]
+
+  nextcloud-redis:
+    image: redis:7-alpine
+    container_name: nextcloud-redis
+    restart: unless-stopped
+    networks: [nextcloud]
+
+networks:
+  proxy:
+    external: true
+  nextcloud:
+```
+
+!!! tip "Don't want Nextcloud?"
+    If all you need is a file browser and WebDAV for a few people, FileBrowser (or FileBrowser Quantum) is one container and ~50 MB of RAM. Syncthing covers device sync. See [Files, sync & documents](17-files-sync-documents.md) for the trade-offs.
+
+**`/srv/stacks/paperless/compose.yaml`** — Paperless-ngx:
+
+```yaml
+services:
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
+    restart: unless-stopped
+    depends_on: [paperless-db, paperless-redis]
+    environment:
+      PAPERLESS_REDIS: redis://paperless-redis:6379
+      PAPERLESS_DBHOST: paperless-db
+      PAPERLESS_DBPASS: ${PL_DB_PASSWORD}
+      PAPERLESS_URL: https://paper.home.example.com
+      PAPERLESS_SECRET_KEY: ${PL_SECRET_KEY}
+      PAPERLESS_OCR_LANGUAGE: eng+deu
+      PAPERLESS_TIME_ZONE: Europe/Berlin
+      PAPERLESS_CONSUMER_POLLING: 30
+      USERMAP_UID: 1000
+      USERMAP_GID: 1000
+    volumes:
+      - /srv/appdata/paperless/data:/usr/src/paperless/data
+      - /srv/appdata/paperless/media:/usr/src/paperless/media
+      - /srv/appdata/paperless/export:/usr/src/paperless/export
+      - /srv/appdata/paperless/consume:/usr/src/paperless/consume
+    networks: [proxy, paperless]
+
+  paperless-db:
+    image: postgres:16-alpine
+    container_name: paperless-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${PL_DB_PASSWORD}
+    volumes:
+      - /srv/appdata/paperless/postgres:/var/lib/postgresql/data
+    networks: [paperless]
+
+  paperless-redis:
+    image: redis:7-alpine
+    container_name: paperless-redis
+    restart: unless-stopped
+    networks: [paperless]
+
+networks:
+  proxy:
+    external: true
+  paperless:
+```
+
+**`/srv/stacks/ops/compose.yaml`** — dashboard, uptime, logs:
+
+```yaml
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: home.home.example.com
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - /srv/appdata/homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # for Docker widgets; use a socket proxy later
+    networks: [proxy]
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - /srv/appdata/uptime-kuma:/app/data
+    networks: [proxy]
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [proxy]
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    command: --monitor-only --schedule "0 0 6 * * *" --notifications shoutrrr
+    environment:
+      WATCHTOWER_NOTIFICATION_URL: ${SHOUTRRR_URL}   # e.g. ntfy://ntfy.sh/your-topic
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+networks:
+  proxy:
+    external: true
+```
+
+Watchtower in **monitor-only** mode tells you updates exist without applying them; auto-updating Immich or Nextcloud unattended is how you learn about breaking changes at 2 a.m. (see [Maintenance](28-maintenance-operations.md)).
+
+Bring it all up:
+
+```bash
+for s in proxy dns media photos vault cloud paperless ops; do
+  docker compose -f /srv/stacks/$s/compose.yaml up -d
+done
+```
+
+### Backups (Starter)
+
+Two Restic repositories from the same script: one on the external SSD, one on B2. App data is quiesced by dumping databases first; media and photos are just files.
+
+**`/srv/stacks/backup/backup.sh`**:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+export RESTIC_PASSWORD_FILE=/srv/stacks/backup/restic.pass
+DUMPS=/srv/backups/dumps; mkdir -p "$DUMPS"
+
+# 1. Consistent DB dumps
+docker exec immich-db     pg_dumpall -c -U postgres  | gzip > "$DUMPS/immich.sql.gz"
+docker exec nextcloud-db  pg_dump  -U nextcloud nextcloud | gzip > "$DUMPS/nextcloud.sql.gz"
+docker exec paperless-db  pg_dump  -U paperless paperless | gzip > "$DUMPS/paperless.sql.gz"
+docker exec vaultwarden   sqlite3 /data/db.sqlite3 ".backup /data/db.backup"
+
+# 2. Back up to each repo
+for REPO in /mnt/backup-ssd/restic "b2:my-bucket:homelab"; do
+  export RESTIC_REPOSITORY="$REPO"
+  restic backup /srv/appdata /srv/photos /srv/stacks "$DUMPS" \
+      --exclude /srv/appdata/immich/postgres \
+      --exclude /srv/appdata/nextcloud/postgres \
+      --exclude /srv/appdata/paperless/postgres \
+      --exclude /srv/appdata/jellyfin/cache \
+      --exclude /srv/appdata/immich/model-cache \
+      --tag daily
+  restic forget --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --prune
+done
+
+# 3. Media to the SSD only (large, replaceable)
+RESTIC_REPOSITORY=/mnt/backup-ssd/restic restic backup /srv/media --tag media
+
+curl -s -d "Backup OK $(date +%F)" ntfy.sh/your-topic >/dev/null
+```
+
+Run with a systemd timer at 03:00 (a unit that sets `Environment=B2_ACCOUNT_ID=… B2_ACCOUNT_KEY=…` from an `EnvironmentFile`). The DB dirs are excluded because live Postgres data directories are not consistent; the dumps are. **Restore test** once a quarter: `restic restore latest --target /tmp/rt --include /srv/appdata/vaultwarden` and open the SQLite file. Fuller patterns in [Backups](11-backups.md).
+
+### What Starter deliberately leaves out
+
+- No hypervisor: a kernel update reboots everything. Acceptable for a household.
+- No storage redundancy: single disks, so backups carry all the weight.
+- No SSO: each app has its own users. Fine for 1–4 people.
+- No public exposure: sharing an Immich album with grandma means she installs Tailscale or you generate a link and accept she can't open it. (If you need public sharing, jump to the Intermediate exposure model.)
+- No VLANs: IoT junk shares the LAN with the server. Mitigate with client isolation on the Wi-Fi if the router supports it.
+
+### Upgrade path → Intermediate
+
+1. Add a second disk and convert to a ZFS mirror (a fresh Proxmox install is the least painful route; restore appdata from Restic).
+2. Move Caddy → Traefik only if you need middlewares, forward-auth or Docker label routing; otherwise Caddy stays.
+3. Add Pocket ID + TinyAuth in front of the admin-ish apps.
+4. Add Beszel for host metrics and ntfy for push alerts.
+5. Keep every Compose file; they run unchanged inside a Debian VM.
+
+---
