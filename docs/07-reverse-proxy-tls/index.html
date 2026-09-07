@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reverse Proxies and TLS Certificates — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li class="active"><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 07 · ~4,129 words · 18 min read</div>
+    <article class="prose">
+      <h1 id="reverse-proxies-and-tls-certificates">Reverse Proxies and TLS Certificates<a class="headerlink" href="#reverse-proxies-and-tls-certificates" title="Permanent link">#</a></h1>
+<p>A reverse proxy is the front door to everything you self-host. It takes every incoming HTTPS request, looks at the hostname, and hands the request to the right backend service — so <code>jellyfin.example.com</code>, <code>photos.example.com</code>, and <code>vault.example.com</code> all arrive on one IP and one port, each with a valid certificate, and no service ever needs to be reached by <code>10.0.20.5:8096</code> again. This chapter explains how that works, how to get free trusted certificates for services that are never exposed to the internet, and compares the proxies worth running: Nginx Proxy Manager, Traefik, Caddy, Nginx, HAProxy, SWAG, Zoraxy, and Pangolin.</p>
+<h2 id="why-you-need-one">Why you need one<a class="headerlink" href="#why-you-need-one" title="Permanent link">#</a></h2>
+<p>Without a reverse proxy, every service is an IP and a port. <code>http://10.0.20.5:8096</code>. <code>http://10.0.20.5:2283</code>. <code>http://10.0.20.7:8080</code>. Browsers warn that the connection is insecure. Passwords travel in plaintext across the LAN. Nothing has a memorable name. If you expose anything to the internet you must forward one port per service, each one a separate attack surface.</p>
+<p>With a reverse proxy:</p>
+<ul>
+<li><strong>One entry point.</strong> Port 443 on one machine. Everything else is reachable only through it.</li>
+<li><strong>Real names.</strong> <code>jellyfin.example.com</code>. Your family can remember it.</li>
+<li><strong>Real certificates.</strong> Free, trusted, automatically renewed. No browser warnings, ever, even for services that never leave your LAN.</li>
+<li><strong>A place to put authentication.</strong> Forward-auth to Authelia or Authentik (<a href="../10-identity-sso/">Chapter 10</a>) protects services that have weak or no login of their own.</li>
+<li><strong>A place to put defences.</strong> Rate limiting, IP allow-lists, CrowdSec or fail2ban integration, security headers, geo-blocking.</li>
+<li><strong>Backend simplicity.</strong> Services speak plain HTTP on an internal network; the proxy handles TLS, HTTP/2, HTTP/3, compression.</li>
+</ul>
+<pre class="mermaid">flowchart LR
+    Browser --&gt;|&quot;https://photos.example.com&quot;| DNS[Local DNS&lt;br/&gt;photos.example.com → 10.0.20.5]
+    Browser --&gt;|&quot;TLS, port 443&quot;| Proxy[Reverse proxy&lt;br/&gt;10.0.20.5]
+    Proxy --&gt;|&quot;http://immich-server:2283&quot;| Immich
+    Proxy --&gt;|&quot;http://jellyfin:8096&quot;| Jellyfin
+    Proxy --&gt;|&quot;http://vaultwarden:80&quot;| Vaultwarden
+    Proxy -.-&gt;|&quot;forward-auth&quot;| Authelia</pre>
+<h2 id="tls-certificates-the-essentials">TLS certificates: the essentials<a class="headerlink" href="#tls-certificates-the-essentials" title="Permanent link">#</a></h2>
+<h3 id="what-a-certificate-does">What a certificate does<a class="headerlink" href="#what-a-certificate-does" title="Permanent link">#</a></h3>
+<p>A TLS certificate binds a hostname to a public key and is signed by a Certificate Authority (CA) that browsers trust. When your browser connects to <code>photos.example.com</code>, the server presents its certificate; the browser checks the signature chain up to a trusted root, checks the name matches, and proceeds to encrypt. If any step fails: the red warning page.</p>
+<h3 id="lets-encrypt-and-acme">Let's Encrypt and ACME<a class="headerlink" href="#lets-encrypt-and-acme" title="Permanent link">#</a></h3>
+<p><strong>Let's Encrypt</strong> is a non-profit CA that issues free certificates, valid for 90 days, via an automated protocol called <strong>ACME</strong>. Renewals are automatic; you never touch a certificate file by hand. It changed the web, and it is what every self-hoster uses. Alternatives that also speak ACME: <strong>ZeroSSL</strong>, <strong>Google Trust Services</strong>, <strong>Buypass</strong>. Certificate lifetimes across the industry are shortening (the CA/Browser Forum has scheduled a reduction to 47 days by 2029; Let's Encrypt began offering optional 6-day certificates in 2025), which makes automation not merely convenient but mandatory.</p>
+<p>To issue a certificate, the CA needs proof that you control the domain. ACME has two common <strong>challenge types</strong>:</p>
+<p><strong>HTTP-01</strong>: the CA connects to <code>http://yourdomain/.well-known/acme-challenge/&lt;token&gt;</code> on port 80 and expects a specific response. Requires port 80 to be reachable from the internet, so your home must have a public IP with port 80 forwarded. Works only for the exact hostname; no wildcards.</p>
+<p><strong>DNS-01</strong>: your ACME client creates a TXT record <code>_acme-challenge.yourdomain</code> at your DNS provider via API, and the CA checks it. <strong>Requires nothing to be exposed</strong> — no open ports, no public IP, works behind CGNAT. Supports <strong>wildcard certificates</strong> (<code>*.example.com</code>), so one certificate covers every service. This is the method you want.</p>
+<div class="admonition tip">
+<p class="admonition-title">DNS-01 with a wildcard is the self-hoster's standard</p>
+<p>Buy a domain at a registrar whose DNS has an API (Cloudflare, Porkbun, deSEC, Hetzner, DigitalOcean, Gandi, Namecheap, OVH, Route 53 — every ACME client supports dozens), point the domain's nameservers there, create a scoped API token, give it to your proxy. You get <code>*.example.com</code> renewed forever, with zero inbound exposure. Every proxy below supports it.</p>
+</div>
+<h3 id="internal-services-with-public-certificates">Internal services with public certificates<a class="headerlink" href="#internal-services-with-public-certificates" title="Permanent link">#</a></h3>
+<p>The trick that confuses newcomers: <strong>you can have a valid, publicly trusted certificate for a hostname that resolves only on your LAN.</strong> DNS-01 validation proves you own <code>example.com</code>; it does not care what <code>jellyfin.example.com</code> resolves to or whether it is reachable. So:</p>
+<ol>
+<li>Your public DNS (at Cloudflare/Porkbun/etc.) has no A record for <code>jellyfin.example.com</code> at all — or has one pointing at a private IP, which is harmless.</li>
+<li>Your <strong>internal DNS</strong> (Pi-hole/AdGuard/Unbound/router — <a href="../09-dns-adblock/">Chapter 9</a>) has a record — or a wildcard — pointing <code>*.example.com</code> at your reverse proxy's LAN IP.</li>
+<li>The proxy has a wildcard certificate from Let's Encrypt via DNS-01.</li>
+<li>Browsers on the LAN resolve the name locally, connect to the proxy, see a certificate signed by a trusted CA for a matching name, and show the padlock.</li>
+</ol>
+<p>This is <strong>split-horizon DNS</strong>, and it is the foundation of a clean home lab. When you later connect via VPN, your VPN client uses the internal DNS and everything works identically from anywhere.</p>
+<p>One privacy note: Let's Encrypt publishes every certificate it issues to <strong>Certificate Transparency</strong> logs, which are publicly searchable (crt.sh). Individual hostnames like <code>vault.example.com</code> will appear there. A wildcard certificate leaks only <code>*.example.com</code>, revealing nothing about which services you run. Another argument for the wildcard.</p>
+<h3 id="internal-cas">Internal CAs<a class="headerlink" href="#internal-cas" title="Permanent link">#</a></h3>
+<p>The alternative to public certificates is running your own CA and installing its root on every device. <strong>step-ca</strong> (Smallstep) is a full ACME-capable private CA; <strong>mkcert</strong> is a dev tool for quick local certs; Caddy has an internal CA built in (<code>tls internal</code>). The downside is real: every phone, laptop, TV, and IoT device needs the root installed, and some (Android apps, smart TVs, Chromecast) make that hard or impossible. For a home lab, a real domain and DNS-01 is less work and works everywhere. Internal CAs make sense for mTLS between services, for SSH certificates, or in air-gapped environments.</p>
+<h3 id="cloudflare-specific-notes">Cloudflare-specific notes<a class="headerlink" href="#cloudflare-specific-notes" title="Permanent link">#</a></h3>
+<p>Cloudflare is the most popular DNS provider for self-hosters because its free tier includes an excellent DNS API. Two things to know:</p>
+<ul>
+<li><strong>Proxied (orange cloud) vs DNS-only (grey cloud).</strong> If you point a public record at your home IP, "proxied" hides your IP behind Cloudflare's edge and gives you their WAF and DDoS protection — but Cloudflare terminates TLS, so they see your traffic in plaintext, and their ToS historically restricts non-HTML content (video streaming, large downloads) on the free tier through the proxy. "DNS-only" just returns your IP. For DNS-01 challenges, the proxy status is irrelevant.</li>
+<li><strong>Cloudflare Origin certificates</strong> are free 15-year certificates trusted <em>only by Cloudflare's edge</em>, for the Cloudflare-to-your-server leg. They are not trusted by browsers; use them only behind the orange cloud.</li>
+</ul>
+<h2 id="the-candidates">The candidates<a class="headerlink" href="#the-candidates" title="Permanent link">#</a></h2>
+<h3 id="nginx-proxy-manager-npm">Nginx Proxy Manager (NPM)<a class="headerlink" href="#nginx-proxy-manager-npm" title="Permanent link">#</a></h3>
+<p>A web UI on top of Nginx with Let's Encrypt built in. Add a "proxy host": type a domain, a backend IP and port, tick "Request a new SSL certificate," tick "Force SSL," save. Done. Access lists give basic auth or IP allow-listing per host. Custom Nginx snippets in an "Advanced" tab for anything the UI does not cover. Wildcard certificates via DNS-01 for dozens of providers.</p>
+<p><strong>Pick it if:</strong> you want the fastest path from zero to working HTTPS and you like clicking. It is the most-recommended beginner proxy and deservedly so.</p>
+<p><strong>Watch out for:</strong> configuration lives in a SQLite database and generated Nginx files, not in a file you can version. Backing up means backing up the <code>data/</code> and <code>letsencrypt/</code> directories. Development has been slow at times (v2.x was stable for years with sporadic releases; a v3 rewrite has been long in progress). Advanced setups — forward-auth to Authelia/Authentik, complex header manipulation, CrowdSec bouncers — require pasting Nginx snippets, at which point you are writing Nginx config through a text box. Many people start on NPM and migrate to Traefik or Caddy once they want their proxy config in Git.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">npm</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jc21/nginx-proxy-manager:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">npm</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;80:80&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;443:443&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;127.0.0.1:81:81&quot;</span><span class="w">      </span><span class="c1"># admin UI, LAN/localhost only</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/data</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./letsencrypt:/etc/letsencrypt</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<h3 id="traefik">Traefik<a class="headerlink" href="#traefik" title="Permanent link">#</a></h3>
+<p>A cloud-native reverse proxy whose defining feature is <strong>automatic configuration from labels</strong>: Traefik watches the Docker socket and, when a container starts with labels like <code>traefik.http.routers.jellyfin.rule=Host(\</code>jellyfin.example.com`)<code>, it creates the route, requests the certificate, and starts serving — no proxy restart, no central config to edit. Middlewares (headers, rate limits, redirects, forward-auth, IP allow-lists, CrowdSec) are composed per route. Static config (entrypoints, certificate resolvers, providers) in a</code>traefik.yml<code>; dynamic config from labels or a watched directory of YAML files (for non-Docker backends like your NAS or Proxmox UI). Excellent dashboard. Native Let's Encrypt with HTTP-01, DNS-01 (via</code>lego`, 100+ providers), and TLS-ALPN. HTTP/3. Also the default ingress in k3s.</p>
+<p><strong>Pick it if:</strong> you run many Docker services and want the proxy config to live <em>with each service</em> in its Compose file. Once it clicks, adding a service is three labels. This is the most popular proxy among intermediate-to-advanced self-hosters.</p>
+<p><strong>Watch out for:</strong> the learning curve is real — the label syntax is verbose, the router/service/middleware model takes a day to internalise, and the v2→v3 migration (2024) changed rule syntax. Debugging "why is this route not appearing" is a rite of passage (usually: the container is not on the proxy network, or <code>traefik.docker.network</code> is not set when the container is on several networks). Giving Traefik the Docker socket is root-equivalent access to the host; mitigate with a <strong>socket proxy</strong> (<code>tecnativa/docker-socket-proxy</code> or <code>wollomatic/socket-proxy</code>) that exposes only read-only container events.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># traefik/compose.yaml</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">traefik</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik:v3.3</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">security_opt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">no-new-privileges</span><span class="p p-Indicator">:</span><span class="nv">true</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;80:80&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;443:443&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">CF_DNS_API_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${CF_DNS_API_TOKEN}</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/docker.sock:/var/run/docker.sock:ro</span><span class="w">   </span><span class="c1"># or point to a socket proxy</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./traefik.yml:/etc/traefik/traefik.yml:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./dynamic:/etc/traefik/dynamic:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./acme:/acme</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.enable=true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.http.routers.dashboard.rule=Host(`traefik.example.com`)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.http.routers.dashboard.service=api@internal</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.http.routers.dashboard.middlewares=authelia@file</span>
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># traefik/traefik.yml (static)</span>
+<span class="nt">entryPoints</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">web</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;:80&quot;</span>
+<span class="w">    </span><span class="nt">http</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">redirections</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">entryPoint</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> to</span><span class="p">:</span><span class="w"> </span><span class="nv">websecure</span><span class="p p-Indicator">,</span><span class="nt"> scheme</span><span class="p">:</span><span class="w"> </span><span class="nv">https</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">websecure</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;:443&quot;</span>
+<span class="w">    </span><span class="nt">http</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">tls</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">certResolver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">letsencrypt</span>
+<span class="w">        </span><span class="nt">domains</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">main</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example.com</span>
+<span class="w">            </span><span class="nt">sans</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;*.example.com&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">docker</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">exposedByDefault</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">proxy</span>
+<span class="w">  </span><span class="nt">file</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">directory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/traefik/dynamic</span>
+<span class="w">    </span><span class="nt">watch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">certificatesResolvers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">letsencrypt</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">acme</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">email</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">you@example.com</span>
+<span class="w">      </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/acme/acme.json</span>
+<span class="w">      </span><span class="nt">dnsChallenge</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare</span>
+<span class="w">        </span><span class="nt">resolvers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;1.1.1.1:53&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;8.8.8.8:53&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">api</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dashboard</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># A service, elsewhere</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">jellyfin</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jellyfin/jellyfin</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">default</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.enable=true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.http.routers.jellyfin.rule=Host(`jellyfin.example.com`)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.http.services.jellyfin.loadbalancer.server.port=8096</span>
+</code></pre></div>
+<h3 id="caddy">Caddy<a class="headerlink" href="#caddy" title="Permanent link">#</a></h3>
+<p>A Go web server whose headline is <strong>automatic HTTPS by default</strong>: write <code>jellyfin.example.com { reverse_proxy jellyfin:8096 }</code> in a <code>Caddyfile</code> and Caddy obtains and renews the certificate, redirects HTTP to HTTPS, and enables HTTP/2 and HTTP/3 — with no further configuration. The Caddyfile is the most readable proxy configuration format in existence. Caddy also serves static files, does forward-auth, basic auth, header manipulation, rate limiting (via plugin), and is the basis of several other projects. Wildcard certificates via DNS-01 require a build with the relevant DNS plugin (<code>caddy-dns/cloudflare</code> etc.) — either use <code>xcaddy</code> to build, use a community image (<code>ghcr.io/caddybuilds/caddy-cloudflare</code>, <code>serfriz/caddy-*</code>), or build a two-line Dockerfile.</p>
+<p><strong>Pick it if:</strong> you want the simplest possible <em>file-based</em> configuration, you are happy to edit one file and reload, and you value sane defaults. Caddy is what many experienced admins settle on after tiring of Traefik's verbosity or NPM's UI. Excellent for non-Docker backends and mixed environments.</p>
+<p><strong>Watch out for:</strong> DNS-01 needs a custom build (a minor annoyance). Fewer "copy this config" examples in project READMEs than Nginx or Traefik, though this is changing. No Docker-label auto-discovery out of the box (the <code>caddy-docker-proxy</code> project adds it). The commercial Caddy Enterprise/API-first features are not needed at home.</p>
+<div class="highlight"><pre><span></span><code># Caddyfile
+{
+    email you@example.com
+    acme_dns cloudflare {env.CF_API_TOKEN}
+}
+
+*.example.com {
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+
+    @jellyfin host jellyfin.example.com
+    handle @jellyfin {
+        reverse_proxy jellyfin:8096
+    }
+
+    @photos host photos.example.com
+    handle @photos {
+        reverse_proxy immich-server:2283
+    }
+
+    @vault host vault.example.com
+    handle @vault {
+        reverse_proxy vaultwarden:80
+    }
+
+    # everything else on the wildcard: 404
+    handle {
+        respond 404
+    }
+}
+</code></pre></div>
+<h3 id="nginx-hand-configured">Nginx (hand-configured)<a class="headerlink" href="#nginx-hand-configured" title="Permanent link">#</a></h3>
+<p>The battle-tested web server and proxy that underlies NPM and SWAG. Every project on earth documents an Nginx config for its reverse proxy needs. Infinitely flexible; blistering performance; the most Stack Overflow answers of anything in this chapter. Certificates via <strong>certbot</strong> (with DNS plugins) or <strong>acme.sh</strong> and a cron/systemd timer; Nginx has no built-in ACME, though a 2025 module added experimental support.</p>
+<p><strong>Pick it if:</strong> you already know Nginx, you need something specific it does that others do not, or you want to understand exactly what your proxy does with no abstraction. On OPNsense, the Nginx plugin is a reasonable choice for terminating TLS at the firewall.</p>
+<p><strong>Watch out for:</strong> you manage certificates and renewals yourself. Config is verbose and repetitive (one <code>server</code> block per host, with the same TLS and header boilerplate — <code>include</code> files help). Mistakes are silent until <code>nginx -t</code>. It is the most work of the options here for the same result.</p>
+<h3 id="swag-secure-web-application-gateway">SWAG (Secure Web Application Gateway)<a class="headerlink" href="#swag-secure-web-application-gateway" title="Permanent link">#</a></h3>
+<p>LinuxServer.io's opinionated Nginx bundle: Nginx + certbot (with DNS plugins for many providers) + fail2ban + a library of <strong>pre-written proxy configs</strong> for hundreds of self-hosted apps (drop <code>jellyfin.subdomain.conf.sample</code> → <code>jellyfin.subdomain.conf</code> and it works) + optional mods for Authelia/Authentik forward-auth, CrowdSec, GeoIP blocking, Cloudflare Real-IP, and a dashboard. It is "Nginx for people who want Nginx but not the boilerplate."</p>
+<p><strong>Pick it if:</strong> you like the LinuxServer ecosystem and want sensible defaults with an escape hatch to raw Nginx. The preset configs are a genuine time-saver and stay current.</p>
+<p><strong>Watch out for:</strong> it is still Nginx underneath; complex customisation means editing Nginx config. The container does a lot (fail2ban inside a container is a little odd). Less "discoverable" than Traefik for Docker-heavy setups.</p>
+<h3 id="haproxy">HAProxy<a class="headerlink" href="#haproxy" title="Permanent link">#</a></h3>
+<p>The high-performance TCP/HTTP load balancer. Extraordinarily capable at layer 4 and 7 — SNI-based routing without terminating TLS, health checks, sticky sessions, sophisticated ACLs — and the standard choice on OPNsense/pfSense for terminating TLS at the firewall (the OPNsense HAProxy plugin plus its ACME plugin is a complete solution). Overkill as a simple HTTP reverse proxy for a home lab, excellent when you need TCP proxying (databases, game servers, SSH, mail) alongside HTTP, or when the firewall is where you want TLS to end.</p>
+<h3 id="zoraxy">Zoraxy<a class="headerlink" href="#zoraxy" title="Permanent link">#</a></h3>
+<p>A newer Go-based proxy with a modern web UI, built-in Let's Encrypt (including DNS-01 for many providers), access control, GeoIP, rate limiting, a uptime monitor, TCP proxying, and a ZeroTier integration. Positioned as a fresher NPM alternative with more built in. Smaller community and younger; worth watching.</p>
+<h3 id="pangolin">Pangolin<a class="headerlink" href="#pangolin" title="Permanent link">#</a></h3>
+<p>A 2024–2025 arrival that solves a different problem: <strong>a self-hosted tunnel with a reverse proxy, identity-aware access, and a web UI, designed to run on a VPS</strong> so that home services behind CGNAT — or that you simply do not want to port-forward — get a public front door. Newt (a lightweight client) on your home machine establishes an outbound WireGuard tunnel to the Pangolin server; Pangolin (Traefik underneath) routes <code>photos.example.com</code> through the tunnel to Immich on your LAN; built-in auth (email/password, passkeys, PIN, OIDC via an SSO provider) can gate any resource before it reaches the backend. Think "self-hosted Cloudflare Tunnel + Access." Growing very fast, backed by a small company (Fossorial), open-core (with a paid tier for some enterprise features). Detailed in <a href="../08-remote-access-vpn/">Chapter 8</a>; mentioned here because it <em>is</em> a reverse proxy, and for CGNAT users it may be the <em>only</em> one they need.</p>
+<h3 id="others-worth-knowing">Others worth knowing<a class="headerlink" href="#others-worth-knowing" title="Permanent link">#</a></h3>
+<p><strong>Envoy</strong> (the service-mesh proxy; too heavy for home), <strong>Apache httpd</strong> (works, nobody starts a new home lab on it), <strong>Cosmos Cloud</strong> (a whole platform including a proxy; <a href="../04-os-and-hypervisors/">Chapter 4</a>), <strong>Bunkerweb</strong> (Nginx-based security-focused proxy with a WAF and UI), <strong>Nginx UI</strong> and <strong>NginxProxyManager forks</strong>, <strong>Traefik-forward-auth / oauth2-proxy</strong> (auth middlewares, not proxies; <a href="../10-identity-sso/">Chapter 10</a>), <strong>Cloudflare Tunnel</strong> (<code>cloudflared</code>; the hosted alternative — <a href="../08-remote-access-vpn/">Chapter 8</a>).</p>
+<h2 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>NPM</th>
+<th>Traefik</th>
+<th>Caddy</th>
+<th>Nginx</th>
+<th>SWAG</th>
+<th>HAProxy</th>
+<th>Zoraxy</th>
+<th>Pangolin</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Configuration</td>
+<td>Web UI</td>
+<td>Docker labels + YAML</td>
+<td>Caddyfile</td>
+<td>nginx.conf</td>
+<td>Nginx + presets</td>
+<td>haproxy.cfg / OPNsense UI</td>
+<td>Web UI</td>
+<td>Web UI</td>
+</tr>
+<tr>
+<td>Auto-HTTPS</td>
+<td>Yes (UI)</td>
+<td>Yes</td>
+<td>Yes (best defaults)</td>
+<td>Via certbot/acme.sh</td>
+<td>Yes (certbot)</td>
+<td>Via OPNsense ACME or external</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>DNS-01 wildcard</td>
+<td>Yes</td>
+<td>Yes (100+ providers)</td>
+<td>Yes (custom build)</td>
+<td>Yes (certbot plugins)</td>
+<td>Yes</td>
+<td>External</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Docker auto-discovery</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+<td>Via plugin</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Forward-auth (Authelia etc.)</td>
+<td>Via snippets</td>
+<td>Native middleware</td>
+<td>Native (<code>forward_auth</code>)</td>
+<td>Manual <code>auth_request</code></td>
+<td>Preset mods</td>
+<td>Possible, fiddly</td>
+<td>Partial</td>
+<td>Built-in auth</td>
+</tr>
+<tr>
+<td>TCP/UDP proxying</td>
+<td>Streams via snippets</td>
+<td>Yes</td>
+<td>Yes (layer4 plugin)</td>
+<td>Yes (<code>stream</code>)</td>
+<td>Via snippets</td>
+<td><strong>Yes</strong> (its strength)</td>
+<td>Yes</td>
+<td>Yes (via tunnel)</td>
+</tr>
+<tr>
+<td>HTTP/3</td>
+<td>No (as of 2.x)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes (1.25+)</td>
+<td>Yes</td>
+<td>Yes (2.6+)</td>
+<td>Partial</td>
+<td>Yes (Traefik)</td>
+</tr>
+<tr>
+<td>Config in Git</td>
+<td>Awkward</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Awkward</td>
+<td>Awkward</td>
+</tr>
+<tr>
+<td>Learning curve</td>
+<td>Lowest</td>
+<td>High</td>
+<td>Low</td>
+<td>Medium–High</td>
+<td>Medium</td>
+<td>High</td>
+<td>Low</td>
+<td>Low–Medium</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Beginners; mixed backends</td>
+<td>Many Docker services</td>
+<td>Readable file config; mixed</td>
+<td>Experts; special needs</td>
+<td>LSIO fans wanting presets</td>
+<td>TCP + firewall-hosted TLS</td>
+<td>NPM alternative</td>
+<td>CGNAT / VPS-fronted access</td>
+</tr>
+</tbody>
+</table>
+<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Just starting, want a UI:</strong> Nginx Proxy Manager. You will learn the concepts and can migrate later.</li>
+<li><strong>Docker-centric, many services, comfortable with YAML:</strong> Traefik. The labels-with-the-service model pays off at scale.</li>
+<li><strong>Want the config in one readable file, mixed Docker and non-Docker backends:</strong> Caddy. The guide's personal favourite for its ratio of capability to configuration.</li>
+<li><strong>Behind CGNAT or want public access without port-forwarding, have a cheap VPS:</strong> Pangolin, or Cloudflare Tunnel if you accept their terms.</li>
+<li><strong>TLS termination at the firewall:</strong> HAProxy or Caddy plugin on OPNsense.</li>
+</ul>
+<p>Whichever you pick: run <em>one</em> reverse proxy. Two proxies (NPM on the NAS and Traefik on the Docker host, say) is a common accident that leads to confusion about which one owns port 443 and which certificate is where. If you have multiple hosts, either run the proxy on one and point it at the others' services by IP:port over the LAN (the simplest), or run a proxy per host with distinct hostnames and a DNS record per host.</p>
+<h2 id="hardening-the-proxy">Hardening the proxy<a class="headerlink" href="#hardening-the-proxy" title="Permanent link">#</a></h2>
+<p>The proxy is the one thing that faces the network, so it deserves care.</p>
+<p><strong>Security headers.</strong> Add to every response: <code>Strict-Transport-Security: max-age=31536000; includeSubDomains</code> (HSTS — commit to HTTPS; be sure everything works over HTTPS first), <code>X-Content-Type-Options: nosniff</code>, <code>Referrer-Policy: strict-origin-when-cross-origin</code>, <code>X-Frame-Options: SAMEORIGIN</code> or a <code>Content-Security-Policy</code> (per-app; a global CSP breaks things). <code>securityheaders.com</code> scores a public host. Traefik: a <code>headers</code> middleware; Caddy: a <code>header</code> block; Nginx: <code>add_header</code>.</p>
+<p><strong>TLS configuration.</strong> TLS 1.2 and 1.3 only; modern cipher suites. Every proxy here does this by default now. Mozilla's SSL Configuration Generator provides copy-paste settings for Nginx/HAProxy; <code>ssllabs.com/ssltest</code> grades a public host.</p>
+<p><strong>Default host.</strong> Requests to your IP with no matching hostname (or a random hostname) should get a 404 or a connection reset, not your first configured service. Traefik: no default router; Caddy: a catch-all <code>handle { respond 404 }</code> or <code>abort</code>; Nginx: a <code>default_server</code> block that returns 444; NPM: the "Default Site" setting.</p>
+<p><strong>Authentication in front of weak apps.</strong> Anything without robust built-in auth (many dashboards, Sonarr/Radarr's optional auth, dev tools) gets forward-auth to your identity provider or at minimum basic auth plus an IP allow-list (<a href="../10-identity-sso/">Chapter 10</a>).</p>
+<p><strong>IP allow-lists</strong> for admin interfaces: the Traefik dashboard, NPM's admin, Proxmox, the NAS UI — LAN and VPN ranges only, enforced at the proxy.</p>
+<p><strong>Rate limiting</strong> on login endpoints; <strong>CrowdSec</strong> (a collaborative IPS with bouncers for Traefik, Caddy, Nginx, and the firewall — <a href="../13-security/">Chapter 13</a>) or <strong>fail2ban</strong> reading proxy logs.</p>
+<p><strong>Real client IPs.</strong> Behind Cloudflare or another upstream proxy, the connecting IP is theirs; configure trusted proxies so <code>X-Forwarded-For</code> is honoured only from those ranges, or your rate limits and bans hit Cloudflare instead of the attacker.</p>
+<p><strong>Don't expose the proxy's own admin UI publicly.</strong> NPM's port 81, Traefik's dashboard, Zoraxy's UI: LAN/VPN only.</p>
+<p><strong>Expose as little as possible.</strong> The best public attack surface is none. A proxy serving forty internal-only hostnames on a LAN behind a router with no port forwards is at very low risk. The moment 443 is forwarded, every one of those forty hostnames is guessable (via CT logs if not wildcarded, via brute-force otherwise) and reachable. Consider a <em>second</em> proxy instance — or separate entrypoints/ports — for public services, so that forwarding 443 to it exposes only the handful of hosts you intend.</p>
+<h2 id="common-problems">Common problems<a class="headerlink" href="#common-problems" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Certificate not issuing.</strong> For DNS-01: is the API token scoped to the right zone with edit permission? Does the proxy's DNS resolver see the TXT record (set explicit resolvers <code>1.1.1.1</code> to avoid your Pi-hole caching a negative answer)? Let's Encrypt has rate limits (50 certificates per registered domain per week; 5 duplicate certificates per week) — use the <strong>staging</strong> environment while testing.</li>
+<li><strong>"502 Bad Gateway."</strong> The proxy cannot reach the backend. Same Docker network? Right container name and <em>internal</em> port (the port the app listens on inside the container, not the published one)? Is the backend actually up (<code>docker compose ps</code>, <code>docker compose logs</code>)? Traefik: is <code>traefik.docker.network</code> set when the container is on several networks?</li>
+<li><strong>WebSockets not working</strong> (Home Assistant, Jellyfin, code-server, terminals). Traefik and Caddy handle them automatically; Nginx and NPM need <code>proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";</code> (NPM has a "Websockets Support" toggle).</li>
+<li><strong>Uploads failing</strong> (Immich, Nextcloud). Raise body-size limits: Nginx <code>client_max_body_size 0;</code> (unlimited) or a large value; Traefik's default has no limit; Caddy's <code>request_body max_size</code>. Also check the <em>app's</em> own limit.</li>
+<li><strong>Redirect loops.</strong> The app thinks it is on HTTP and redirects to HTTPS, which the proxy sends to it as HTTP again. Set <code>X-Forwarded-Proto: https</code> (proxies do by default) and configure the app's "trusted proxies" or "base URL" setting — Nextcloud (<code>overwriteprotocol</code>), Authelia, Gitea, Vaultwarden (<code>DOMAIN</code>), Home Assistant (<code>trusted_proxies</code>) all have one.</li>
+<li><strong>Works on LAN, not via VPN</strong> (or vice versa). DNS. The VPN client is not using your internal DNS, or your internal DNS lacks the record. <code>dig</code> from the client to confirm.</li>
+<li><strong>Browser caches the HSTS policy</strong> after you experiment, then refuses to load an HTTP-only test service on the same domain. Set HSTS only when everything is settled; clear via <code>chrome://net-internals/#hsts</code>.</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> A real domain with DNS at a provider that has an API; a scoped API token created.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> One reverse proxy chosen and running; only it publishes 80/443; services reach it via a shared Docker network or LAN IP:port.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Wildcard certificate via DNS-01; auto-renewal confirmed (check the cert's expiry in the browser a week after issue; watch proxy logs at renewal time).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Internal DNS resolves <code>*.example.com</code> (or individual names) to the proxy's LAN IP.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> HTTP → HTTPS redirect; HSTS once stable; security headers; TLS 1.2+ only.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A default/catch-all host that returns 404 or drops.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Forward-auth or basic-auth + IP allow-list on every service lacking its own strong authentication.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Proxy admin UI/dashboard restricted to LAN/VPN.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Zero ports forwarded from the internet unless a specific service must be public; if so, only 443, only to the proxy, with CrowdSec/fail2ban and rate limiting.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Proxy configuration (Caddyfile / Traefik YAML + service labels / NPM data dir) included in backups and, where file-based, in Git.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../06-storage/">← 06. Storage: Filesystems, Redundancy, and Sharing</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/07-reverse-proxy-tls.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#why-you-need-one">Why you need one</a></li>
+<li><a href="#tls-certificates-the-essentials">TLS certificates: the essentials</a><ul>
+<li><a href="#what-a-certificate-does">What a certificate does</a></li>
+<li><a href="#lets-encrypt-and-acme">Let's Encrypt and ACME</a></li>
+<li><a href="#internal-services-with-public-certificates">Internal services with public certificates</a></li>
+<li><a href="#internal-cas">Internal CAs</a></li>
+<li><a href="#cloudflare-specific-notes">Cloudflare-specific notes</a></li>
+</ul>
+</li>
+<li><a href="#the-candidates">The candidates</a><ul>
+<li><a href="#nginx-proxy-manager-npm">Nginx Proxy Manager (NPM)</a></li>
+<li><a href="#traefik">Traefik</a></li>
+<li><a href="#caddy">Caddy</a></li>
+<li><a href="#nginx-hand-configured">Nginx (hand-configured)</a></li>
+<li><a href="#swag-secure-web-application-gateway">SWAG (Secure Web Application Gateway)</a></li>
+<li><a href="#haproxy">HAProxy</a></li>
+<li><a href="#zoraxy">Zoraxy</a></li>
+<li><a href="#pangolin">Pangolin</a></li>
+<li><a href="#others-worth-knowing">Others worth knowing</a></li>
+</ul>
+</li>
+<li><a href="#comparison">Comparison</a></li>
+<li><a href="#recommendations">Recommendations</a></li>
+<li><a href="#hardening-the-proxy">Hardening the proxy</a></li>
+<li><a href="#common-problems">Common problems</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
