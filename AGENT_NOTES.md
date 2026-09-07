@@ -16,6 +16,14 @@ Constraints from the user:
 - Remote: `https://github.com/gorg667/self-host-guide.git` (credentials already configured via
   `setup_github_environment`; re-run that tool if `git push` fails with auth error).
 
+## Session-start checklist (do this every time)
+
+1. `cd /home/user/webapp && git status && git log --oneline | head`
+2. `pip install -q markdown pymdown-extensions` — the sandbox may have been reset; build.py exits early without these.
+3. If `git push` fails on auth, call the `setup_github_environment` tool.
+4. Read the STATUS table below; continue with the first unchecked chapter.
+5. A chapter that was being written when the session died is LOST unless it is on disk — always check `ls guide/`.
+
 ## Repository layout
 
 ```
