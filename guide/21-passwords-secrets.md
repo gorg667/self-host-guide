@@ -82,3 +82,60 @@ The **file-based** approach: a single encrypted `.kdbx` database file opened by 
 | Audit / official support | Community | **Vendor** | Vendor (Pro) | n/a |
 | Licence | AGPL | AGPL/BSL mix + licence keys | AGPL / Pro | GPL |
 | Best for | Households; most people | Businesses wanting support | Teams sharing credentials | Minimalists; offline-first |
+
+## Two-factor codes
+
+Where do your TOTP seeds live? Options, from most to least convenient:
+
+- **In the password manager** (Vaultwarden/Bitwarden's built-in authenticator, KeePassXC). Convenient — one app, autofill of the code. The criticism: it collapses two factors into one (whoever has your vault has both). The counter-argument: for most people the realistic threat is a phished password, not a compromised vault, and vault-with-MFA is still far better than SMS codes. A reasonable compromise: TOTP in the vault for everyday sites; a *separate* authenticator for the vault itself, your email, and your bank.
+- **A dedicated authenticator app** with encrypted backups: **Aegis** (Android — open source, encrypted export, the best), **2FAS**, **Ente Auth** (open source, E2EE cross-device sync via Ente's service or your own self-hosted Ente server, Android/iOS/desktop — the best cross-platform choice), **Raivo** (iOS; acquired and enshittified in 2023 — migrate), **Bitwarden Authenticator** (standalone app, separate from the vault). Back the seeds up: an encrypted export stored with your other cold backups.
+- **A self-hosted TOTP web app**: **2FAuth** (a clean PHP app that stores your seeds server-side with a web UI and PWA, import from Aegis/Google Authenticator/etc.) — useful as a household-shared or "any-device" authenticator; you are trusting your server with the seeds, so VPN-only.
+- **Hardware keys** (YubiKey, Nitrokey, Google Titan, SoloKeys) for FIDO2/WebAuthn where supported — the strongest factor, phishing-resistant, no seeds to back up (but buy **two** and register both everywhere; a lost single key is a lockout). Also store TOTP seeds on the YubiKey via Yubico Authenticator if you like.
+
+## Passkeys
+
+Passkeys (FIDO2 credentials synced across devices) are replacing passwords on major sites. Where they live matters for self-hosters: **Vaultwarden/Bitwarden** store them in the vault (cross-platform, self-hosted, portable), **KeePassXC** too; Apple/Google/Microsoft platform passkeys are synced via their clouds. Storing passkeys in your self-hosted vault keeps them under your control and works on every OS — the recommendation. Your own services should *accept* passkeys via the IdP ([Chapter 10](10-identity-sso.md)).
+
+## Machine secrets
+
+A home lab accumulates hundreds of non-human secrets: database passwords, API tokens for Cloudflare and B2, SMTP credentials, OIDC client secrets, Restic repository keys, Home Assistant tokens. They end up in `.env` files. That is where most people should leave them — with discipline:
+
+### The pragmatic baseline
+
+- One `.env` per stack, `chmod 600`, owned by the deploying user, `.gitignore`d.
+- `*_FILE` variables and Docker secrets where the image supports them ([Chapter 13](13-security.md)).
+- A copy of every `.env` in the **password manager** (as a secure note attached to a "Homelab: stackname" entry) — so a lost host does not mean lost credentials, and so the vault's backup covers them.
+- Scoped tokens; rotation when anything leaks.
+
+### SOPS + age: secrets in Git
+
+**SOPS** (Mozilla, now CNCF) encrypts *values* in YAML/JSON/`.env` files while leaving keys readable — you see `DB_PASSWORD: ENC[AES256_GCM,...]` and can diff the file meaningfully. Encryption keys: **age** (a small modern tool; one keypair per admin/host), GPG, or cloud KMS. Commit encrypted files; decrypt on deploy (`sops -d .env.enc > .env`, or `sops exec-env`). Integrates with Ansible (community.sops), Kubernetes (via Flux/Argo), NixOS (sops-nix, agenix), Komodo. **This is how you get a fully reproducible lab in Git *including* its secrets**, and the recommendation for anyone doing infrastructure-as-code ([Chapter 27](27-automation-iac.md)). `git-crypt` is the older whole-file alternative.
+
+### Secrets managers
+
+For labs that want a *service* to hold secrets, inject them at runtime, rotate them, and audit access:
+
+- **Infisical** — a modern open-source secrets platform (Node + Postgres + Redis): projects/environments, a clean UI, a CLI (`infisical run -- docker compose up`, which injects secrets as env vars), SDKs, an agent, a Kubernetes operator, secret rotation, PKI/certificates, SSH CA, and audit logs. MIT-licensed core with an enterprise tier. The most approachable full secrets manager and the current community favourite.
+- **OpenBao** — the Linux Foundation fork of **HashiCorp Vault** after its 2023 licence change (Vault itself is BSL; OpenBao is MPL). The enterprise standard: key/value secrets, dynamic database credentials, PKI, transit encryption, SSH CA, policies, audit. Powerful, complex, a real learning curve; single-node "dev" mode is fine at home. **Pick it if** you want to learn Vault for career reasons.
+- **Bitwarden Secrets Manager** — a machine-secrets product alongside the password manager; free tier for personal use on the hosted service; Vaultwarden does not implement it.
+- **Doppler**, **1Password Secrets Automation / Connect** — hosted; excellent; not self-hosted.
+- **Teller**, **envchain**, **direnv** with encrypted files — lightweight CLI wrappers.
+
+**Recommendation for machine secrets:** `.env` files with copies in Vaultwarden for Tier 1; **SOPS + age in Git** for anyone with their Compose files versioned (which should be everyone at Tier 2+); **Infisical** if you want a UI-driven manager with runtime injection; **OpenBao** to learn Vault.
+
+## Backing up the vault (specifically)
+
+- Nightly `sqlite3 /data/db.sqlite3 ".backup '/data/backups/db-$(date +%F).sqlite3'"` (Vaultwarden), plus `attachments/`, `sends/`, `rsa_key*`, and `config.json`, into the normal encrypted off-site backup.
+- Monthly **encrypted JSON export** from a Bitwarden client (Settings → Export → password-protected) saved to cold storage. This is the format-independent recovery: it can be imported into *any* Bitwarden server, or into KeePassXC.
+- A **printed emergency sheet**: master password (or a hint only you understand), 2FA recovery codes for the vault, the location of the export and its password. In a safe, a bank box, or with a trusted person. Bitwarden's **emergency access** feature (Vaultwarden supports it) lets a trusted contact request access after a waiting period — configure it for your partner.
+- **Test**: restore the SQLite backup into a scratch Vaultwarden and log in. Import the JSON export into KeePassXC and open it. Once a year.
+
+## Checklist
+
+- [ ] Vaultwarden (or chosen manager) deployed; signups disabled; admin token hashed or admin disabled; icons internal.
+- [ ] Every household member enrolled; shared credentials in an organisation collection; emergency access configured for partners.
+- [ ] MFA on every vault account with recovery codes stored *outside* the vault; passkeys stored in the vault.
+- [ ] Access via VPN (or exposed with CrowdSec/fail2ban reading its log, rate limits, and no admin panel); push notifications configured if desired.
+- [ ] Vault DB backed up via `sqlite3 .backup` nightly + keys + attachments; monthly encrypted export in cold storage; printed emergency sheet exists; annual restore test.
+- [ ] TOTP strategy decided (vault vs separate authenticator); authenticator seeds backed up encrypted; two hardware keys registered where FIDO2 is supported.
+- [ ] Machine secrets: `.env` files `600` and gitignored with copies in the vault; SOPS+age for Git-managed configs; scoped tokens; rotation on leak.

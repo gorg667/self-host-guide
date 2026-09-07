@@ -97,7 +97,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 18-notes-productivity.md — Obsidian LiveSync, Joplin, Trilium, Outline, BookStack, Wiki.js, Memos, SilverBullet, AFFiNE, Hedgedoc; Vikunja/Planka; Radicale/Baikal; Linkwarden/Linkding/Karakeep/Wallabag; FreshRSS/Miniflux
 - [x] 19-home-automation.md — Home Assistant, Zigbee2MQTT/ZHA, Z-Wave JS, Mosquitto, Node-RED, ESPHome, Frigate, Scrypted, Homebridge, Matter, Music Assistant
 - [x] 20-communication.md — Matrix (Synapse/Conduit/Tuwunel), Rocket.Chat, Mattermost, XMPP, Jitsi, Mumble; self-hosted email (Mailcow/Mailu/Stalwart/docker-mailserver) with caveats
-- [ ] 21-passwords-secrets.md — Vaultwarden, Bitwarden, Passbolt, KeePassXC+Syncthing, Psono, Infisical, OpenBao, 2FAuth
+- [x] 21-passwords-secrets.md — Vaultwarden, Bitwarden, Passbolt, KeePassXC+Syncthing, Psono, Infisical, OpenBao, 2FAuth
 - [ ] 22-dev-git-automation.md — Gitea/Forgejo/GitLab, Woodpecker/Gitea Actions, Harbor, code-server/Coder, Portainer/Dockge/Komodo, n8n/Windmill/Activepieces, it-tools
 - [ ] 23-ai-llm.md — Ollama, Open WebUI, LocalAI, llama.cpp, vLLM, ComfyUI/SD, Whisper/Speaches, Piper/Kokoro, SearXNG/Perplexica, LibreChat, AnythingLLM; GPU/VRAM sizing, quantization
 - [ ] 24-gaming.md — Pterodactyl/Pelican, Crafty, PufferPanel, AMP, itzg Minecraft, RomM, Gaseous, EmulatorJS, Sunshine/Moonlight
