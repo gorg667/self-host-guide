@@ -106,7 +106,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 
 ### Part IV — Operations
 - [x] 27-automation-iac.md — Ansible, Terraform/OpenTofu + Proxmox, cloud-init, NixOS, Renovate, GitOps (Komodo, Flux/ArgoCD)
-- [ ] 28-maintenance-operations.md — Update cadence, pinning, runbooks, documentation, disaster drills, bus factor
+- [x] 28-maintenance-operations.md — Update cadence, pinning, runbooks, documentation, disaster drills, bus factor
 - [ ] 29-power-cost-environment.md — Measuring watts, cost calc, idle tuning (powertop/C-states/ASPM), spin-down, heat/noise, UPS + NUT
 - [ ] 30-legal-ethical.md — Licensing (OSS vs source-available), hosting for family, copyright, ISP ToS, GDPR-lite
 - [ ] 31-reference-architectures.md — Starter / Intermediate / Advanced blueprints with Mermaid diagrams + full compose stacks
