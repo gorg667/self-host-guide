@@ -2,7 +2,7 @@
 
 > A comprehensive, opinionated, in-depth guide to services worth self-hosting — and everything around them.
 
-*Generated 2026-09-07 from the chapter sources in `guide/`. 31 chapters, ~106,531 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
+*Generated 2026-09-07 from the chapter sources in `guide/`. 35 chapters, ~124,968 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
 
 
 ## Table of contents
@@ -50,6 +50,10 @@
 - [28. Maintenance and Operations](#maintenance-and-operations)
 - [29. Power, Cost, and the Physical Environment](#power-cost-and-the-physical-environment)
 - [30. Legal and Ethical Considerations](#legal-and-ethical-considerations)
+- [31. Reference Architectures](#reference-architectures)
+- [32. Troubleshooting and FAQ](#troubleshooting-and-faq)
+- [33. Resources and Community](#resources-and-community)
+- [34. Appendix](#appendix)
 
 ---
 
@@ -206,7 +210,7 @@ The landscape has matured remarkably. A few observations that inform the recomme
 - **Local AI became a legitimate self-hosting category.** Running capable language models, image generation, speech-to-text, and text-to-speech on consumer GPUs is now practical and is one of the strongest reasons to add a GPU to a home lab. [Chapter 23](#local-ai-llms-image-generation-speech-and-search) is new territory for many.
 - **Immich made self-hosted photos viable for normal people.** For years the honest advice was "keep using Google Photos." That is no longer true. [Chapter 16](#photos-replacing-google-photos-and-icloud) explains why.
 - **Licensing is a live issue.** Several popular projects have moved from open source to source-available or "fair" licences, and a few have been acquired or have added paywalled tiers. This guide notes the licence of each service reviewed and [Chapter 30](#legal-and-ethical-considerations) explains what the distinctions mean for you.
-- **The community is enormous and generous.** r/selfhosted, r/homelab, the awesome-selfhosted list, and countless blogs and Discord servers mean that whatever problem you hit, someone has hit it before. [Chapter 33](33-resources-community.md) points to the best of them.
+- **The community is enormous and generous.** r/selfhosted, r/homelab, the awesome-selfhosted list, and countless blogs and Discord servers mean that whatever problem you hit, someone has hit it before. [Chapter 33](#resources-and-community) points to the best of them.
 
 ## How to use this guide
 
@@ -255,7 +259,7 @@ Sum the RAM (this one comes to ~8 GB with headroom), note the single "needs hard
 
 ## The three tiers
 
-Throughout this guide, recommendations are grouped into three tiers. They are not rigid and most labs sit between two of them, but naming them makes it easier to talk about trade-offs. [Chapter 31](31-reference-architectures.md) gives a complete blueprint for each.
+Throughout this guide, recommendations are grouped into three tiers. They are not rigid and most labs sit between two of them, but naming them makes it easier to talk about trade-offs. [Chapter 31](#reference-architectures) gives a complete blueprint for each.
 
 ### Tier 1 — Starter
 
@@ -6500,5 +6504,2321 @@ A few positions this guide takes, stated plainly so you can disagree:
 - [ ] Domain: multi-year, auto-renew, locked, 2FA, off-domain recovery email, recorded in the emergency document.
 - [ ] Old drives wiped before disposal; hardware choices consider idle power as an environmental cost.
 - [ ] A budget — however small — for donating to the projects you rely on.
+
+---
+
+# Reference Architectures
+
+Everything before this chapter has been a menu. This one plates three complete meals: a **Starter** lab on a single mini PC, an **Intermediate** lab that adds a hypervisor, real storage, a proper reverse proxy, SSO and a monitoring stack, and an **Advanced** lab with a dedicated router, VLANs, a NAS, a Proxmox cluster and a Kubernetes-free but fully declarative, GitOps-managed service layer. Each blueprint gives you the hardware bill of materials, the network layout, a diagram, the full Compose stacks (not snippets), the backup plan, the exposure model and an honest list of what it does *not* do. Pick the one that matches where you are, build it end to end, then take the upgrade paths at the end of each section as your needs grow.
+
+> **How to use these blueprints**
+>
+> They are opinionated on purpose. Every choice (Caddy vs Traefik, Restic vs Kopia, Pocket ID vs Authelia) has a chapter earlier in the guide explaining the alternatives; the blueprints simply pick one so that the pieces are known to fit together. Swap components once the whole thing is running, not before.
+
+
+## Blueprint comparison
+
+| | Starter | Intermediate | Advanced |
+|---|---|---|---|
+| **Hardware** | 1 × mini PC (N100/N305 or used USFF), 16–32 GB, 1 × NVMe + 1 × external SSD | 1 × mini PC or small tower (i5/Ryzen 5, 64 GB), 2 × NVMe (mirror) + 2–4 × HDD; 1 × Pi/thin client for the "second node" | Dedicated router box, managed PoE switch, NAS (4–8 bays), 2–3 Proxmox nodes, small UPS for each rack shelf |
+| **Cost (used/new, approx.)** | €200–450 | €700–1,500 | €2,000–5,000+ |
+| **Idle power** | 8–15 W | 25–45 W | 80–200 W |
+| **Host OS** | Debian 12 / Ubuntu 24.04 LTS + Docker | Proxmox VE → Debian VM for Docker + LXCs | Proxmox VE cluster + TrueNAS SCALE (or Proxmox ZFS) NAS |
+| **Storage** | ext4 NVMe + external SSD for backups | ZFS mirror (boot/VMs) + ZFS RAIDZ1 or MergerFS+SnapRAID (bulk) | ZFS on NAS, NFS/iSCSI to nodes, replication between pools |
+| **Networking** | ISP router, flat LAN | ISP router in bridge → OPNsense VM *or* keep ISP router; two VLANs | OPNsense/VyOS bare metal, 4–6 VLANs, 2.5/10 GbE spine |
+| **Reverse proxy / TLS** | Caddy, DNS-01 wildcard | Traefik, DNS-01 wildcard, split-horizon DNS | Traefik + CrowdSec bouncer; Pangolin for public apps |
+| **Remote access** | Tailscale | Tailscale + Headscale option | WireGuard on OPNsense + Tailscale subnet router; Pangolin |
+| **Identity** | none / app-native | Pocket ID (OIDC) + Traefik forward-auth via TinyAuth | Authentik or Kanidm, LDAP + OIDC, groups |
+| **DNS** | AdGuard Home | AdGuard Home ×2 (HA), Unbound upstream | Unbound + AdGuard on two nodes, DHCP on OPNsense |
+| **Monitoring** | Uptime Kuma, Dozzle | Beszel + Uptime Kuma + ntfy | Prometheus/Grafana/Loki, Alertmanager → ntfy, Uptime Kuma external |
+| **Backups** | Restic → external SSD + Backblaze B2 | PBS for VMs, Restic for app data, ZFS snapshots, off-site B2 | PBS + ZFS replication to second pool + off-site (B2 / friend's NAS via Tailscale) |
+| **IaC** | Compose in Git | Compose in Git + Komodo + Renovate | Ansible + OpenTofu (Proxmox provider) + Komodo/GitOps + Renovate |
+| **Services** | Jellyfin, Immich, Vaultwarden, Nextcloud *or* FileBrowser, Paperless, Homepage | + Home Assistant, Forgejo, Miniflux, Audiobookshelf, *arr stack, Grafana | + Matrix/Synapse, Mailcow (optional), Ollama/Open WebUI, game servers, Frigate |
+
+---
+
+## Starter: one box, ten services, a weekend
+
+### Goals
+
+- Everything on one low-power box you can switch off without anyone noticing (until they do).
+- HTTPS everywhere with real certificates and *no* open ports.
+- Backups that would actually restore.
+- A path to Intermediate that does not require starting over.
+
+### Bill of materials
+
+| Item | Suggested | Notes |
+|---|---|---|
+| Compute | Intel N100/N305 mini PC (Beelink, GMKtec, MINISFORUM) **or** used Lenovo M720q/M920q / HP 800 G4 Mini / Dell 7060 Micro | Intel iGPU gives Quick Sync for Jellyfin and Immich ML runs fine on CPU. 8th-gen+ Intel for used units (see [Hardware](#hardware-choosing-what-to-run-it-on)) |
+| RAM | 16 GB minimum, 32 GB comfortable | Immich + Nextcloud + Jellyfin + Paperless sit around 6–8 GB |
+| Boot/app storage | 1 TB NVMe | ext4 is fine here; a single disk has no redundancy so backups are non-negotiable |
+| Bulk storage | 2–4 TB USB 3 SSD or a second internal SATA SSD | Media + photos. Avoid USB **HDD** enclosures that spin down aggressively |
+| Backup target | Second external SSD (kept unplugged except during backups) + Backblaze B2 | Fulfils 3-2-1 at ~€1–3/month |
+| UPS | Optional small line-interactive (APC BE-series or Eaton 3S) | Protects the ext4 filesystem from power-loss corruption; NUT is overkill at this stage |
+
+### Network layout
+
+Keep the ISP router. Give the box a **DHCP reservation** (e.g. `192.168.1.10`) and point the router's DHCP DNS at it once AdGuard is running (or set the DNS on individual devices first while testing).
+
+```mermaid
+flowchart LR
+    Internet((Internet)) --- ISP[ISP router<br/>192.168.1.1<br/>DHCP, NAT, Wi-Fi]
+    ISP --- Box[Mini PC 192.168.1.10<br/>Debian + Docker]
+    ISP --- Clients[Phones, laptops, TV]
+    Box -.Tailscale.-> Phone[Your phone<br/>away from home]
+    subgraph Box services
+        Caddy[Caddy :443<br/>*.home.example.com]
+        AGH[AdGuard Home :53]
+        Apps[Jellyfin, Immich, Vaultwarden,<br/>Nextcloud, Paperless, Homepage,<br/>Uptime Kuma, Dozzle]
+        Caddy --> Apps
+    end
+```
+
+Name resolution: buy a cheap domain (e.g. `example.com`) at a registrar with an API that Caddy's DNS plugins support (Cloudflare, Porkbun, deSEC, Hetzner…). Create a **wildcard DNS rewrite** in AdGuard Home so `*.home.example.com → 192.168.1.10`. Caddy obtains a wildcard certificate via DNS-01 (see [Reverse proxy & TLS](#reverse-proxies-and-tls-certificates)). Nothing is ever forwarded on the router; away from home you use Tailscale, which also lets you set AdGuard as the tailnet DNS so the same names work everywhere.
+
+### Host preparation
+
+```bash
+# Debian 12 minimal install, then:
+sudo apt update && sudo apt install -y curl git ufw unattended-upgrades
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker "$USER"
+
+# Firewall: only SSH (LAN), DNS, HTTP/S, and Tailscale
+sudo ufw default deny incoming
+sudo ufw allow from 192.168.1.0/24 to any port 22 proto tcp
+sudo ufw allow 53
+sudo ufw allow 80,443/tcp
+sudo ufw allow in on tailscale0
+sudo ufw enable
+
+# Tailscale on the host (not in a container) so SSH survives Docker restarts
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up --ssh --advertise-routes=192.168.1.0/24
+
+# Layout
+sudo mkdir -p /srv/{stacks,appdata,media,photos,backups}
+sudo chown -R "$USER":"$USER" /srv
+```
+
+> **Disable the host's stub resolver before AdGuard**
+>
+> On Ubuntu/Debian with `systemd-resolved`, port 53 is taken. Edit `/etc/systemd/resolved.conf` → `DNSStubListener=no`, then `ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf` and restart `systemd-resolved`. Details in [DNS & ad blocking](#dns-and-network-wide-ad-blocking).
+
+
+### Compose stacks
+
+Directory layout: one directory per stack under `/srv/stacks`, each with `compose.yaml` and a `.env` that is **not** committed. Commit the directory to a private Git repo (a `.gitignore` with `.env` and `*.secret`).
+
+**`/srv/stacks/proxy/compose.yaml`** — Caddy with the Cloudflare DNS module (swap for your provider; images exist for most, or build with `xcaddy`):
+
+```yaml
+services:
+  caddy:
+    image: ghcr.io/caddybuilds/caddy-cloudflare:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/appdata/caddy/data:/data
+      - /srv/appdata/caddy/config:/config
+    networks: [proxy]
+
+networks:
+  proxy:
+    name: proxy
+```
+
+**`/srv/stacks/proxy/Caddyfile`**:
+
+```caddyfile
+{
+    email you@example.com
+}
+
+*.home.example.com {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+
+    @jellyfin  host jellyfin.home.example.com
+    handle @jellyfin  { reverse_proxy jellyfin:8096 }
+
+    @immich    host photos.home.example.com
+    handle @immich    { reverse_proxy immich-server:2283 }
+
+    @vault     host vault.home.example.com
+    handle @vault     { reverse_proxy vaultwarden:80 }
+
+    @cloud     host cloud.home.example.com
+    handle @cloud     { reverse_proxy nextcloud:80 }
+
+    @paper     host paper.home.example.com
+    handle @paper     { reverse_proxy paperless:8000 }
+
+    @home      host home.home.example.com
+    handle @home      { reverse_proxy homepage:3000 }
+
+    @status    host status.home.example.com
+    handle @status    { reverse_proxy uptime-kuma:3001 }
+
+    @logs      host logs.home.example.com
+    handle @logs      { reverse_proxy dozzle:8080 }
+
+    @dns       host dns.home.example.com
+    handle @dns       { reverse_proxy adguard:80 }
+
+    handle { respond "No such service" 404 }
+}
+```
+
+Every app container joins the external `proxy` network and publishes **no ports** of its own — Caddy reaches them by container name.
+
+**`/srv/stacks/dns/compose.yaml`** — AdGuard Home:
+
+```yaml
+services:
+  adguard:
+    image: adguard/adguardhome:latest
+    container_name: adguard
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "3000:3000/tcp"   # first-run wizard only; remove after setup
+    volumes:
+      - /srv/appdata/adguard/work:/opt/adguardhome/work
+      - /srv/appdata/adguard/conf:/opt/adguardhome/conf
+    networks: [proxy]
+
+networks:
+  proxy:
+    external: true
+```
+
+After the wizard, set the web UI to port 80 inside the container (or leave 3000 and adjust the Caddyfile), add the DNS rewrite `*.home.example.com → 192.168.1.10`, and choose upstreams (`https://dns.quad9.net/dns-query` or `tls://one.one.one.one`).
+
+**`/srv/stacks/media/compose.yaml`** — Jellyfin with Intel Quick Sync:
+
+```yaml
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    user: "1000:1000"
+    group_add: ["render", "video"]        # or the numeric GIDs from `getent group render video`
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      JELLYFIN_PublishedServerUrl: https://jellyfin.home.example.com
+    volumes:
+      - /srv/appdata/jellyfin/config:/config
+      - /srv/appdata/jellyfin/cache:/cache
+      - /srv/media:/media:ro
+    networks: [proxy]
+
+networks:
+  proxy:
+    external: true
+```
+
+**`/srv/stacks/photos/compose.yaml`** — Immich (pin the version; Immich moves fast and its release notes contain breaking changes):
+
+```yaml
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    container_name: immich-server
+    restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri              # hardware transcoding for videos
+    volumes:
+      - /srv/photos/library:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    env_file: .env
+    depends_on: [immich-redis, immich-db]
+    networks: [proxy, immich]
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    container_name: immich-ml
+    restart: unless-stopped
+    volumes:
+      - /srv/appdata/immich/model-cache:/cache
+    env_file: .env
+    networks: [immich]
+
+  immich-redis:
+    image: docker.io/valkey/valkey:8-bookworm
+    container_name: immich-redis
+    restart: unless-stopped
+    healthcheck:
+      test: redis-cli ping || exit 1
+    networks: [immich]
+
+  immich-db:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+    container_name: immich-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - /srv/appdata/immich/postgres:/var/lib/postgresql/data
+    shm_size: 128mb
+    networks: [immich]
+
+networks:
+  proxy:
+    external: true
+  immich:
+```
+
+`.env`:
+
+```dotenv
+IMMICH_VERSION=v1.135.3
+DB_PASSWORD=change-me-long-random
+DB_USERNAME=postgres
+DB_DATABASE_NAME=immich
+DB_HOSTNAME=immich-db
+REDIS_HOSTNAME=immich-redis
+TZ=Europe/Berlin
+```
+
+**`/srv/stacks/vault/compose.yaml`** — Vaultwarden:
+
+```yaml
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      DOMAIN: https://vault.home.example.com
+      SIGNUPS_ALLOWED: "false"          # set true for the first account, then back to false
+      ADMIN_TOKEN: ${VW_ADMIN_TOKEN}   # generate with: vaultwarden hash  (argon2)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_FROM: vault@example.com
+      SMTP_USERNAME: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASS}
+      SMTP_SECURITY: starttls
+      SMTP_PORT: 587
+    volumes:
+      - /srv/appdata/vaultwarden:/data
+    networks: [proxy]
+
+networks:
+  proxy:
+    external: true
+```
+
+**`/srv/stacks/cloud/compose.yaml`** — Nextcloud AIO is simpler on Proxmox; on a single Docker host the plain image with Postgres and Redis is more transparent:
+
+```yaml
+services:
+  nextcloud:
+    image: nextcloud:31-apache
+    container_name: nextcloud
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: nextcloud-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NC_DB_PASSWORD}
+      REDIS_HOST: nextcloud-redis
+      NEXTCLOUD_TRUSTED_DOMAINS: cloud.home.example.com
+      OVERWRITEPROTOCOL: https
+      OVERWRITECLIURL: https://cloud.home.example.com
+      TRUSTED_PROXIES: 172.16.0.0/12
+      PHP_MEMORY_LIMIT: 1G
+      PHP_UPLOAD_LIMIT: 16G
+    volumes:
+      - /srv/appdata/nextcloud/html:/var/www/html
+      - /srv/appdata/nextcloud/data:/var/www/html/data
+    depends_on: [nextcloud-db, nextcloud-redis]
+    networks: [proxy, nextcloud]
+
+  nextcloud-cron:
+    image: nextcloud:31-apache
+    container_name: nextcloud-cron
+    restart: unless-stopped
+    entrypoint: /cron.sh
+    volumes:
+      - /srv/appdata/nextcloud/html:/var/www/html
+      - /srv/appdata/nextcloud/data:/var/www/html/data
+    depends_on: [nextcloud-db, nextcloud-redis]
+    networks: [nextcloud]
+
+  nextcloud-db:
+    image: postgres:16-alpine
+    container_name: nextcloud-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NC_DB_PASSWORD}
+    volumes:
+      - /srv/appdata/nextcloud/postgres:/var/lib/postgresql/data
+    networks: [nextcloud]
+
+  nextcloud-redis:
+    image: redis:7-alpine
+    container_name: nextcloud-redis
+    restart: unless-stopped
+    networks: [nextcloud]
+
+networks:
+  proxy:
+    external: true
+  nextcloud:
+```
+
+> **Don't want Nextcloud?**
+>
+> If all you need is a file browser and WebDAV for a few people, FileBrowser (or FileBrowser Quantum) is one container and ~50 MB of RAM. Syncthing covers device sync. See [Files, sync & documents](#files-sync-and-documents) for the trade-offs.
+
+
+**`/srv/stacks/paperless/compose.yaml`** — Paperless-ngx:
+
+```yaml
+services:
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
+    restart: unless-stopped
+    depends_on: [paperless-db, paperless-redis]
+    environment:
+      PAPERLESS_REDIS: redis://paperless-redis:6379
+      PAPERLESS_DBHOST: paperless-db
+      PAPERLESS_DBPASS: ${PL_DB_PASSWORD}
+      PAPERLESS_URL: https://paper.home.example.com
+      PAPERLESS_SECRET_KEY: ${PL_SECRET_KEY}
+      PAPERLESS_OCR_LANGUAGE: eng+deu
+      PAPERLESS_TIME_ZONE: Europe/Berlin
+      PAPERLESS_CONSUMER_POLLING: 30
+      USERMAP_UID: 1000
+      USERMAP_GID: 1000
+    volumes:
+      - /srv/appdata/paperless/data:/usr/src/paperless/data
+      - /srv/appdata/paperless/media:/usr/src/paperless/media
+      - /srv/appdata/paperless/export:/usr/src/paperless/export
+      - /srv/appdata/paperless/consume:/usr/src/paperless/consume
+    networks: [proxy, paperless]
+
+  paperless-db:
+    image: postgres:16-alpine
+    container_name: paperless-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${PL_DB_PASSWORD}
+    volumes:
+      - /srv/appdata/paperless/postgres:/var/lib/postgresql/data
+    networks: [paperless]
+
+  paperless-redis:
+    image: redis:7-alpine
+    container_name: paperless-redis
+    restart: unless-stopped
+    networks: [paperless]
+
+networks:
+  proxy:
+    external: true
+  paperless:
+```
+
+**`/srv/stacks/ops/compose.yaml`** — dashboard, uptime, logs:
+
+```yaml
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: home.home.example.com
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - /srv/appdata/homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # for Docker widgets; use a socket proxy later
+    networks: [proxy]
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - /srv/appdata/uptime-kuma:/app/data
+    networks: [proxy]
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [proxy]
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    command: --monitor-only --schedule "0 0 6 * * *" --notifications shoutrrr
+    environment:
+      WATCHTOWER_NOTIFICATION_URL: ${SHOUTRRR_URL}   # e.g. ntfy://ntfy.sh/your-topic
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+networks:
+  proxy:
+    external: true
+```
+
+Watchtower in **monitor-only** mode tells you updates exist without applying them; auto-updating Immich or Nextcloud unattended is how you learn about breaking changes at 2 a.m. (see [Maintenance](#maintenance-and-operations)).
+
+Bring it all up:
+
+```bash
+for s in proxy dns media photos vault cloud paperless ops; do
+  docker compose -f /srv/stacks/$s/compose.yaml up -d
+done
+```
+
+### Backups (Starter)
+
+Two Restic repositories from the same script: one on the external SSD, one on B2. App data is quiesced by dumping databases first; media and photos are just files.
+
+**`/srv/stacks/backup/backup.sh`**:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+export RESTIC_PASSWORD_FILE=/srv/stacks/backup/restic.pass
+DUMPS=/srv/backups/dumps; mkdir -p "$DUMPS"
+
+# 1. Consistent DB dumps
+docker exec immich-db     pg_dumpall -c -U postgres  | gzip > "$DUMPS/immich.sql.gz"
+docker exec nextcloud-db  pg_dump  -U nextcloud nextcloud | gzip > "$DUMPS/nextcloud.sql.gz"
+docker exec paperless-db  pg_dump  -U paperless paperless | gzip > "$DUMPS/paperless.sql.gz"
+docker exec vaultwarden   sqlite3 /data/db.sqlite3 ".backup /data/db.backup"
+
+# 2. Back up to each repo
+for REPO in /mnt/backup-ssd/restic "b2:my-bucket:homelab"; do
+  export RESTIC_REPOSITORY="$REPO"
+  restic backup /srv/appdata /srv/photos /srv/stacks "$DUMPS" \
+      --exclude /srv/appdata/immich/postgres \
+      --exclude /srv/appdata/nextcloud/postgres \
+      --exclude /srv/appdata/paperless/postgres \
+      --exclude /srv/appdata/jellyfin/cache \
+      --exclude /srv/appdata/immich/model-cache \
+      --tag daily
+  restic forget --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --prune
+done
+
+# 3. Media to the SSD only (large, replaceable)
+RESTIC_REPOSITORY=/mnt/backup-ssd/restic restic backup /srv/media --tag media
+
+curl -s -d "Backup OK $(date +%F)" ntfy.sh/your-topic >/dev/null
+```
+
+Run with a systemd timer at 03:00 (a unit that sets `Environment=B2_ACCOUNT_ID=… B2_ACCOUNT_KEY=…` from an `EnvironmentFile`). The DB dirs are excluded because live Postgres data directories are not consistent; the dumps are. **Restore test** once a quarter: `restic restore latest --target /tmp/rt --include /srv/appdata/vaultwarden` and open the SQLite file. Fuller patterns in [Backups](#backups-the-chapter-that-matters-most).
+
+### What Starter deliberately leaves out
+
+- No hypervisor: a kernel update reboots everything. Acceptable for a household.
+- No storage redundancy: single disks, so backups carry all the weight.
+- No SSO: each app has its own users. Fine for 1–4 people.
+- No public exposure: sharing an Immich album with grandma means she installs Tailscale or you generate a link and accept she can't open it. (If you need public sharing, jump to the Intermediate exposure model.)
+- No VLANs: IoT junk shares the LAN with the server. Mitigate with client isolation on the Wi-Fi if the router supports it.
+
+### Upgrade path → Intermediate
+
+1. Add a second disk and convert to a ZFS mirror (a fresh Proxmox install is the least painful route; restore appdata from Restic).
+2. Move Caddy → Traefik only if you need middlewares, forward-auth or Docker label routing; otherwise Caddy stays.
+3. Add Pocket ID + TinyAuth in front of the admin-ish apps.
+4. Add Beszel for host metrics and ntfy for push alerts.
+5. Keep every Compose file; they run unchanged inside a Debian VM.
+
+---
+
+## Intermediate: hypervisor, redundant storage, SSO, real monitoring
+
+### Goals
+
+- Survive a single disk failure and a botched OS upgrade (snapshots + rollback).
+- Segregate IoT and guests from servers with two VLANs.
+- One login for everything that supports OIDC; forward-auth for what does not.
+- Alerts on your phone when a disk, backup, certificate or service goes bad.
+- Public exposure for a *small* set of apps without touching the router's port-forward table.
+
+### Bill of materials
+
+| Item | Suggested | Notes |
+|---|---|---|
+| Main node | Used SFF/tower (Dell 3070/7070 SFF, HP 800 G5 SFF) or a 6-core mini PC (MINISFORUM MS-01, ASUS NUC 13 Pro) | i5-9500+/Ryzen 5 5600+ ; iGPU for transcoding. MS-01 gives 2×2.5 GbE + 2×10 GbE SFP+ and 3 NVMe slots |
+| RAM | 64 GB (2×32 DDR4/DDR5 SODIMM) | ZFS ARC + 6–10 VMs/LXCs. ECC if the platform allows (see [Hardware](#hardware-choosing-what-to-run-it-on)) |
+| Boot + VM pool | 2 × 1–2 TB NVMe, **ZFS mirror** | Choose enterprise-ish drives or expect TBW to be consumed by Proxmox's logging; set `zfs_arc_max` |
+| Bulk pool | 2–4 × 8–16 TB CMR HDD (WD Red Plus/Pro, Seagate IronWolf, Toshiba N300) | RAIDZ1 with 3–4 drives, or a mirror with 2. Or MergerFS + SnapRAID if mostly media |
+| Second node | Raspberry Pi 5 / used thin client (Fujitsu Futro S740, HP t640) | Runs second AdGuard, Uptime Kuma *externally to the main node*, PBS if it has a USB SSD |
+| Switch | 8-port managed 2.5 GbE (or 1 GbE with 2.5 GbE uplinks) that does 802.1Q VLANs | TP-Link TL-SG108E class is enough; PoE if you want APs/cameras |
+| Router | Keep the ISP router **or** move routing to an OPNsense VM with a dedicated NIC | The VM route is elegant but ties your internet to the hypervisor rebooting. See [Networking](#networking-fundamentals-for-the-home-lab) |
+| UPS | 600–1000 VA line-interactive with USB (Eaton Ellipse, APC Back-UPS Pro, CyberPower CP series) | NUT on the Proxmox host shuts down cleanly |
+
+### Network layout
+
+```mermaid
+flowchart TB
+    Internet((Internet)) --- Router[Router / OPNsense<br/>VLAN 10 Servers 10.0.10.0/24<br/>VLAN 20 Trusted 10.0.20.0/24<br/>VLAN 30 IoT 10.0.30.0/24]
+    Router --- Switch[Managed switch<br/>trunk to PVE, access ports]
+    Switch --- PVE[Proxmox VE node<br/>vmbr0 trunk]
+    Switch --- Pi[Second node<br/>AdGuard #2, Uptime Kuma, PBS]
+    Switch --- AP[Wi-Fi AP<br/>SSIDs mapped to VLAN 20 / 30]
+    subgraph PVE
+        Docker[VM: docker-01<br/>Debian, 16 GB]
+        HA[VM: Home Assistant OS]
+        LXC1[LXC: AdGuard #1 + Unbound]
+        LXC2[LXC: PBS or Samba]
+        Traefik[Traefik in docker-01<br/>*.home.example.com]
+    end
+    Docker --> Traefik
+    Pangolin[VPS: Pangolin<br/>public apps] -. WireGuard/Newt .-> Docker
+```
+
+Rules on the router firewall, in order:
+
+1. IoT → Servers: allow only what the integration needs (e.g. TCP 8123 to Home Assistant, MQTT 1883, DNS 53); block the rest.
+2. Trusted → Servers: allow all.
+3. Servers → Trusted/IoT: allow *established* only, plus specific exceptions (HA → IoT devices, Jellyfin → Chromecast on IoT via mDNS reflector).
+4. Guest Wi-Fi → Internet only.
+
+mDNS across VLANs needs a reflector (Avahi on OPNsense, or `mdns-repeater`); Chromecast discovery is the classic casualty. Details and IPv6 considerations in [Networking](#networking-fundamentals-for-the-home-lab).
+
+### Proxmox layout
+
+| Guest | Type | vCPU / RAM | Storage | Notes |
+|---|---|---|---|---|
+| `docker-01` | VM (Debian 12, q35, virtio) | 6 / 16–24 GB | 200 GB on NVMe mirror; **bind-mount bulk via NFS or virtiofs** | The main Compose host. iGPU passthrough *or* leave the GPU on the host and give Jellyfin its own LXC with `/dev/dri` mapped |
+| `haos` | VM (Home Assistant OS) | 2 / 4 GB | 32 GB | Use the community helper script or import the qcow2. USB Zigbee/Z-Wave stick passthrough |
+| `dns-01` | LXC (Debian, unprivileged) | 1 / 512 MB | 4 GB | AdGuard Home + Unbound. Static IP `10.0.10.53` |
+| `pbs` | LXC or VM | 2 / 4 GB | datastore on bulk pool | Proxmox Backup Server. Better on the second node if it has the disk |
+| `files` | LXC | 2 / 2 GB | bind-mounts from bulk pool | Samba/NFS exports for the LAN; keeps SMB out of the Docker VM |
+
+ZFS specifics: `zfs set compression=zstd atime=off xattr=sa` on pools; datasets per purpose (`tank/media`, `tank/photos`, `tank/appdata-backups`); `zfs_arc_max` ≈ 25 % of RAM in `/etc/modprobe.d/zfs.conf`; monthly scrubs via the default timer; `zfs-auto-snapshot` or Sanoid for 15-min/hourly/daily snapshots on the VM pool. Full treatment in [Storage](#storage-filesystems-redundancy-and-sharing) and [OS & hypervisors](#operating-systems-and-hypervisors).
+
+> **Proxmox on consumer NVMe**
+>
+> Proxmox writes constantly (pmxcfs, RRD, journal). Two mitigations: `zfs set sync=disabled` is **not** one of them. Use `log2ram`-style tmpfs for `/var/log` sparingly, disable the HA services if you have a single node (`systemctl disable --now pve-ha-lrm pve-ha-crm`), and buy drives with ≥600 TBW.
+
+
+### Compose on `docker-01`
+
+The Starter stacks carry over. What changes: Traefik replaces Caddy (Docker labels, middlewares, forward-auth), a socket proxy hides the Docker socket, Pocket ID provides OIDC, TinyAuth guards apps that lack native OIDC, and Beszel + ntfy add metrics and alerts.
+
+**`/srv/stacks/proxy/compose.yaml`**:
+
+```yaml
+services:
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: socket-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    read_only: true
+    tmpfs: [/run]
+    networks: [socket]
+
+  traefik:
+    image: traefik:v3.4
+    container_name: traefik
+    restart: unless-stopped
+    depends_on: [socket-proxy]
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN}
+    command:
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.endpoint=tcp://socket-proxy:2375
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+      - --providers.file.directory=/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls.certresolver=le
+      - --entrypoints.websecure.http.tls.domains[0].main=home.example.com
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.home.example.com
+      - --certificatesresolvers.le.acme.dnschallenge=true
+      - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.le.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
+      - --certificatesresolvers.le.acme.email=you@example.com
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --log.level=INFO
+      - --accesslog=true
+      - --metrics.prometheus=true
+    volumes:
+      - /srv/appdata/traefik/letsencrypt:/letsencrypt
+      - ./dynamic:/dynamic:ro
+    networks: [proxy, socket]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.traefik.rule: Host(`traefik.home.example.com`)
+      traefik.http.routers.traefik.service: api@internal
+      traefik.http.routers.traefik.middlewares: tinyauth@docker,secure-headers@file
+
+  tinyauth:
+    image: ghcr.io/steveiliop56/tinyauth:v3
+    container_name: tinyauth
+    restart: unless-stopped
+    environment:
+      APP_URL: https://auth.home.example.com
+      SECRET: ${TINYAUTH_SECRET}
+      GENERIC_CLIENT_ID: ${TINYAUTH_OIDC_CLIENT_ID}
+      GENERIC_CLIENT_SECRET: ${TINYAUTH_OIDC_CLIENT_SECRET}
+      GENERIC_AUTH_URL: https://id.home.example.com/authorize
+      GENERIC_TOKEN_URL: https://id.home.example.com/api/oidc/token
+      GENERIC_USER_URL: https://id.home.example.com/api/oidc/userinfo
+      GENERIC_SCOPES: openid email profile groups
+      GENERIC_NAME: Pocket ID
+      OAUTH_WHITELIST: you@example.com,partner@example.com
+    networks: [proxy]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.tinyauth.rule: Host(`auth.home.example.com`)
+      traefik.http.middlewares.tinyauth.forwardauth.address: http://tinyauth:3000/api/auth/traefik
+
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id:v1
+    container_name: pocket-id
+    restart: unless-stopped
+    environment:
+      APP_URL: https://id.home.example.com
+      TRUST_PROXY: "true"
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - /srv/appdata/pocket-id:/app/data
+    networks: [proxy]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.pocket-id.rule: Host(`id.home.example.com`)
+
+networks:
+  proxy:
+    name: proxy
+  socket:
+    internal: true
+```
+
+**`/srv/stacks/proxy/dynamic/middlewares.yaml`**:
+
+```yaml
+http:
+  middlewares:
+    secure-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        referrerPolicy: strict-origin-when-cross-origin
+        frameDeny: false        # Homepage iframes; set true per-router if desired
+    lan-only:
+      ipAllowList:
+        sourceRange: ["10.0.10.0/24", "10.0.20.0/24", "100.64.0.0/10"]
+```
+
+An app then needs only labels, e.g. Jellyfin (native login, so no TinyAuth):
+
+```yaml
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.jellyfin.rule: Host(`jellyfin.home.example.com`)
+      traefik.http.services.jellyfin.loadbalancer.server.port: 8096
+      traefik.http.routers.jellyfin.middlewares: secure-headers@file
+```
+
+and something like Dozzle (no auth of its own) gets `traefik.http.routers.dozzle.middlewares: tinyauth@docker,lan-only@file`.
+
+Apps with native OIDC — Immich, Paperless (via `PAPERLESS_SOCIALACCOUNT_PROVIDERS`), Nextcloud (`user_oidc` app), Forgejo, Miniflux, Audiobookshelf, Grafana, Komodo, Home Assistant (through the *hass-oidc* custom integration) — get a client in Pocket ID and log in with a passkey. The mechanics are in [Identity & SSO](#identity-and-single-sign-on).
+
+**`/srv/stacks/ops/compose.yaml`** (additions):
+
+```yaml
+  beszel:
+    image: henrygd/beszel:latest
+    container_name: beszel
+    restart: unless-stopped
+    volumes:
+      - /srv/appdata/beszel:/beszel_data
+    networks: [proxy]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.beszel.rule: Host(`metrics.home.example.com`)
+      traefik.http.services.beszel.loadbalancer.server.port: 8090
+
+  beszel-agent:
+    image: henrygd/beszel-agent:latest
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      LISTEN: 45876
+      KEY: ${BESZEL_PUBLIC_KEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    restart: unless-stopped
+    command: serve
+    environment:
+      NTFY_BASE_URL: https://ntfy.home.example.com
+      NTFY_CACHE_FILE: /var/cache/ntfy/cache.db
+      NTFY_AUTH_FILE: /var/lib/ntfy/user.db
+      NTFY_AUTH_DEFAULT_ACCESS: deny-all
+      NTFY_BEHIND_PROXY: "true"
+      NTFY_ENABLE_LOGIN: "true"
+    volumes:
+      - /srv/appdata/ntfy/cache:/var/cache/ntfy
+      - /srv/appdata/ntfy/data:/var/lib/ntfy
+    networks: [proxy]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.ntfy.rule: Host(`ntfy.home.example.com`)
+```
+
+Install the Beszel agent on the Proxmox host and the Pi too (binary + systemd), and point Uptime Kuma on the **Pi** at everything on the main node — monitoring that lives on the thing it monitors cannot tell you it is down. Wire Uptime Kuma, Beszel, PBS, smartd and the ZFS event daemon (`zed`) to ntfy. Full stack options in [Monitoring](#monitoring-logging-and-alerting).
+
+**`/srv/stacks/komodo/`** — Komodo (Core + Periphery) gives you a UI over your Git-stored stacks with deploy-on-push and shows drift; Renovate (self-hosted runner in Forgejo Actions or the hosted GitHub app on a mirror) opens PRs for image bumps. That workflow is described step by step in [Automation & IaC](#infrastructure-as-code-and-automation).
+
+### Exposure model (Intermediate)
+
+Three tiers, decided per app:
+
+| Tier | Mechanism | Examples |
+|---|---|---|
+| **LAN + tailnet only** | Traefik `lan-only` middleware; DNS only resolves internally | Proxmox UI, Traefik dashboard, Dozzle, Beszel, AdGuard, PBS |
+| **Authenticated anywhere** | Tailscale (with AdGuard as tailnet DNS) — no public DNS record | Immich, Nextcloud, Paperless, Vaultwarden (Bitwarden clients work fine over Tailscale) |
+| **Public** | **Pangolin** on a €4 VPS: Newt tunnel from `docker-01`, Pangolin's own SSO/2FA in front, CrowdSec bouncer on the VPS | Jellyfin for relatives, a shared Immich album domain, a static site, Uptime Kuma status page |
+
+Public apps use a *different* hostname scheme (`jellyfin.example.com`, not `*.home.example.com`) so a leaked public name reveals nothing about the internal one. Cloudflare Tunnel is the alternative for the third tier if you accept its ToS limits on video streaming; comparison in [Remote access & VPN](#remote-access-and-vpns).
+
+### Backups (Intermediate)
+
+```mermaid
+flowchart LR
+    VMs[Proxmox VMs/LXCs] -- nightly, dirty-bitmap incremental --> PBS[PBS datastore<br/>on Pi USB SSD or bulk pool]
+    PBS -- weekly sync job --> B2[(Backblaze B2<br/>via rclone or PBS S3 target)]
+    Appdata[/srv/appdata + dumps] -- Restic hourly --> Tank[tank/appdata-backups]
+    Tank -- ZFS snapshots hourly/daily --> Tank
+    Tank -- Restic nightly --> B2
+    Photos[tank/photos] -- ZFS send --> USB[Cold USB disk monthly]
+    Photos -- Restic --> B2
+```
+
+- **PBS** backs up every guest nightly; retention 7 daily / 4 weekly / 6 monthly; verify job weekly; the datastore is *not* on the same pool as the guests.
+- **Restic** inside `docker-01` for appdata and DB dumps (same script as Starter) → `tank/appdata-backups` via NFS, then B2. Hourly locally, nightly off-site.
+- **ZFS snapshots** on `tank` via Sanoid: 48 hourly, 30 daily, 6 monthly — this is your ransomware/oops rollback, not your backup.
+- **Cold copy** of irreplaceable data (photos, documents) to a USB disk monthly, stored somewhere else.
+- **Tested**: PBS file-restore into a scratch VM quarterly; Restic restore of one app quarterly; a full "rebuild `docker-01` from Git + Restic" drill once a year.
+
+### What Intermediate leaves out
+
+- Single hypervisor: hardware failure = everything down until you rebuild on spare hardware (the backups make that a day, not a disaster).
+- Storage and compute share a box; a Proxmox upgrade gone wrong takes the NAS role with it.
+- Grafana/Prometheus are optional here; Beszel covers most of what a home needs.
+- No email hosting, no Matrix, no large GPU work.
+
+### Upgrade path → Advanced
+
+1. Separate storage into a NAS (TrueNAS SCALE or a second Proxmox box with ZFS + Samba/NFS) and replicate between the two pools.
+2. Add a second/third Proxmox node; cluster with a QDevice on the Pi for quorum.
+3. Move routing to dedicated OPNsense hardware; add more VLANs (cameras, management, lab).
+4. Swap TinyAuth for Authentik or Kanidm when you need LDAP or group-based access.
+5. Replace Beszel with Prometheus + Grafana + Loki when you want history and dashboards.
+
+---
+
+## Advanced: dedicated router, NAS, Proxmox cluster, GitOps
+
+### Goals
+
+- No single box whose failure takes down internet, DNS, storage *and* services at once.
+- Storage as a service: one NAS, ZFS, replicated; compute nodes are disposable.
+- Everything reproducible from Git: hosts (Ansible), VMs (OpenTofu), stacks (Komodo/Compose), DNS records (OpenTofu), firewall (OPNsense config exported to Git).
+- Observability with history: Prometheus/Grafana/Loki; alerting rules, not just up/down.
+- Public services hardened with CrowdSec and an IdP with groups.
+
+### Bill of materials
+
+| Item | Suggested | Notes |
+|---|---|---|
+| Router | Fanless 4×2.5 GbE N100/N305 box (Protectli VP2420, Qotom, "Topton" class) running **OPNsense** | 8–12 W; handles gigabit + IDS. Or a MikroTik/Ubiquiti gateway if you prefer appliances |
+| Switch | 8–16 port 2.5 GbE managed with 2–4 × 10 GbE SFP+ uplinks (MikroTik CRS310-8G+2S+, TP-Link TL-SG3210XHP-M2, Ubiquiti Flex 2.5G PoE) | 10 GbE between NAS and compute; 2.5 GbE to nodes and APs |
+| NAS | 4–8 bay: used Supermicro/HP tower, Jonsbo N3/N5 + ASRock Rack board, or a used Xeon E-2200 board with ECC; **or** a Synology/QNAP if you want an appliance | TrueNAS SCALE. 32–64 GB ECC. Two pools: NVMe mirror (appdata, VM disks over NFS/iSCSI), HDD RAIDZ2 (bulk) |
+| Compute | 2–3 × mini PC (MS-01, Lenovo P3 Tiny, used 1L PCs) | Same model for live-migration sanity. 32–96 GB each |
+| Quorum | Pi/thin client as **QDevice** if you run 2 nodes | Prevents split-brain; also hosts external monitoring |
+| GPU (optional) | One node with a low-profile GPU (Intel Arc A310/A380 for transcoding; RTX 3060 12 GB / used 3090 for LLMs) | Passthrough to a VM; see [AI/LLM](#local-ai-llms-image-generation-speech-and-search) |
+| Power | 1–1.5 kVA UPS with SNMP or USB; NUT master on the NAS | Whole rack ~100–200 W idle |
+| Rack | 12–18U wall-mount or a Lack rack | Cable management is not optional at this size |
+
+### Network layout
+
+```mermaid
+flowchart TB
+    Internet((Internet)) --- OPN[OPNsense<br/>WAN + VLAN gateway, DHCP, WireGuard, IDS]
+    OPN === Core[10 GbE / 2.5 GbE switch]
+    Core --- NAS[TrueNAS SCALE<br/>VLAN 10 · 10 GbE<br/>NFS/iSCSI/SMB]
+    Core --- N1[PVE node 1]
+    Core --- N2[PVE node 2]
+    Core --- N3[PVE node 3 / QDevice]
+    Core --- AP[APs · VLAN 20/30/40 SSIDs]
+    Core --- Cams[PoE cameras · VLAN 50]
+    VPS[VPS: Pangolin + CrowdSec] -. Newt tunnel .-> N1
+    Friend[Friend's NAS] -. ZFS replication over Tailscale .-> NAS
+```
+
+| VLAN | Subnet | Purpose | Rules |
+|---|---|---|---|
+| 10 | 10.0.10.0/24 | Servers, NAS, Proxmox guests | Allow from 20; from 30 selectively; from 99 all |
+| 20 | 10.0.20.0/24 | Trusted laptops/phones | Allow anywhere |
+| 30 | 10.0.30.0/24 | IoT | Internet + HA/MQTT only |
+| 40 | 10.0.40.0/24 | Guest | Internet only, rate-limited |
+| 50 | 10.0.50.0/24 | Cameras | **No internet**; Frigate only |
+| 99 | 10.0.99.0/24 | Management: IPMI/iDRAC, switch, PVE web UI, TrueNAS UI | Reachable only from a jump host or with VPN + 2FA |
+
+OPNsense also runs: Unbound (recursive, DNSSEC) as upstream for two AdGuard instances (one per compute node), WireGuard for road-warriors, Suricata in IDS mode on WAN, and the CrowdSec plugin. The OPNsense config goes to Git nightly via the built-in Git backup. Rationale for each piece in [Networking](#networking-fundamentals-for-the-home-lab) and [Security](#security-for-the-home-lab).
+
+### Storage layout (TrueNAS SCALE)
+
+```
+fast  (2× NVMe mirror)    → fast/vm         NFS 4.2 → Proxmox storage "nas-vm"  (or iSCSI zvols)
+                           → fast/appdata    NFS     → docker VMs (/srv/appdata)
+tank  (6× HDD RAIDZ2)      → tank/media      SMB+NFS
+                           → tank/photos     NFS
+                           → tank/cameras    NFS → Frigate recordings
+                           → tank/backups    → PBS datastore (NFS, or a PBS VM with a passed-through disk)
+                           → tank/replica    → receives ZFS replication from friend; sends ours to them
+```
+
+Snapshots: `fast/*` every 15 min (keep 24), hourly (48), daily (14); `tank/*` daily (30), weekly (12), monthly (12). Replication task: `tank/photos`, `tank/backups`, `fast/appdata` → friend's NAS nightly over Tailscale (raw send of encrypted datasets, so they never hold the key). Scrubs monthly; SMART long test weekly; alerts → ntfy via TrueNAS' webhook alert service.
+
+> **Databases on NFS**
+>
+> SQLite over NFS is a known corruption source (locking). Postgres tolerates NFS with `hard` mounts and `sync=always` but you pay latency. The Advanced blueprint therefore runs a **dedicated Postgres VM** on a node's local NVMe mirror with backups to the NAS, and keeps SQLite-based apps' data on local VM disks. Bulk assets (media, photo originals) live on NFS happily. See [Databases & backing services](#databases-and-backing-services).
+
+
+### Proxmox cluster layout
+
+| Node | Guests |
+|---|---|
+| **pve-01** | `docker-core` (Traefik, IdP, Komodo, ntfy, AdGuard #1), `postgres-01`, `haos` |
+| **pve-02** | `docker-apps` (Immich, Nextcloud, Paperless, Forgejo, media stack), `frigate` (Coral/iGPU), AdGuard #2 (LXC) |
+| **pve-03** (or QDevice) | `docker-lab` (experiments), `monitoring` (Prometheus/Grafana/Loki), `ollama` (GPU passthrough) |
+
+HA groups only for `docker-core` and `haos` (their disks on `nas-vm` NFS so they can float); everything else is restored from PBS if a node dies — accept a 30-minute RTO rather than run every VM on shared storage. Cluster/corosync traffic on VLAN 99, ideally on a second NIC. Node provisioning via Ansible (repos, `zfs_arc_max`, IOMMU kernel args, NUT client, node exporter, unattended security updates). VM creation via **OpenTofu** with the `bpg/proxmox` provider and cloud-init — a working module is in [Automation & IaC](#infrastructure-as-code-and-automation).
+
+### Identity
+
+**Authentik** (or **Kanidm** if you prefer a lighter, LDAP-first, Rust implementation) on `docker-core`:
+
+- Groups: `admins`, `family`, `media-users`, `guests`.
+- OIDC clients for every app that supports it; **LDAP outpost** for Jellyfin (LDAP plugin) and other legacy apps.
+- Forward-auth outpost as the Traefik middleware, with **policies per application**: admins only for infrastructure UIs, `family` for Immich/Nextcloud, `media-users` for the public Jellyfin entry.
+- Passkeys + TOTP enforced; recovery codes printed and kept in the safe ([Passwords & secrets](#passwords-secrets-and-two-factor-codes)).
+- Authentik's database on `postgres-01`; its blueprints (YAML config) in Git so a rebuild is `compose up` + apply.
+
+Why Pocket ID is enough for most people, and the full IdP comparison, in [Identity & SSO](#identity-and-single-sign-on).
+
+### Observability
+
+```yaml
+# monitoring VM, /srv/stacks/observability/compose.yaml (abridged)
+services:
+  prometheus:
+    image: prom/prometheus:v3.4.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=90d"]
+    volumes: ["./prometheus:/etc/prometheus", "/srv/appdata/prometheus:/prometheus"]
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    volumes: ["./alertmanager:/etc/alertmanager"]
+  grafana:
+    image: grafana/grafana:12.0.2
+    environment:
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"      # Authentik OIDC
+      GF_SERVER_ROOT_URL: https://grafana.home.example.com
+    volumes: ["/srv/appdata/grafana:/var/lib/grafana", "./grafana/provisioning:/etc/grafana/provisioning"]
+  loki:
+    image: grafana/loki:3.5
+    volumes: ["./loki:/etc/loki", "/srv/appdata/loki:/loki"]
+  alloy:
+    image: grafana/alloy:v1.9.1
+    volumes: ["./alloy:/etc/alloy", "/var/run/docker.sock:/var/run/docker.sock:ro", "/var/log:/var/log:ro"]
+```
+
+Exporters: `node_exporter` on every host and the NAS, `pve-exporter` for Proxmox, `smartctl_exporter`, `zfs_exporter`, `blackbox_exporter` for HTTPS/certificate probes, `cadvisor` per Docker VM, the OPNsense `node_exporter` plugin, Traefik's `/metrics`. Alerting rules that matter: disk > 85 %, ZFS pool degraded, SMART failing, backup job age > 26 h, certificate expiry < 14 d, host down 5 min, UPS on battery. Alertmanager → ntfy, with a **separate** ntfy.sh topic as fallback so a dead `docker-core` still alerts. Uptime Kuma runs *outside* the cluster (QDevice Pi or the VPS) for the external view. Dashboards and rationale in [Monitoring](#monitoring-logging-and-alerting).
+
+### Service layer highlights
+
+Beyond the Intermediate set:
+
+- **Frigate** on `pve-02` with a Coral TPU or OpenVINO on the iGPU, recordings on `tank/cameras`, integrated with Home Assistant; cameras on VLAN 50 with no internet ([Home automation](#home-automation)).
+- **Matrix (Synapse or Conduwuit) + Element** for family chat, behind Pangolin with `.well-known` delegation ([Communication](#communication-chat-video-calls-and-email)).
+- **Email**: still probably *not* self-hosted; if you insist, Mailcow or Stalwart on the VPS with the home lab as backup MX at most ([Communication](#communication-chat-video-calls-and-email)).
+- **Ollama + Open WebUI** on the GPU node; SearXNG for private search; Immich ML pointed at the GPU ([AI/LLM](#local-ai-llms-image-generation-speech-and-search)).
+- **Forgejo + Actions runner** hosting the very repos that define this lab; Renovate as an Action; Komodo deploying on push ([Dev, Git & automation](#developer-tools-git-hosting-and-automation)).
+- **Game servers** via Pelican/Pterodactyl or Crafty in `docker-lab`, exposed through Pangolin's raw TCP/UDP resources ([Gaming](#gaming-game-servers-retro-libraries-and-streaming)).
+
+### Exposure model (Advanced)
+
+```mermaid
+flowchart LR
+    User((Public user)) --> DNS[Public DNS<br/>public names → VPS IP]
+    DNS --> VPS[VPS: Pangolin + Traefik + CrowdSec]
+    VPS -. Newt / WireGuard .-> Core[docker-core Traefik + Authentik]
+    Core --> Apps[Apps]
+    Fam((Family, phones)) -- WireGuard on OPNsense or Tailscale --> Core
+    Admin((You)) -- WireGuard + VLAN 99 jump host + 2FA --> Mgmt[Proxmox / TrueNAS / OPNsense UIs]
+```
+
+- Public: Pangolin on the VPS; CrowdSec with the Traefik bouncer + community blocklists; Pangolin resource-level auth for anything not meant for anonymous users; rate limiting; geo-blocking where sensible.
+- Remote family: WireGuard profiles from OPNsense (QR codes), Tailscale as fallback with an ACL that only permits VLAN 10 ports 443/53.
+- Management: never public, never on the app VLAN, always 2FA. SSH keys only; CrowdSec on the jump host anyway.
+- Trust boundaries are enforced by the **firewall and VLANs**; Traefik middleware is defence in depth, not the wall ([Security](#security-for-the-home-lab)).
+
+### Backups (Advanced)
+
+| Layer | Tool | Target | Cadence | Retention | Verified by |
+|---|---|---|---|---|---|
+| VMs/LXCs | PBS (VM on pve-03 or the NAS) | `tank/backups` | nightly | 7d/4w/6m | PBS verify weekly; monthly restore into `docker-lab` |
+| App data & DB dumps | Restic (or Kopia) from each docker VM | `fast/appdata` snapshots → `tank/backups/restic` | hourly | 48h/14d/12m | `restic check --read-data-subset=5%` weekly |
+| Postgres | `pg_dumpall` + WAL archiving with pgBackRest | `tank/backups/pg` | dumps nightly, WAL continuous | 30 d PITR | monthly restore test to a scratch DB |
+| NAS datasets | ZFS replication | Friend's NAS (encrypted raw send) | nightly | matches source policy | staleness alert on the far end |
+| Off-site cold | rclone crypt → Backblaze B2 (photos, documents, PBS subset) | B2 | nightly | 90-day object lock | quarterly random-file restore |
+| Config | OPNsense Git backup, TrueNAS config export, Authentik blueprints, Compose repos, OpenTofu state (encrypted) | Forgejo + mirror to GitHub/Codeberg | on change | git history | yearly rebuild drill |
+
+3-2-1-1-0 satisfied: ≥3 copies, 2 media types, 1 off-site (friend + B2), 1 immutable (B2 object lock), 0 errors (verify jobs). Methodology in [Backups](#backups-the-chapter-that-matters-most).
+
+### What Advanced still leaves out (and why)
+
+- **Kubernetes.** For a home lab, k3s/Talos adds operational surface for benefits you mostly don't need with Proxmox HA underneath. If you want to *learn* k8s, run it inside VMs on `docker-lab`.
+- **Ceph.** Three nodes with 10 GbE is the bare minimum and it wants enterprise SSDs; ZFS on a NAS plus PBS is simpler and faster at this scale.
+- **Hosted email as primary.** Deliverability is a full-time job; keep it on a provider or a VPS.
+- **Perfect HA.** OPNsense and the NAS are each single points of failure. CARP with two router boxes and a second NAS are possible; most people should spend that money on better backups.
+
+---
+
+## Cross-cutting checklists
+
+### Before you call a blueprint "done"
+
+- [ ] Every service reachable by HTTPS with a valid certificate; `http://` redirects.
+- [ ] No ports forwarded on the router except those you can name and justify.
+- [ ] `docker ps` shows no container publishing a port that the proxy should own.
+- [ ] Every stack in Git; secrets in `.env`/secret files that are *not* in Git; a README telling future-you how to bootstrap.
+- [ ] Backups run, alert on failure **and** on silence, and a restore was performed in the last 90 days.
+- [ ] Monitoring lives partly *outside* the thing it monitors.
+- [ ] Notifications reach your phone for: disk, backup, certificate, host-down, UPS.
+- [ ] A printed/offline "break-glass" sheet: router admin, Proxmox root, IdP recovery codes, Restic/PBS encryption keys, B2 credentials, registrar 2FA backup.
+- [ ] Household knows what happens if you're unavailable (see [Planning](#planning-your-home-lab) on the "bus factor").
+
+### Sizing rules of thumb
+
+| Workload | RAM | CPU | Notes |
+|---|---|---|---|
+| Traefik/Caddy | 100–200 MB | negligible | |
+| AdGuard/Pi-hole + Unbound | 100–300 MB | negligible | |
+| Jellyfin | 0.5–2 GB | 1 core + iGPU per 2–4 transcodes | 4K HDR tone-mapping wants a real GPU |
+| Immich (server + ML + DB) | 2–4 GB, 6+ during ML jobs | 2–4 cores for initial import | ML can move to the GPU node |
+| Nextcloud + Postgres + Redis | 1–2 GB | 2 cores | PHP tuning matters more than hardware |
+| Paperless-ngx | 0.5–1.5 GB | bursts to 2 cores during OCR | |
+| Home Assistant OS | 2–4 GB | 2 vCPU | more if Frigate runs inside |
+| Frigate (4 cams, detect) | 2–4 GB | 2 cores + Coral/iGPU | recordings are I/O, not CPU |
+| Prometheus + Grafana + Loki | 2–4 GB | 2 cores | retention drives disk, not RAM |
+| Authentik | 1–1.5 GB | 1–2 cores | Pocket ID: ~50 MB |
+| Ollama (8B Q4) | model in VRAM + 2 GB | GPU | CPU-only is possible, slow |
+| Proxmox host overhead + ZFS ARC | 4 GB + ARC (cap it) | 1–2 cores | |
+
+Details behind these numbers, per service, in the Part III chapters.
+
+---
+
+# Troubleshooting and FAQ
+
+Most home-lab problems are one of about thirty problems wearing different costumes. This chapter is organised by *symptom*, because that is what you have at 11 p.m.: "the site says 502", "DNS stopped", "the container restarts forever". Each entry gives the fastest diagnostic, the usual causes ranked by likelihood, and the fix. The second half answers the questions that come up in every forum thread, once, with the reasoning.
+
+## A method before the list
+
+```mermaid
+flowchart TD
+    A[Something is broken] --> B{What changed?<br/>update, reboot, new container, DHCP lease, cert renewal}
+    B --> C{Which layer?}
+    C --> D[Physical/power/host up?<br/>ping, SSH, console]
+    C --> E[Network/DNS?<br/>dig, ip a, ss -tlnp]
+    C --> F[Container/process?<br/>docker ps, logs, inspect]
+    C --> G[Proxy/TLS?<br/>curl -vk, proxy logs]
+    C --> H[App itself?<br/>app logs, healthcheck, DB]
+    D & E & F & G & H --> I[Fix smallest thing, re-test, write it down]
+```
+
+Ten commands that solve half of everything:
+
+```bash
+docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'   # what's up, restarting, exited
+docker logs --tail 200 -f <name>                                  # what it says
+docker inspect <name> --format '{{json .State}}' | jq              # exit code, OOMKilled, error
+docker compose -f /srv/stacks/x/compose.yaml config                # what compose *actually* resolved (env, paths)
+ss -tlnp | grep -E ':(53|80|443)\b'                                # who owns the port
+dig @127.0.0.1 jellyfin.home.example.com +short                    # does *my* resolver answer
+curl -vk --resolve jellyfin.home.example.com:443:192.168.1.10 https://jellyfin.home.example.com/   # bypass DNS, test proxy+TLS
+journalctl -u docker -b --no-pager | tail -50                      # daemon-level errors
+df -h; df -i                                                       # full disk / full inodes
+free -h; dmesg -T | grep -iE 'oom|killed process' | tail           # memory pressure
+```
+
+Always ask **what changed**. `docker image ls --format '{{.Repository}}:{{.Tag}} {{.CreatedSince}}'`, `last reboot`, `apt` history (`/var/log/apt/history.log`), Proxmox task log, Renovate/Watchtower notifications. Ninety percent of "it stopped working" is "something updated".
+
+## Containers
+
+### Container in a restart loop / `Restarting (1)`
+
+1. `docker logs --tail 100 <name>` — the error is almost always in the last 20 lines.
+2. **Permission denied on a volume** → the process runs as a UID that can't write the bind-mount. Fix: `chown -R 1000:1000 /srv/appdata/<app>` (match `PUID/PGID` or `user:`), never `chmod 777`.
+3. **Bad env / missing required variable** → `docker compose config` shows the resolved value; empty means your `.env` isn't where Compose looks (it reads `.env` from the *project directory*, not the shell's cwd, unless `--env-file`).
+4. **Port already allocated** → `ss -tlnp` to find the squatter (often `systemd-resolved` on 53, Apache/nginx on 80, another stack).
+5. **DB not ready** → app started before Postgres. Add `depends_on` with `condition: service_healthy` and a healthcheck on the DB.
+6. **OOMKilled** → `docker inspect` shows `"OOMKilled": true`. Raise `mem_limit` or fix the leak (Immich ML, Nextcloud previews, Jellyfin transcoding to RAM).
+7. **Exec format error** → wrong architecture image (ARM image on x86 or vice versa). Pin `platform: linux/amd64` or pick a multi-arch tag.
+
+### `docker compose up` says network/volume "needs to be recreated" or "already exists"
+
+You changed a network or volume definition; Compose won't destroy something it didn't create with the same labels. For external networks, `external: true` and create once: `docker network create proxy`. For a stuck volume, `docker compose down -v` **deletes data** — only if it's a named volume you're sure about. Prefer bind-mounts for data you care about, exactly so this can't bite.
+
+### Container can't reach another container by name
+
+- They must share a **user-defined** network (the default `bridge` has no DNS). Check `docker network inspect proxy | jq '.[0].Containers[].Name'`.
+- Compose prefixes networks with the project name; use `name: proxy` or `external: true` so all stacks refer to the same one.
+- The name is the *service* or `container_name`; ports are the **container's** internal port, not the published one (`jellyfin:8096`, never `:443` or the host's `8097:8096` mapping).
+- `network_mode: host` containers aren't on any Docker network; reach them via the host IP.
+
+### Container can reach the internet but not the LAN (or vice versa)
+
+- Docker's default bridge subnet (`172.17.0.0/16`) or a Compose network collides with your LAN/VPN (`172.16.x`, corporate VPNs love `172.x`). Set `default-address-pools` in `/etc/docker/daemon.json` to e.g. `10.200.0.0/16, size 24`, then `systemctl restart docker` and recreate networks.
+- `ufw` blocking: Docker punches its own iptables holes for *published* ports but outbound to LAN can hit `ufw` forward rules; set `DEFAULT_FORWARD_POLICY="ACCEPT"` or use the `DOCKER-USER` chain properly ([Security](#security-for-the-home-lab)).
+- Container needs to reach the *host*: use `host.docker.internal` with `extra_hosts: ["host.docker.internal:host-gateway"]`, or the bridge gateway IP.
+
+### Published port unreachable from another machine but works on the host
+
+- `ufw`/firewalld blocking; Docker bypasses `ufw` for *inbound* published ports normally — if you installed `ufw-docker`, rules are now needed.
+- Bound to `127.0.0.1:8080:80` on purpose (good, if it's meant to be proxy-only).
+- IPv6: published as `[::]:8080` but the client resolves the AAAA and your firewall treats v6 differently.
+- VLAN/firewall between client and host (the router rules you wrote last week).
+
+### Time is wrong inside the container
+
+Containers share the host clock; a wrong *zone* is `TZ=Europe/Berlin` in env, or mount `/etc/localtime:ro`. Wrong *time* is the host: `timedatectl`, enable `systemd-timesyncd` or `chrony`. Wrong time breaks TLS, TOTP and Kerberos first.
+
+### Disk full, but `du` doesn't show it
+
+```bash
+docker system df -v          # images, build cache, volumes, logs
+journalctl --disk-usage
+du -sh /var/lib/docker/containers/*/*-json.log | sort -h | tail   # unrotated container logs
+```
+
+Fixes: set log rotation in `daemon.json` (`"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}`), `docker image prune -a` (careful: it removes images for stopped containers too), `journalctl --vacuum-size=500M`, find the runaway app (Frigate recordings, Immich thumbnails, Nextcloud trash/versions, download clients). Inode exhaustion (`df -i`) is typically millions of tiny files in a cache dir.
+
+### GPU / hardware transcoding not working
+
+- `ls -l /dev/dri` on the host; the container needs `devices: [/dev/dri:/dev/dri]` **and** group access (`group_add: ["render"]` or the numeric GID from `getent group render`).
+- Inside a Proxmox **LXC**: map the device with `dev0: /dev/dri/renderD128,gid=104` (or the legacy `lxc.cgroup2.devices.allow` + `lxc.mount.entry`). Inside a **VM**: you need full iGPU passthrough (no sharing) or SR-IOV on 12th-gen+ with the `i915-sriov-dkms` module.
+- Intel: install `intel-media-va-driver-non-free` on the host for HEVC/AV1 on newer chips; check with `vainfo`.
+- NVIDIA: `nvidia-container-toolkit` on the host, `runtime: nvidia` or `deploy.resources.reservations.devices`, `nvidia-smi` inside the container. Driver version mismatch after a host update is the number-one breakage.
+- Jellyfin: Dashboard → Playback → confirm the codecs you ticked are actually supported (`/usr/lib/jellyfin-ffmpeg/vainfo`).
+
+## DNS
+
+### Nothing resolves on the whole network
+
+The single most user-visible failure. In order:
+
+1. Is the DNS box up and is the container running? `dig @192.168.1.10 example.com`.
+2. Port 53 stolen by `systemd-resolved` after a reboot/upgrade (`ss -ulnp | grep :53`). Disable the stub listener ([DNS & ad blocking](#dns-and-network-wide-ad-blocking)).
+3. Upstream unreachable: AdGuard/Pi-hole returns SERVFAIL. Test upstream directly: `dig @1.1.1.1 example.com`. If Unbound is the upstream, check it (`unbound-control status`, its own port 5335/5353).
+4. Router still handing out the old DHCP DNS; clients cached it. `ipconfig /flushdns`, `resolvectl flush-caches`.
+5. **Prevention**: two resolvers on two devices (Pi + main box), both in DHCP. A Pi-hole/AdGuard pair costs €50 and buys spousal approval.
+
+### Local names (`*.home.example.com`) work on LAN but not on VPN / vice versa
+
+- Tailscale: set the tailnet DNS to your AdGuard IP (MagicDNS "override local DNS"), or add a **split DNS** entry for `home.example.com` → 192.168.1.10. Subnet routes must be advertised **and approved** in the admin console.
+- WireGuard: `DNS = 192.168.1.10` in the client config and `AllowedIPs` covering the LAN.
+- The resolver rewrite (`*.home.example.com → 192.168.1.10`) only exists on your resolver; anything not using it gets NXDOMAIN or the public IP. Public DNS having no record for the internal names is *correct*.
+- Android "Private DNS" (DoT) set to a public provider silently bypasses your resolver; set it to off/automatic or point it at your own DoT endpoint.
+
+### Ad blocking works, but some devices ignore it
+
+Hard-coded DNS (Chromecast, Roku, some smart TVs use `8.8.8.8`), DoH in the browser (Firefox/Chrome "secure DNS"), IPv6 router advertisements handing out the ISP's resolver. Fixes: firewall rule redirecting all LAN port 53 to your resolver (NAT redirect) and blocking outbound 853; disable browser DoH via the canary domain `use-application-dns.net` (AdGuard/Pi-hole do this automatically); set RDNSS in the router or turn off IPv6 DNS advertisement.
+
+### `dig` works, browser doesn't
+
+Browser DoH (above), HSTS cache (you once visited the public name over HTTPS with a different cert), or the browser resolves via a different interface (VPN split tunnel). `chrome://net-internals/#dns` → clear host cache; `about:networking#dns` in Firefox.
+
+## Reverse proxy and TLS
+
+### 502 Bad Gateway
+
+The proxy is fine; it can't reach the backend.
+
+- Backend container down → `docker ps`.
+- Wrong internal port (see above); wrong scheme (backend speaks HTTPS: Proxmox `:8006`, Unifi `:8443`, Portainer `:9443` → `reverse_proxy https://…` with `tls_insecure_skip_verify`/`serversTransport.insecureSkipVerify`).
+- Not on the same Docker network as the proxy → Traefik logs `no such host`; Caddy logs `dial tcp: lookup jellyfin`.
+- Traefik with multiple networks on the container: set `traefik.docker.network=proxy` (or the global `providers.docker.network`), otherwise it picks the wrong IP.
+- Backend binds to `127.0.0.1` inside the container (some apps default to localhost; set `HOST=0.0.0.0` or the app's equivalent).
+
+### 404 from the proxy itself
+
+Traefik: no router matched — label typo, missing `traefik.enable=true` with `exposedByDefault=false`, or rule syntax (`Host(\`x\`)` needs backticks). Check the dashboard. Caddy: no matching site block; `caddy validate` and look for the catch-all handler.
+
+### Certificate errors
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| "TRAEFIK DEFAULT CERT" / self-signed | ACME failed; proxy fell back | Read the proxy log for the ACME error; below |
+| DNS-01 fails: "propagation" or `NXDOMAIN _acme-challenge` | API token lacks zone-edit permission; wrong zone; provider's DNS is slow | Traefik: `delayBeforeCheck` and `resolvers=1.1.1.1:53`; Caddy: `propagation_timeout`; verify token scopes |
+| DNS-01 fails with split-horizon | Your local resolver answers for `example.com` and knows nothing about `_acme-challenge` | Make the ACME client use public resolvers (above) or don't override the whole zone — rewrite only `*.home.example.com` |
+| HTTP-01 fails | Port 80 not reachable from the internet (CGNAT, no forward, ISP blocks 80) | Use DNS-01 |
+| Rate limited | Recreated the stack too many times; 5 duplicate certs/week per exact name set | Wait a week, or use the staging CA while debugging; **persist `acme.json`/Caddy's `/data`** |
+| Works in browser, fails in an app (Bitwarden mobile, Immich app, Home Assistant companion) | App doesn't like the Let's Encrypt chain? Rare now. Usually the app is hitting the *public* name from mobile data where the name doesn't resolve | Check the hostname you configured in the app, and that the name resolves where the phone is |
+| `NET::ERR_CERT_COMMON_NAME_INVALID` on `sub.sub.home.example.com` | Wildcard covers only **one** level | Flatten names or add a second SAN `*.sub.home.example.com` |
+| Cert renewed but clients still see the old one | Proxy needs a reload (Traefik/Caddy do it automatically; nginx does not) | `nginx -s reload`, or NPM restart |
+
+### Redirect loop / "too many redirects"
+
+Backend thinks it's on HTTP and redirects to HTTPS while the proxy terminated TLS already. Tell the app it is behind a proxy: Nextcloud `OVERWRITEPROTOCOL=https` + `trusted_proxies`; WordPress `$_SERVER['HTTPS']='on'`; Django `SECURE_PROXY_SSL_HEADER`; Grafana `GF_SERVER_ROOT_URL`. Make sure the proxy passes `X-Forwarded-Proto` (Traefik/Caddy do by default).
+
+### WebSockets don't work (live logs, Home Assistant, Jellyfin dashboard, Vaultwarden notifications)
+
+Caddy and Traefik pass WebSockets automatically. nginx/NPM need `proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";` (NPM: the "Websockets Support" toggle). Cloudflare proxied: fine; Cloudflare Tunnel: fine; some corporate proxies: not fine.
+
+### Uploads fail at exactly 100 MB / 1 MB
+
+Body size limits: Cloudflare free (100 MB), NPM/nginx `client_max_body_size` (default 1 MB!), Traefik has none by default, Caddy `request_body max_size`. Then the app's own limit (Nextcloud `PHP_UPLOAD_LIMIT`, Immich none, Paperless none).
+
+### Real client IPs show as the proxy's IP
+
+Pass `X-Forwarded-For`/`X-Real-IP` and tell the app to trust the proxy's subnet (Nextcloud `TRUSTED_PROXIES`, Vaultwarden `IP_HEADER`, Immich reads `X-Forwarded-For` automatically, Authelia/Authentik need it for geo rules). Behind Cloudflare, trust Cloudflare's IP ranges and use `CF-Connecting-IP`. CrowdSec decisions on the wrong IP = you banned your own proxy; check this first when *everything* is suddenly 403.
+
+## Remote access and VPN
+
+### Tailscale connects but can't reach LAN devices
+
+Subnet router: `tailscale up --advertise-routes=192.168.1.0/24` **and** approve the route in the admin console (or use autoApprovers in the ACL). On Linux routers, enable forwarding (`net.ipv4.ip_forward=1`, `net.ipv6.conf.all.forwarding=1`). Clients on Linux need `--accept-routes`. If it's a Docker container acting as subnet router, it needs `network_mode: host` or `cap_add: NET_ADMIN` + `/dev/net/tun`.
+
+### Tailscale is slow / shows "relayed" (DERP)
+
+Direct connection failed; both sides behind hard NAT (CGNAT, symmetric NAT, some 5G). Fix one end: forward UDP 41641 to the home node, or enable UPnP/NAT-PMP on the router, or run your own DERP. `tailscale netcheck` and `tailscale ping <peer>` show what's happening. IPv6 on both ends usually fixes it.
+
+### WireGuard handshake never completes
+
+99 % one of: wrong public key pasted (each side needs the *other's* public key), `Endpoint` unreachable (CGNAT, port not forwarded, DDNS stale), clock skew > a few minutes, `AllowedIPs` on the server missing the client's tunnel IP. `wg show` on the server: if `latest handshake` never appears, packets aren't arriving — `tcpdump -ni any udp port 51820`. MTU issues (`MTU = 1280` fixes many mobile-network problems) show as "handshake fine, traffic dies".
+
+### I'm behind CGNAT
+
+Check: the router's WAN IP is in `100.64.0.0/10` or differs from `curl ifconfig.me`. Options: ask the ISP for a public IPv4 (often free or a couple of euros), use IPv6 if you have it, Tailscale/NetBird (no inbound needed), Pangolin/Cloudflare Tunnel on a VPS for public services. Port forwarding will *never* work; stop trying.
+
+### Cloudflare Tunnel: 502/`error code 1033`/"origin unreachable"
+
+`cloudflared` can't reach the service URL you configured — it's the same as a proxy 502: use the Docker service name and *internal* port if `cloudflared` is in the same network; `http://localhost` only works with `network_mode: host`. For HTTPS origins with self-signed certs, enable "No TLS Verify" in the tunnel's TLS settings.
+
+## Storage
+
+### ZFS pool DEGRADED / a disk shows FAULTED
+
+`zpool status -v`. If a disk is `FAULTED` with read/write/cksum errors, check SMART (`smartctl -a /dev/sdX`), cables first (SATA cables cause more "disk failures" than disks). Replace: `zpool replace tank <old> <new>`; watch `zpool status` for resilver. Checksum errors with a healthy disk → RAM (run memtest), controller, or cable. **Do not** `zpool clear` and forget; note the disk. Scrub after resilver.
+
+### ZFS: "cannot import pool: pool was previously in use from another system"
+
+`zpool import -f tank`. After a hostname change or moving disks between machines this is normal.
+
+### ZFS/Proxmox: RAM "full"
+
+ARC. `arc_summary` or `cat /proc/spl/kstat/zfs/arcstats | grep -E '^(size|c_max)'`. Cap it in `/etc/modprobe.d/zfs.conf`: `options zfs zfs_arc_max=8589934592` (8 GiB) then `update-initramfs -u` and reboot. Used-by-ARC memory is released under pressure, but VMs' balloon drivers and OOM heuristics don't always wait.
+
+### SMB share slow / NFS hangs
+
+- SMB: check `smb.conf` for `server multi channel support = yes` on 2.5/10 GbE; disable `strict sync` for media; macOS needs `vfs objects = fruit streams_xattr`; Windows Explorer thumbnails hammer the share (`veto files` for `Thumbs.db`).
+- NFS "hang": server went away with `hard` mounts (correct behaviour — it waits). `umount -f -l`; use `soft,timeo=…` only for non-critical mounts, or systemd automount so a dead NAS doesn't wedge boot (`x-systemd.automount,_netdev,nofail`).
+- Permissions: NFSv4 with `all_squash,anonuid=1000,anongid=1000` for a home lab, or map UIDs consistently across hosts.
+
+### Docker on ZFS: many datasets / slow `docker pull`
+
+Docker's `zfs` storage driver creates a dataset per layer. Use `overlay2` on a plain dataset instead: put `/var/lib/docker` on a ZFS dataset and set `"storage-driver": "overlay2"` in `daemon.json` (works on ZFS 2.2+ with overlayfs support). In an LXC on Proxmox the same applies; keyctl/nesting features must be enabled.
+
+### Btrfs: "No space left on device" with free space showing
+
+Metadata exhausted or unbalanced chunks. `btrfs filesystem usage /`; `btrfs balance start -dusage=50 /`. Enable the periodic balance via `btrfsmaintenance`.
+
+### Disk is CMR or SMR?
+
+`smartctl -a /dev/sdX | grep -i 'rotation\|TRIM'` — SMR drives often report `TRIM Command: Available`. Better: check the manufacturer's model list (WD Red *non-Plus* 2–6 TB and many 2.5" drives are SMR). SMR in a ZFS resilver = days, or a failed resilver.
+
+## Proxmox
+
+### VM won't start: "TASK ERROR: ... kvm: -device vfio-pci ... " (passthrough)
+
+IOMMU not enabled (`intel_iommu=on iommu=pt` / `amd_iommu=on` in GRUB or systemd-boot cmdline, then `update-grub`/`proxmox-boot-tool refresh`), device still bound to the host driver (blacklist `i915`/`nouveau`/`amdgpu`, or `vfio-pci.ids=`), or the device isn't in its own IOMMU group (`pvesh get /nodes/<node>/hardware/pci --pci-class-blacklist ""` shows groups; ACS override is a last resort).
+
+### LXC: can't run Docker / permission errors on bind mounts
+
+Unprivileged LXC needs `features: nesting=1,keyctl=1`. Bind-mount ownership: UIDs are shifted by 100000 in unprivileged containers — either `chown 101000:101000` on the host or add an idmap in the CT config. Running Docker in LXC is unsupported by Proxmox (works, but a Docker VM is the recommendation).
+
+### Cluster: node shows with a red X / "no quorum"
+
+Two-node cluster with one down = no quorum by design. Add a **QDevice** (`pvecm qdevice setup <ip>` with `corosync-qnetd` on a Pi) or temporarily `pvecm expected 1` to operate. Corosync wants low latency; don't run it over Wi-Fi or a saturated link — a busy backup on the same NIC as corosync is a classic cause of flapping nodes.
+
+### Backups slow / PBS "chunk verification failed"
+
+Slow: PBS datastore on HDD without a special device — add a small SSD mirror as ZFS `special` vdev, or enable `dirty-bitmap` (default for running VMs; a shutdown resets it). Verification failures: bad disk or RAM on the PBS host; re-run verify, check SMART, scrub the pool.
+
+### Web UI unreachable after network change
+
+`/etc/network/interfaces` typo — you still have the console. `ifreload -a` after fixing. Also `/etc/hosts` must resolve the node name to the *cluster* IP or pve services misbehave.
+
+## Applications
+
+### Nextcloud: slow, "maintenance mode", or "untrusted domain"
+
+- Untrusted domain: `occ config:system:set trusted_domains 1 --value=cloud.home.example.com`.
+- Maintenance mode stuck: `occ maintenance:mode --off`; after upgrades run `occ upgrade`, `occ db:add-missing-indices`, `occ maintenance:repair --include-expensive`.
+- Slow: no Redis (`memcache.local` = APCu, `memcache.locking` = Redis), cron via `nextcloud-cron` container instead of AJAX, PHP `memory_limit` ≥ 512 M, `opcache.interned_strings_buffer=16`, HTTP/2 on the proxy, and previews pre-generated (`preview:pre-generate`). Nextcloud AIO handles most of this for you.
+- Desktop client "connection closed": body size limit on the proxy, or Cloudflare's 100 MB.
+
+### Immich: app can't upload / "server offline" / ML never finishes
+
+- Mobile: the server URL must be reachable from *mobile data* (so Tailscale on the phone, or public exposure). Background upload on iOS is limited by the OS; keep the app open for the first big import.
+- After an update, migration errors: check release notes; pin `IMMICH_VERSION`; **never** run `:latest` for the DB image; the Postgres image must match the pgvecto.rs/VectorChord version Immich expects.
+- ML jobs at 0 %: the `immich-machine-learning` container is OOM-killed or can't download models (no internet, or set `MACHINE_LEARNING_*` cache mount). Smart search re-indexing after changing the CLIP model takes hours — normal.
+
+### Jellyfin: buffering, "playback error", or transcoding when it shouldn't
+
+- Direct play requires the client to support the codec **and** container **and** subtitle format; burnt-in PGS/ASS subtitles force transcoding. Use SRT subs or a client that supports the format (Jellyfin Media Player, Infuse, Kodi).
+- Bitrate limit in the client set low (defaults to 20 Mbps on some).
+- Transcode dir on a slow/full disk; move to `tmpfs` or SSD.
+- HW transcoding not actually active → Dashboard → Active devices shows "(hw)" only if it worked; see the GPU section.
+
+### Vaultwarden: clients won't log in / "Failed to fetch"
+
+The `DOMAIN` env must match exactly the URL the client uses (including https). WebSocket notifications need the proxy to pass `/notifications/hub`. If the browser extension works and the mobile app doesn't, the certificate chain or name resolution from mobile data is the issue. Backups: `db.sqlite3` **plus** `attachments/`, `sends/`, `rsa_key*`.
+
+### Home Assistant: "400 Bad Request" behind a proxy
+
+Add to `configuration.yaml`:
+
+```yaml
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.16.0.0/12     # or your proxy's subnet / Docker network
+```
+
+Companion app "unable to connect": internal URL vs external URL; set both in the app, and make sure the internal SSID list is right.
+
+### Paperless-ngx: consumption folder ignores files
+
+`PAPERLESS_CONSUMER_POLLING=30` when the folder is a network mount (inotify doesn't work over NFS/SMB). Permission: the consumer runs as `USERMAP_UID`. Duplicate detection silently skips identical files (check "Duplicates" in logs).
+
+### Authelia/Authentik/Pocket ID: redirect loop or "invalid redirect_uri"
+
+Redirect URI in the IdP must match **exactly** what the app sends (scheme, host, path, trailing slash). Clock skew between IdP and app (> 30 s) breaks token validation. Cookie domain: forward-auth needs the IdP and the apps under the same parent domain (`home.example.com`) or a session domain setting. `TRUST_PROXY` / `X-Forwarded-*` headers must reach the IdP or it generates `http://` URLs.
+
+## Hardware and host
+
+### Random reboots / freezes
+
+RAM (memtest86+ overnight), PSU (undersized after adding disks/GPU), C-states on some Intel boards (add `intel_idle.max_cstate=1` or disable C6 in BIOS — common on N100 boxes and older Atoms), thermal (check `sensors`, dust), a USB device (external HDD enclosures with flaky power), or kernel + driver issue (Realtek 2.5 GbE `r8169`/`r8125` — install the `r8125-dkms` driver).
+
+### High idle power
+
+BIOS: enable ASPM, C-states, disable unused controllers; Linux: `powertop --auto-tune` then make the tunables permanent; avoid HBA/RAID cards and 10 GbE copper NICs that block package C-states (`powertop` shows the deepest reached state). Spin down idle HDDs (`hdparm -S` or `hd-idle`) *only* on media pools, never on ZFS pools with periodic writes.
+
+### USB drive disappears / renames from `sda` to `sdb`
+
+Never mount by `/dev/sdX`; use `/dev/disk/by-uuid/` or `by-id/` in `fstab` with `nofail`. Enclosure power management: `usbcore.autosuspend=-1` on the kernel cmdline; UAS quirks for some chipsets (`usb-storage.quirks=VID:PID:u`).
+
+### Boot hangs on a missing network mount / "A start job is running for …"
+
+Add `nofail,x-systemd.automount,_netdev` to network mounts; `nofail` on any disk that isn't the root.
+
+### SMART says the drive is fine, but…
+
+SMART "PASSED" is a low bar. Watch attributes 5 (Reallocated), 187 (Reported Uncorrectable), 188 (Command Timeout), 197 (Pending), 198 (Offline Uncorrectable). Any non-zero *and rising* 197/198 means replace. Run `smartd` with email/ntfy notifications and a monthly long test ([Maintenance](#maintenance-and-operations)).
+
+---
+
+## FAQ
+
+**Do I need a domain name?**
+For local-only with self-signed certs, no. For trusted TLS certificates via Let's Encrypt (which also makes phones and apps happy), yes — around €5–15/year. A domain on a registrar with an API (Cloudflare, Porkbun, deSEC, Hetzner) enables DNS-01 wildcard certificates with zero open ports. `.home.arpa` and `.internal` are the correct choices for purely private names *without* public certificates.
+
+**Should I use `.local`?**
+No. `.local` is reserved for mDNS and resolvers treat it specially; you'll chase odd resolution failures. Use `home.arpa`, `internal`, or a subdomain of a real domain.
+
+**Is it safe to expose services to the internet?**
+Safe enough if you: keep only a proxy on 443 (or use a tunnel), put an IdP/SSO or at least 2FA in front of anything that isn't designed to be public, run CrowdSec/fail2ban, update promptly, and don't expose management UIs (Proxmox, routers, Portainer, Docker socket) ever. Safer still: don't expose at all and use Tailscale/WireGuard. Only expose what *needs* to be reachable by people who can't run a VPN ([Remote access](#remote-access-and-vpns), [Security](#security-for-the-home-lab)).
+
+**Is port forwarding "insecure"?**
+Forwarding 443 to a well-maintained reverse proxy is fine — it's what every website does. What's insecure is forwarding *many* ports to *many* apps, each with its own auth and patch cadence, or forwarding SSH/RDP/admin ports.
+
+**Cloudflare Tunnel vs Tailscale vs Pangolin vs WireGuard?**
+Tailscale/WireGuard for *you and your family* (no public exposure); Pangolin or Cloudflare Tunnel for *the public* (grandma clicks a link). Cloudflare Tunnel: easiest, free, but Cloudflare decrypts your traffic and its ToS discourages video streaming; Pangolin: self-hosted equivalent on a €4 VPS, you hold the keys ([Remote access](#remote-access-and-vpns)).
+
+**Proxmox or bare-metal Docker?**
+One box, want simplicity, comfortable rebuilding from Compose files: bare Debian + Docker. Want snapshots before upgrades, Home Assistant OS, isolation of experiments, or PBS backups of whole systems: Proxmox with a Docker VM. Most people who start with bare metal end up on Proxmox within a year; the reverse migration is rare ([OS & hypervisors](#operating-systems-and-hypervisors)).
+
+**Docker or Podman or Kubernetes?**
+Docker Compose is the lingua franca — every project ships a compose file. Podman is a fine drop-in if you value rootless and daemonless (Quadlet is genuinely nice). Kubernetes (k3s/Talos) at home is a *learning* choice, not an operational one ([Containers](#containers-docker-compose-podman-and-kubernetes)).
+
+**ZFS or Btrfs or ext4 or MergerFS+SnapRAID?**
+ZFS for anything you can't lose and want checksummed, snapshotted and replicated; it wants RAM and same-size disks. Btrfs if you want ZFS-like features with mixed disks and don't run RAID5/6. ext4/XFS for scratch and appliances. MergerFS + SnapRAID for large, mostly-static media on mixed-size disks that you'd rather spin down ([Storage](#storage-filesystems-redundancy-and-sharing)).
+
+**How much RAM do I need?**
+16 GB runs ten typical services comfortably. 32 GB removes thinking about it. 64 GB is for Proxmox with several VMs plus ZFS ARC. RAM is cheap; buy the second stick.
+
+**Do I need ECC?**
+Nice, not necessary. Non-ECC ZFS is still far safer than non-ECC ext4; the "scrub of death" is a myth. If the platform supports ECC cheaply (AMD Pro APUs, used Xeon/EPYC, some Alder Lake boards), take it ([Hardware](#hardware-choosing-what-to-run-it-on)).
+
+**RAID is a backup, right?**
+No. RAID/RAIDZ/mirrors protect against *disk failure*. They replicate deletions, ransomware and corruption instantly. Snapshots protect against oops. Backups (off-machine, off-site, tested) protect against everything else ([Backups](#backups-the-chapter-that-matters-most)).
+
+**Should I auto-update containers?**
+For stateless/low-risk images with good semver (proxy, DNS, dashboards), yes, with notifications. For anything with a database or migrations (Immich, Nextcloud, Paperless, Home Assistant), no — pin versions, read release notes, update deliberately after a snapshot/backup. Renovate/Diun/Watchtower-in-monitor-mode tell you what's available ([Maintenance](#maintenance-and-operations)).
+
+**`latest` tag or pinned?**
+Pin major (or exact) versions for anything stateful, use Renovate to bump them via PRs. `latest` is fine for tools you'd redeploy from scratch anyway.
+
+**How do I share Jellyfin/Immich with family who won't install a VPN?**
+Public exposure of *that one app* through Pangolin or Cloudflare Tunnel, with the app's native login plus rate limiting/CrowdSec. Jellyfin has no 2FA — put it behind an auth proxy with a "media-users" group, or accept the risk with strong passwords. Jellyfin over Cloudflare Tunnel violates the ToS spirit; Pangolin doesn't.
+
+**Self-host email?**
+Almost certainly not as your primary. Deliverability (IP reputation, DKIM/DMARC/SPF, blocklists, residential IP ranges being blanket-blocked) is a full-time job. A €2–5/month provider (Migadu, Fastmail, mailbox.org, Purelymail) with your own domain gives you the portability benefit. If you must, do it on a clean VPS with Mailcow/Stalwart and keep the home lab as archive/backup MX ([Communication](#communication-chat-video-calls-and-email)).
+
+**How much does this cost per month?**
+Starter: €2–4 electricity (10 W ≈ 7 kWh) + ~€1 domain + €1–3 B2. Intermediate: €8–15 electricity + €4 VPS (optional) + €3–5 B2. Advanced: €25–60 electricity + VPS + storage. Compare against the subscriptions you're replacing — and be honest that the *time* is the real cost ([Power, cost & environment](#power-cost-and-the-physical-environment)).
+
+**What happens when I'm not around / the "bus factor"?**
+Document the break-glass sheet, keep the household on services that degrade gracefully (Bitwarden clients cache the vault; Immich phones keep originals; Jellyfin is entertainment), and choose a "shutdown plan": how someone exports the photos and passwords if the lab is abandoned. See [Planning](#planning-your-home-lab).
+
+**Where do I ask for help?**
+Read the project's docs and GitHub issues first (search the exact error string). Then the communities in [Resources & community](#resources-and-community). Post: what you expected, what happened, exact error, compose file (secrets redacted), `docker logs` tail, what you already tried, what changed recently. Half the time, writing that out reveals the answer.
+
+---
+
+# Resources and Community
+
+No guide stays current for long in this space. Projects fork, licences change, a new reverse proxy becomes fashionable every eighteen months. What *does* stay useful is knowing where the reliable information lives, who explains things well, and how to evaluate a project before you trust it with your data. This chapter is that map: directories, communities, documentation you should actually read, creators worth your time, newsletters, and a short checklist for judging a project's health. Nothing here is sponsored; everything here has been useful to real self-hosters for years.
+
+> **Link rot is inevitable**
+>
+> Names are given alongside URLs so you can search when a link dies. Where a project has a canonical home (GitHub org, docs site), that is preferred over third-party mirrors.
+
+
+## Software directories
+
+Start here when you know *what* you want to do but not *which* project does it.
+
+| Directory | URL | What it's good for |
+|---|---|---|
+| **awesome-selfhosted** | github.com/awesome-selfhosted/awesome-selfhosted · awesome-selfhosted.net | The canonical list. Categorised, licence-tagged, actively curated with strict inclusion rules (must be actively maintained, must be self-hostable). The website version is filterable |
+| **selfh.st apps** | selfh.st/apps | Curated, searchable, with icons, GitHub stars, last-release dates. Companion to the selfh.st newsletter |
+| **Awesome-Sysadmin** | github.com/awesome-foss/awesome-sysadmin | Infra-side tooling: monitoring, backup, config management |
+| **awesome-docker-compose** / **Haxxnet Compose-Examples** | github.com/Haxxnet/Compose-Examples | Hundreds of working compose files with Traefik labels; great for "how do others run X" |
+| **LinuxServer.io** | linuxserver.io · docs.linuxserver.io | Consistent, well-documented images for ~200 apps with PUID/PGID conventions; the fleet page lists everything |
+| **Proxmox VE Helper-Scripts** | community-scripts.github.io/ProxmoxVE | One-line LXC/VM creators for ~300 apps. Read the script before running it, as with anything `curl | bash` |
+| **AlternativeTo** / **European Alternatives** | alternativeto.net · european-alternatives.eu | "What replaces Google Photos?" style discovery, including non-self-hosted options |
+| **Privacy Guides** | privacyguides.org | Vetted recommendations with reasoning; overlaps with self-hosting on VPN, DNS, passwords, email |
+| **OpenAlternative** | openalternative.co | Open-source alternatives to SaaS, with health metrics |
+| **Selfhosted Show wiki** / **r/selfhosted wiki** | reddit.com/r/selfhosted/wiki | Community FAQ, beginner links |
+| **Docker Hub / GHCR / Quay** | hub.docker.com · ghcr.io | Check pull counts, tag history and whether the image is *official*, *verified* or random |
+
+## Communities
+
+Where to ask, lurk and learn. Each has a personality.
+
+| Community | Where | Personality & etiquette |
+|---|---|---|
+| **r/selfhosted** | reddit.com/r/selfhosted | Largest general community (~500k). Weekly "what are you running" threads, project announcements, lots of beginners. Search before posting; read the wiki. Tolerant of newbies, allergic to ads |
+| **r/homelab** / **r/HomeServer** / **r/minilab** | reddit | Hardware-heavy. r/homelab loves racks and eBay enterprise gear; r/HomeServer is more practical; r/minilab is small-form-factor |
+| **r/Proxmox**, **r/truenas**, **r/unRAID**, **r/DataHoarder**, **r/zfs**, **r/docker**, **r/Traefik**, **r/homeassistant**, **r/jellyfin**, **r/immich** | reddit | Per-project subs; devs often read them. r/DataHoarder for disk deals and storage philosophy |
+| **Lemmy: selfhosted@lemmy.world**, **selfhost@lemmy.ml**, **homelab@lemmy.ml** | lemmy.world / lemmy.ml | The federated Reddit alternative; smaller, technical, very friendly; good if you left Reddit in 2023 |
+| **Self-Hosted Podcast Discord** / **selfh.st Discord** | invite via selfhosted.show / selfh.st | Active chat, project maintainers present |
+| **LinuxServer.io Discord/Discourse** | discord.gg/YWrKVTn · discourse.linuxserver.io | Support for their images; very responsive |
+| **Level1Techs forum** | forum.level1techs.com | Hardware, ZFS, virtualisation; Wendell's community, high signal |
+| **ServeTheHome forum** | forums.servethehome.com | Enterprise-ish hardware, "TinyMiniMicro" thread, NIC/HBA deep dives, great for used-gear questions |
+| **Proxmox forum** | forum.proxmox.com | Official; staff answer. Search first — most questions are duplicates |
+| **TrueNAS forum** | forums.truenas.com | Official; strong opinions on ZFS best practice |
+| **Unraid forum** | forums.unraid.net | Official; Community Apps discussions |
+| **Home Assistant Community** | community.home-assistant.io | Enormous, well-moderated, integration-specific threads |
+| **Matrix rooms** | #selfhosted:matrix.org and per-project rooms (Immich, Nextcloud, Jellyfin, Authelia…) | Real-time, decentralised, often where developers actually hang out |
+| **Hacker News** | news.ycombinator.com | "Show HN" launches of new self-hosted tools; skeptical, useful comment threads |
+| **Stack Exchange: Server Fault, Unix & Linux, Super User** | *.stackexchange.com | For precise technical questions with reproducible detail |
+| **Project GitHub Discussions / Issues** | per project | The most authoritative place; search closed issues for your exact error |
+
+How to ask well: state goal, environment (host OS, Docker version, how you deployed), exact error text, the relevant compose/config with secrets removed, what you already tried and what changed recently. Format code as code. Say thanks and post the fix when you find it — the next person searching will bless you.
+
+## Documentation worth reading end to end
+
+Most people skim docs. These are worth an evening each and will save you weeks.
+
+| Document | Why |
+|---|---|
+| **Docker docs: Compose specification, networking, storage** — docs.docker.com | Understand `networks`, bind vs volume, `user:`, healthchecks and you'll debug 80 % of container issues without asking |
+| **Traefik docs (Routing & Load Balancing, Middlewares, Let's Encrypt)** — doc.traefik.io | Dense but precise; the "Docker provider" page explains labels properly |
+| **Caddy docs (Caddyfile concepts, reverse_proxy, Automatic HTTPS)** — caddyserver.com/docs | Short and excellent; the Caddyfile tutorial takes 30 minutes |
+| **OpenZFS docs & Aaron Toponce's ZFS series** — openzfs.github.io/openzfs-docs · pthree.org/2012/04/17/install-zfs-on-debian-gnulinux | The Toponce series is old but the mental model is timeless (vdevs, ARC, snapshots) |
+| **Proxmox VE Administration Guide** — pve.proxmox.com/pve-docs | The PDF is 500 pages; read Storage, Backup, Cluster, PCI passthrough chapters |
+| **Proxmox Backup Server docs** — pbs.proxmox.com/docs | Especially Datastore, Prune & GC, Verification, Sync jobs |
+| **Tailscale docs & KB** — tailscale.com/kb | Model documentation; subnet routers, exit nodes, MagicDNS, ACLs are all explained with diagrams |
+| **WireGuard whitepaper & Quick Start** — wireguard.com | The whitepaper is readable and explains why it's simple |
+| **Let's Encrypt: Challenge Types, Rate Limits, Chain of Trust** — letsencrypt.org/docs | Understand DNS-01 vs HTTP-01 and the rate limits before you hit them |
+| **Restic docs / Borg docs / Kopia docs** — restic.readthedocs.io · borgbackup.readthedocs.io · kopia.io/docs | Read the "Removing snapshots" and "Repository format/encryption" sections; know how to restore before you need to |
+| **Authelia / Authentik / Pocket ID docs** | OIDC concepts, forward-auth headers, and per-app integration guides (Authentik's integrations list is huge) |
+| **Immich docs (Install, Backup & Restore, Hardware Transcoding, ML)** — immich.app/docs | Read *before* every update; the release notes are mandatory |
+| **Nextcloud Admin Manual (Server tuning, Background jobs, Reverse proxy)** — docs.nextcloud.com | Most "Nextcloud is slow" complaints are a skipped chapter |
+| **Home Assistant docs (Installation methods, Networking, Reverse proxy)** — home-assistant.io/docs | Understand HAOS vs Container vs Core before choosing |
+| **Arch Wiki** — wiki.archlinux.org | Distro-agnostic gold for systemd, networking, PipeWire, disks, power management |
+| **Debian Administrator's Handbook** — debian-handbook.info | Free; the fundamentals of the OS most of this runs on |
+| **Mozilla SSL Configuration Generator / SSL Labs** — ssl-config.mozilla.org · ssllabs.com/ssltest | Sensible TLS defaults and a way to test public endpoints |
+| **OWASP Docker Security Cheat Sheet** — cheatsheetseries.owasp.org | The security baseline for containers in one page |
+| **NIST SP 800-63B (Digital Identity)** | Why passkeys/2FA matter and how to think about authenticator strength |
+| **Backblaze Drive Stats** — backblaze.com/cloud-storage/resources/hard-drive-test-data | Real failure rates by model; published quarterly |
+
+## Blogs and creators
+
+Quality over quantity. All of these show their work.
+
+### Written
+
+| Author / site | Focus |
+|---|---|
+| **selfh.st (Ethan Sholly)** | Weekly roundup of releases, new apps, community content; the best single feed for staying current |
+| **noted.lol** | Reviews and how-tos of self-hosted apps, honest about rough edges |
+| **mariushosting** | Synology-centric Docker guides; hundreds of step-by-step tutorials |
+| **ServeTheHome (Patrick Kennedy)** | Hardware reviews, the "Project TinyMiniMicro" series on 1L PCs, NICs, switches, power measurements |
+| **Wolfgang's Channel blog / notthebee** | Low-power builds and ZFS; measured idle-power tables |
+| **Jeff Geerling** | Raspberry Pi, Ansible (he wrote *Ansible for DevOps*), homelab experiments; rigorous |
+| **Wolfgang, Louwrentius (Blog Louwrentius)** | Storage and ZFS deep dives; 71 TiB build write-ups |
+| **Jim Salter (Ars Technica, jrs-s.net)** | ZFS explained properly; Sanoid/Syncoid author |
+| **Chris Titus Tech, Christian Lempa (blog)** | Practical Linux/Docker/Proxmox tutorials |
+| **smallstep blog, Scott Helme (scotthelme.co.uk)** | TLS, PKI, HTTP security headers |
+| **Julia Evans (jvns.ca)** | Networking, DNS, Linux fundamentals as comics/zines; *How DNS Works* is the best DNS primer anywhere |
+| **Michael Stapelberg** | Router7, gokrazy, Go-based homelab infrastructure; meticulous |
+| **Ben Cox (blog.benjojo.co.uk), Cloudflare blog, Tailscale blog** | Networking internals; the Tailscale NAT traversal post is essential reading |
+| **Awesome Selfhosted blog / AlternativeTo blog** | Project comparisons |
+| **DB-Tech, Techno Tim (docs.technotim.live)** | Written companions to their videos; Techno Tim's docs repo has all his configs |
+
+### Video
+
+| Channel | Focus |
+|---|---|
+| **Techno Tim** | Homelab, Kubernetes, Proxmox, Traefik; clear and structured; all configs on GitHub |
+| **Christian Lempa** | Docker, Proxmox, security, Traefik, Authentik; teaches concepts, not just clicks |
+| **Wolfgang's Channel** | Low-power NAS builds, Jellyfin, Immich; measured, no hype |
+| **Hardware Haven** | Budget/used hardware for homelab, honest reviews |
+| **Jeff Geerling** | Pi, Ansible, NAS builds, weird hardware experiments |
+| **NetworkChuck** | Entertaining intros; good for enthusiasm, verify details elsewhere |
+| **Lawrence Systems (Tom Lawrence)** | pfSense/OPNsense, TrueNAS, UniFi, business-grade networking explained for home users; very thorough |
+| **Craft Computing** | Proxmox, GPU passthrough, enterprise hardware, cloud gaming |
+| **DB Tech** | Fast Docker app walkthroughs; high volume, so pick the ones you need |
+| **Raid Owl, Jim's Garage, Novaspirit Tech, The Digital Life** | Practical homelab builds and app setups |
+| **Level1Techs (Wendell)** | Deep hardware, ZFS, Linux; long-form |
+| **apalrd's adventures** | Proxmox, networking, VLANs, Ceph — very technical |
+| **Home Network Guy** | OPNsense, VLANs, Omada/UniFi; step-by-step |
+| **Everything Smart Home, Smart Home Solver, The Hook Up** | Home Assistant and devices, with actual testing |
+| **Awesome Open Source** | Ten-minute overviews of a project a week |
+
+### Podcasts
+
+| Podcast | Notes |
+|---|---|
+| **Self-Hosted (Jupiter Broadcasting)** | Alex Kretzschmar & Chris Fisher; the community's flagship show; app picks, Home Assistant, hardware |
+| **2.5 Admins** | Allan Jude, Jim Salter, Joe Ressington; ZFS, sysadmin war stories, news |
+| **Linux Unplugged**, **Late Night Linux**, **Ask Noah** | Broader Linux; frequent self-hosting segments |
+| **Selfhosted Show / Homelab Show** | Interviews with maintainers |
+| **The Homelab Show** | Tom Lawrence & Jay LaCroix; networking and infra |
+| **Darknet Diaries** | Security storytelling; motivational for locking things down |
+
+## Newsletters and feeds
+
+- **selfh.st Weekly** — the one to subscribe to.
+- **This Week in Self-Hosted** (r/selfhosted stickied / selfh.st) — release notes roundup.
+- **Console.dev** — weekly two-tool newsletter for developers; many self-hostable finds.
+- **TLDR / TLDR DevOps** — broader, but flags new infra tools.
+- **Changelog Nightly** — trending GitHub repos.
+- **Awesome-Selfhosted commits feed** — watch the repo to see additions.
+- **GitHub Releases RSS** for the projects you run: `https://github.com/<org>/<repo>/releases.atom` into Miniflux/FreshRSS — the most reliable way to learn about breaking changes before Renovate opens the PR.
+- **Security**: **CISA KEV**, **oss-security list**, per-project security advisories (GitHub "Security" tab, watch → custom → security alerts).
+
+## Evaluating a project before you adopt it
+
+A self-hosted app is a long relationship. Ten minutes of due diligence:
+
+| Signal | Check | Green | Yellow | Red |
+|---|---|---|---|---|
+| **Activity** | Commits, releases in last 3–6 months | Regular releases, changelog | Sporadic, "looking for maintainers" | Last commit > 1 year, issues piling up |
+| **Bus factor** | Contributors graph | Several active | One person, responsive | One person, silent |
+| **Issues** | Open/closed ratio, response time, tone | Triaged, labelled, answered | Backlog, but polite | Hostile or ignored |
+| **Licence** | LICENSE file; recent changes | OSI-approved (MIT/Apache/GPL/AGPL) | Source-available (BSL/SSPL), stable | Recent relicensing, "open core" with critical features paywalled |
+| **Docs** | Install, upgrade, **backup/restore**, reverse-proxy pages | All present, current | Install only | Wiki last edited years ago |
+| **Data portability** | Export formats, open file storage | Standard formats, plain files on disk | Export via API only | Proprietary blobs, no export |
+| **Upgrade story** | Migration notes; does `:latest` break? | Semver, migration guides | "Read the release notes" | Frequent breaking changes without notes |
+| **Security** | SECURITY.md, past CVE handling, default auth | Responsible disclosure, quick fixes, auth on by default | Slow but fixed | Unauthenticated by default, dismissive of reports |
+| **Image provenance** | Who builds the Docker image? | Project or LinuxServer.io, multi-arch, signed/attested | Trusted third party | Random user's image with no Dockerfile |
+| **Dependencies** | DB/queue requirements | SQLite or Postgres, Redis optional | Needs 4 services | Requires a specific ancient DB version |
+| **Community** | Discord/Matrix/forum size and tone | Active, helpful | Small but present | None |
+| **Funding** | Sponsors, company backing, roadmap | Transparent | Unknown | VC-backed with no revenue model (see the relicensing pattern in [Legal](#legal-and-ethical-considerations)) |
+
+Two extra tests: **install it in a throwaway VM/LXC first**, and **perform a backup and restore on day one**. If restoring is undocumented or painful, that's your answer.
+
+## Giving back
+
+Self-hosting runs on volunteer labour. Ways to sustain it that don't require writing code:
+
+- **Sponsor** the two or three projects you rely on most (GitHub Sponsors, Open Collective, Liberapay). €5/month to Immich, Jellyfin, Vaultwarden, Paperless or Home Assistant is less than one streaming subscription.
+- **Report bugs well** and confirm fixes. Reproducible reports are gifts.
+- **Improve documentation**: fix the typo, add the reverse-proxy example that took you an hour to figure out.
+- **Translate**, **triage issues**, **answer questions** in the community you learned from.
+- **Publish your compose files and notes** (redacted) — someone's Sunday will be shorter for it.
+- **Buy a licence** for the commercial-but-fair projects you use (Unraid, Plex Pass if you use Plex, JetBrains, Proxmox subscription for enterprise repo access).
+- Support the **infrastructure** the ecosystem leans on: Let's Encrypt (ISRG), the OpenZFS/FreeBSD/Debian foundations, Wikipedia, Internet Archive.
+
+## Books
+
+| Book | Why |
+|---|---|
+| *The Debian Administrator's Handbook* (Hertzog & Mas, free online) | Fundamentals of the base OS |
+| *UNIX and Linux System Administration Handbook*, 5th ed. (Nemeth et al.) | The comprehensive reference; skim chapters as needed |
+| *Ansible for DevOps* (Jeff Geerling) | The friendly Ansible book, homelab-relevant examples |
+| *Docker Deep Dive* (Nigel Poulton) | Concise, current, covers Compose and security |
+| *FreeBSD Mastery: ZFS* and *Advanced ZFS* (Lucas & Jude) | Best ZFS books; concepts apply to OpenZFS on Linux |
+| *Practical Monitoring* (Mike Julian) | Philosophy of alerts that matter |
+| *Site Reliability Engineering* (Google, free online) | Overkill for home, but the chapters on toil, SLOs and postmortems reframe how you run things |
+| *Network Warrior* (Gary Donahue) / *Computer Networking: A Top-Down Approach* (Kurose & Ross) | Networking fundamentals; VLANs and routing will stop being mysterious |
+| *Security Engineering* (Ross Anderson, free online) | Threat modelling, why systems fail |
+| *The Practice of System and Network Administration* (Limoncelli et al.) | Process, documentation, change management — the parts hobbyists skip |
+
+## Keeping this guide current
+
+This guide is a snapshot. When something here contradicts a project's current documentation, the project is right. Suggested cadence: revisit the [maintenance chapter](#maintenance-and-operations) quarterly, re-read a project's release notes before every major version, and check awesome-selfhosted or selfh.st once a year for whether a better tool has appeared in a category you care about. Contributions and corrections to this guide's repository are welcome — see the README.
+
+---
+
+# Appendix
+
+Reference material to keep open in another tab: a glossary of the jargon used throughout the guide, a port table for the services it covers, the checklists that were scattered across chapters gathered in one place, a Docker Compose cheat-sheet, and a handful of command references (ZFS, Docker, systemd, networking) that you'll reach for repeatedly.
+
+## Glossary
+
+| Term | Meaning |
+|---|---|
+| **3-2-1(-1-0)** | Backup rule: 3 copies, 2 media, 1 off-site (+1 offline/immutable, 0 verification errors). See [Backups](#backups-the-chapter-that-matters-most) |
+| **ACME** | Protocol for automated certificate issuance (Let's Encrypt, ZeroSSL). Challenges: HTTP-01, DNS-01, TLS-ALPN-01 |
+| **AGPL** | GNU Affero GPL; copyleft that also triggers when software is offered over a network. See [Legal](#legal-and-ethical-considerations) |
+| **ARC / L2ARC / SLOG** | ZFS read cache in RAM / on SSD / separate intent log for sync writes. Most home labs need only ARC |
+| **ARM64 / amd64** | CPU architectures (Raspberry Pi, Apple Silicon / Intel & AMD). Images must match or be multi-arch |
+| **Bind mount** | Host directory mapped into a container (`/srv/appdata/x:/config`) vs a Docker-managed **named volume** |
+| **Bus factor** | How many people can be hit by a bus before a project (or your home lab) dies |
+| **CARP / VRRP** | Router failover protocols (OPNsense/pfSense, Keepalived) |
+| **CGNAT** | Carrier-grade NAT: your ISP shares one public IPv4 among many customers; inbound port forwarding impossible |
+| **CMR / SMR** | Conventional vs Shingled Magnetic Recording. SMR drives have terrible sustained-write/rewrite performance; avoid for RAID/ZFS |
+| **Copyleft / permissive** | Licence families: GPL/AGPL require sharing derivative source; MIT/Apache/BSD do not |
+| **CrowdSec** | Collaborative IPS: parses logs, shares reputation, "bouncers" block at proxy/firewall |
+| **DDNS** | Dynamic DNS: updates a hostname when your public IP changes |
+| **DERP** | Tailscale's relay servers used when direct NAT traversal fails |
+| **DNS-01** | ACME challenge proving domain control via a TXT record; enables wildcards and needs no open ports |
+| **DoH / DoT / DoQ** | DNS over HTTPS / TLS / QUIC — encrypted DNS transport |
+| **Docker socket** | `/var/run/docker.sock`; mounting it grants root-equivalent on the host. Use a socket proxy |
+| **ECC** | Error-correcting RAM; detects/corrects bit flips. Nice for ZFS, not mandatory |
+| **Forward auth** | Reverse proxy asks an auth service (Authelia, TinyAuth, Authentik outpost) whether to allow each request |
+| **GitOps** | Desired state lives in Git; a tool (Komodo, Flux, Argo) reconciles the running system to match |
+| **HBA** | Host Bus Adapter — a SAS/SATA controller in "IT mode" (no RAID) presenting raw disks to ZFS |
+| **Headless** | No monitor/keyboard; managed over SSH/web |
+| **IaC** | Infrastructure as Code: Ansible, OpenTofu/Terraform, cloud-init, Compose |
+| **IdP / OIDC / OAuth2 / SAML / LDAP** | Identity Provider; the protocols apps use to delegate login (OIDC is the modern default; LDAP is the legacy directory protocol) |
+| **iGPU / Quick Sync / VA-API / NVENC** | Integrated GPU; Intel's hardware codec engine; Linux video-acceleration API; NVIDIA's encoder |
+| **IOMMU / VFIO** | CPU feature and kernel framework for passing PCI devices to VMs |
+| **IPMI / iDRAC / iLO** | Out-of-band management (remote console/power) on server boards |
+| **LXC** | Linux Containers — OS-level virtualisation; Proxmox "CT" |
+| **mDNS / Avahi / Bonjour** | Multicast local name resolution (`*.local`); doesn't cross VLANs without a reflector |
+| **MergerFS** | Union filesystem pooling disks into one mount; pair with **SnapRAID** for parity |
+| **Mesh VPN / overlay** | Tailscale, NetBird, ZeroTier, Nebula: peer-to-peer WireGuard-based networks with a coordination server |
+| **NAT / hairpin NAT / NAT reflection** | Address translation; hairpin lets LAN clients reach the public IP of their own router |
+| **NUT** | Network UPS Tools — monitors a UPS and shuts hosts down cleanly |
+| **OOM** | Out of memory; the kernel kills the largest process (`OOMKilled` in Docker) |
+| **Passkey / WebAuthn / FIDO2** | Phishing-resistant public-key login (Pocket ID is passkey-only) |
+| **PBS** | Proxmox Backup Server — deduplicating, incremental backups of VMs/CTs/hosts |
+| **PoE** | Power over Ethernet (802.3af/at/bt) for APs and cameras |
+| **PUID / PGID** | LinuxServer.io convention: run the app as this user/group so bind-mount ownership works |
+| **QDevice / quorum** | Tie-breaker for two-node Proxmox clusters; majority needed to operate |
+| **RAIDZ1/2/3, mirror, stripe** | ZFS redundancy levels (1/2/3 disks' parity; identical copies; none) |
+| **Resilver / scrub** | ZFS rebuilding redundancy after disk replacement / verifying every block's checksum |
+| **Reverse proxy** | Terminates TLS and routes `host.example.com` to the right backend (Traefik, Caddy, nginx, NPM) |
+| **RTO / RPO** | How long until service is back / how much data you can lose (time since last backup) |
+| **SBC** | Single-board computer (Raspberry Pi, Orange Pi, Rock 5) |
+| **SFF / USFF / 1L / TinyMiniMicro** | Small-form-factor PCs; Lenovo Tiny, HP Mini, Dell Micro |
+| **Snapshot** | Point-in-time filesystem/volume copy (ZFS, Btrfs, LVM, Proxmox) — cheap rollback, **not** a backup |
+| **Split-horizon DNS** | Same name resolves to a private IP internally and a public IP (or nothing) externally |
+| **SR-IOV** | PCI feature letting one device (NIC, Intel iGPU 12th-gen+) appear as several virtual functions for VMs |
+| **SSO** | Single sign-on — one login for many apps via an IdP |
+| **Subnet router / exit node** | Tailscale node that advertises a LAN / routes all internet traffic |
+| **Tailnet** | Your private Tailscale network |
+| **TBW / DWPD** | SSD endurance: total terabytes written / drive writes per day |
+| **Trunk / access port / PVID** | Switch port carrying multiple tagged VLANs / one untagged VLAN / the untagged VLAN ID |
+| **UPS** | Uninterruptible power supply; line-interactive is the home-lab sweet spot |
+| **VLAN (802.1Q)** | Virtual LAN tags to segment one physical network |
+| **Wildcard certificate** | `*.home.example.com` — one cert for all first-level subdomains; requires DNS-01 |
+| **WireGuard** | Modern minimal VPN protocol; basis of Tailscale, NetBird, Pangolin's Newt |
+| **ZFS dataset / zvol** | Filesystem within a pool / block device within a pool (used for VM disks, iSCSI) |
+
+## Default port reference
+
+Container-internal ports; publish or proxy as needed. Where two are listed, the second is HTTPS or an alternate.
+
+### Infrastructure
+
+| Service | Port(s) | Proto | Notes |
+|---|---|---|---|
+| SSH | 22 | TCP | Change only if you like; use keys and fail2ban/CrowdSec |
+| DNS (AdGuard Home, Pi-hole, Unbound, Blocky, Technitium) | 53 | TCP+UDP | AdGuard UI 3000 (setup) → 80; Pi-hole UI 80/443; Unbound as upstream often 5335; Technitium 5380 |
+| DHCP | 67/68 | UDP | |
+| HTTP / HTTPS | 80 / 443 | TCP (+UDP 443 for HTTP/3) | Owned by the reverse proxy |
+| DoT / DoH / DoQ | 853 / 443 / 853 | TCP / TCP / UDP | |
+| Traefik dashboard | 8080 | TCP | Route via `api@internal` instead of exposing |
+| Nginx Proxy Manager | 81 (UI), 80, 443 | TCP | |
+| Caddy admin API | 2019 | TCP | Keep on localhost |
+| Portainer | 9443 / 9000 (legacy) / 8000 (agent tunnel) | TCP | |
+| Dockge | 5001 | TCP | |
+| Komodo Core / Periphery | 9120 / 8120 | TCP | |
+| Proxmox VE | 8006 (UI), 5900–5999 (VNC), 3128 (SPICE), 5405–5412 (corosync UDP), 60000–60050 (migration) | TCP/UDP | |
+| Proxmox Backup Server | 8007 | TCP | |
+| TrueNAS SCALE | 80 / 443 | TCP | |
+| Unraid | 80 / 443 | TCP | |
+| Cockpit | 9090 | TCP | |
+| Webmin | 10000 | TCP | |
+| NUT (upsd) | 3493 | TCP | |
+| SNMP | 161 | UDP | |
+| Syslog | 514 | UDP/TCP | |
+| NTP | 123 | UDP | |
+
+### Storage & file sharing
+
+| Service | Port(s) | Notes |
+|---|---|---|
+| SMB/CIFS | 445 (139 legacy) | |
+| NFS | 2049 (+111 rpcbind for v3) | v4 needs only 2049 |
+| iSCSI | 3260 | |
+| SFTP/SCP | 22 | |
+| FTP/FTPS | 21 (+ passive range) | Don't |
+| rsync daemon | 873 | |
+| WebDAV | 80/443 (path) | |
+| Syncthing | 8384 (UI), 22000 (TCP+UDP sync), 21027 (UDP discovery) | |
+| MinIO | 9000 (S3), 9001 (console) | |
+| Garage | 3900 (S3), 3902 (web), 3903 (admin) | |
+| SeaweedFS | 9333 (master), 8080 (volume), 8888 (filer) | |
+| FileBrowser | 80 (image) / 8080 | |
+| Nextcloud | 80 (Apache image) / 9000 (FPM) | AIO: 8080 (setup), 11000 (Apache) |
+| Seafile | 80 | |
+| Copyparty | 3923 | |
+
+### Remote access & networking
+
+| Service | Port(s) | Notes |
+|---|---|---|
+| WireGuard | 51820 UDP (convention) | Any UDP port works |
+| OpenVPN | 1194 UDP/TCP | |
+| Tailscale | 41641 UDP (outbound; forward for direct connections) | Control plane over 443 |
+| Headscale | 8080 (API), 9090 (metrics), 50443 (gRPC) | Put behind proxy on 443 |
+| NetBird | 80/443 (mgmt), 33073 (mgmt gRPC), 10000 (signal), 3478 (STUN), 49152–65535 (TURN) | |
+| ZeroTier | 9993 UDP | |
+| Pangolin | 80/443 (Traefik), 51820 UDP (Gerbil/WireGuard), 3001–3003 internal | On the VPS |
+| Cloudflare Tunnel (cloudflared) | outbound 7844 | No inbound |
+| Guacamole | 8080 | |
+| RustDesk (hbbs/hbbr) | 21115–21117 TCP, 21116 UDP, 21118–21119 (web) | |
+| MeshCentral | 443 (or 4430) | |
+| Wazuh | 1514/1515 (agents), 55000 (API), 443 (dashboard) | |
+| Speedtest Tracker | 80 | |
+| LibreSpeed | 80 | |
+| UniFi Controller | 8443 (UI), 8080 (inform), 3478 UDP (STUN), 10001 UDP (discovery) | |
+| Omada Controller | 8043 (UI), 8088, 29810–29814 | |
+
+### Identity, security, monitoring
+
+| Service | Port(s) | Notes |
+|---|---|---|
+| Authelia | 9091 | |
+| Authentik | 9000 / 9443 | Outposts: 9000 |
+| Pocket ID | 1411 | |
+| TinyAuth | 3000 | |
+| Kanidm | 8443 (HTTPS), 636 (LDAPS) | |
+| LLDAP | 17170 (UI), 3890 (LDAP), 6360 (LDAPS) | |
+| Keycloak | 8080 / 8443 | |
+| Zitadel | 8080 | |
+| Vaultwarden | 80 (3012 legacy WS) | |
+| Bitwarden (official) | 80/443 | |
+| Psono | 80 | |
+| HashiCorp Vault / OpenBao | 8200 | |
+| Infisical | 8080 | |
+| CrowdSec LAPI | 8080 | Metrics 6060 |
+| Uptime Kuma | 3001 | |
+| Gatus | 8080 | |
+| Beszel hub / agent | 8090 / 45876 | |
+| Prometheus | 9090 | |
+| Alertmanager | 9093 | |
+| Grafana | 3000 | |
+| Loki | 3100 | |
+| Alloy / Promtail | 12345 / 9080 | |
+| node_exporter | 9100 | |
+| cAdvisor | 8080 | |
+| Netdata | 19999 | |
+| Zabbix | 10051 (server), 10050 (agent), 8080 (web) | |
+| InfluxDB | 8086 | |
+| VictoriaMetrics | 8428 | |
+| Dozzle | 8080 | |
+| Glances | 61208 | |
+| ntfy | 80 | |
+| Gotify | 80 | |
+| Apprise API | 8000 | |
+| Scrutiny | 8080 | Collector talks to 8080 |
+| Diun | — | No UI |
+| Watchtower | 8080 (metrics, optional) | |
+| Healthchecks.io | 8000 | |
+| Changedetection.io | 5000 | |
+
+### Media & downloads
+
+| Service | Port(s) | Notes |
+|---|---|---|
+| Jellyfin | 8096 (HTTP), 8920 (HTTPS), 1900 UDP (DLNA), 7359 UDP (discovery) | |
+| Plex | 32400, 32410–32414 UDP (GDM), 1900 UDP, 32469 (DLNA) | |
+| Emby | 8096 / 8920 | |
+| Jellyseerr / Overseerr | 5055 | |
+| Radarr / Sonarr / Lidarr / Readarr / Whisparr | 7878 / 8989 / 8686 / 8787 / 6969 | |
+| Prowlarr | 9696 | |
+| Bazarr | 6767 | |
+| Tdarr | 8265 (UI), 8266 (server) | |
+| qBittorrent | 8080 (UI), 6881 TCP+UDP (peers) | |
+| Transmission | 9091 (UI), 51413 | |
+| Deluge | 8112 (UI), 58846 (daemon), 6881 | |
+| SABnzbd | 8080 | |
+| NZBGet | 6789 | |
+| Gluetun | 8888 (HTTP proxy), 8388 (Shadowsocks), 8000 (control) | Route download clients through it |
+| Audiobookshelf | 80 (image) / 13378 | |
+| Navidrome | 4533 | |
+| Kavita | 5000 | |
+| Komga | 25600 | |
+| Calibre-Web | 8083 | |
+| Tautulli | 8181 | |
+| Stash | 9999 | |
+| Tube Archivist | 8000 | |
+| MeTube | 8081 | |
+| Pinchflat | 8945 | |
+| Lidarr | 8686 | |
+| ErsatzTV | 8409 | |
+| Threadfin / xTeVe | 34400 | |
+
+### Photos, documents, productivity, communication
+
+| Service | Port(s) | Notes |
+|---|---|---|
+| Immich | 2283 | ML 3003 internal |
+| PhotoPrism | 2342 | |
+| Ente (Museum API) | 8080 | |
+| Paperless-ngx | 8000 | |
+| Docspell | 7880 | |
+| Stirling-PDF | 8080 | |
+| Homepage | 3000 | |
+| Homarr | 7575 | |
+| Dashy | 8080 | |
+| Heimdall | 80/443 | |
+| Glance | 8080 | |
+| Miniflux | 8080 | |
+| FreshRSS | 80 | |
+| Wallabag | 80 | |
+| Linkding | 9090 | |
+| Karakeep (Hoarder) | 3000 | |
+| Joplin Server | 22300 | |
+| Trilium | 8080 | |
+| Outline | 3000 | |
+| Docmost | 3000 | |
+| BookStack | 80 | |
+| Wiki.js | 3000 | |
+| SilverBullet | 3000 | |
+| Memos | 5230 | |
+| Vikunja | 3456 | |
+| Planka | 1337 | |
+| Actual Budget | 5006 | |
+| Firefly III | 8080 | |
+| Grocy | 80 (LSIO: 9283) | |
+| Mealie | 9000 | |
+| Tandoor | 8080 | |
+| Radicale | 5232 | |
+| Baïkal | 80 | |
+| Matrix Synapse | 8008 (client), 8448 (federation) | |
+| Conduwuit / Conduit | 6167 | |
+| Element Web | 80 | |
+| Mattermost | 8065 | |
+| Rocket.Chat | 3000 | |
+| Jitsi | 443, 10000 UDP (JVB) | |
+| Mumble | 64738 TCP+UDP | |
+| TeamSpeak | 9987 UDP, 10011, 30033 | |
+| Mailcow | 25, 465, 587, 143, 993, 110, 995, 4190, 80/443 | |
+| Stalwart | 25, 465, 587, 143, 993, 4190, 8080 | |
+| Postfix / Dovecot | 25/587/465 / 143/993 | |
+| Roundcube | 80 | |
+| ntfy | 80 | (listed above) |
+| Home Assistant | 8123 | |
+| Mosquitto (MQTT) | 1883, 8883 (TLS), 9001 (WS) | |
+| Zigbee2MQTT | 8080 | |
+| Z-Wave JS UI | 8091 (UI), 3000 (WS) | |
+| Node-RED | 1880 | |
+| ESPHome | 6052 | |
+| Frigate | 5000 (UI), 8971 (auth UI), 8554 (RTSP), 8555 (WebRTC) | |
+| Scrypted | 10443 | |
+| go2rtc | 1984 (API), 8554 (RTSP), 8555 (WebRTC) | |
+
+### Dev, AI, gaming, databases
+
+| Service | Port(s) | Notes |
+|---|---|---|
+| Forgejo / Gitea | 3000 (HTTP), 22 or 2222 (SSH) | |
+| GitLab | 80/443, 22 | |
+| Woodpecker CI | 8000 (UI), 9000 (gRPC) | |
+| Drone | 80 | |
+| Jenkins | 8080, 50000 (agents) | |
+| code-server / OpenVSCode | 8080 / 3000 | |
+| Coder | 7080 | |
+| Harbor | 80/443 | |
+| Docker Registry | 5000 | |
+| Verdaccio | 4873 | |
+| n8n | 5678 | |
+| Activepieces | 80 | |
+| Windmill | 8000 | |
+| Huginn | 3000 | |
+| Ollama | 11434 | |
+| Open WebUI | 8080 | |
+| LocalAI | 8080 | |
+| llama.cpp server | 8080 | |
+| vLLM | 8000 | |
+| text-generation-webui | 7860, 5000 (API) | |
+| ComfyUI | 8188 | |
+| AUTOMATIC1111 | 7860 | |
+| SearXNG | 8080 | |
+| Whisper ASR / Speaches | 9000 / 8000 | |
+| Piper / Wyoming | 10200 | Whisper-Wyoming 10300 |
+| Minecraft Java / Bedrock | 25565 TCP / 19132 UDP | |
+| Valheim | 2456–2458 UDP | |
+| Palworld | 8211 UDP | |
+| Satisfactory | 7777 UDP+TCP | |
+| Terraria | 7777 | |
+| Factorio | 34197 UDP | |
+| Pterodactyl / Pelican | 80/443 (panel), 8080 (Wings), 2022 (SFTP) | |
+| Crafty | 8443 | |
+| Steam cache (LanCache) | 80, 443, 53 | |
+| RomM | 8080 | |
+| Sunshine | 47984–47990 TCP, 47998–48000 UDP, 48010 | |
+| PostgreSQL | 5432 | |
+| MariaDB / MySQL | 3306 | |
+| Redis / Valkey | 6379 | |
+| MongoDB | 27017 | |
+| InfluxDB | 8086 | |
+| ClickHouse | 8123 (HTTP), 9000 (native) | |
+| Elasticsearch / OpenSearch | 9200, 9300 | |
+| Meilisearch | 7700 | |
+| Typesense | 8108 | |
+| RabbitMQ | 5672, 15672 (UI) | |
+| NATS | 4222, 8222 (monitoring) | |
+| pgAdmin | 80 | |
+| Adminer | 8080 | |
+| CloudBeaver | 8978 | |
+
+---
+
+## Consolidated checklists
+
+### New host bootstrap
+
+- [ ] Static IP or DHCP reservation; hostname set; `/etc/hosts` correct
+- [ ] Non-root user with sudo; SSH keys; `PasswordAuthentication no`; `PermitRootLogin no`
+- [ ] `unattended-upgrades` (security only) enabled; reboot policy decided
+- [ ] Time sync verified (`timedatectl`)
+- [ ] Firewall default-deny inbound; allow SSH from LAN/VPN only, 80/443, 53 if DNS
+- [ ] Docker installed from the official repo; user in `docker` group (or rootless); `daemon.json` with log rotation and `default-address-pools`
+- [ ] Directory layout created (`/srv/stacks`, `/srv/appdata`, data mounts) with correct ownership
+- [ ] Network mounts in `fstab` with `nofail,_netdev,x-systemd.automount`
+- [ ] Tailscale/WireGuard installed on the host (not in a container)
+- [ ] Monitoring agent (Beszel/node_exporter) + `smartd` + ntfy notifications
+- [ ] Host added to the backup plan **before** the first service goes live
+- [ ] Documented in your notes/Git: what, why, IP, purpose
+
+### New service deployment
+
+- [ ] Evaluated (activity, licence, backup docs — see [Resources](#resources-and-community))
+- [ ] Compose file in Git; secrets in `.env`/secret files, gitignored
+- [ ] Image tag pinned for stateful apps; `restart: unless-stopped`
+- [ ] Bind mounts under `/srv/appdata/<app>`; ownership matches `PUID/PGID`/`user:`
+- [ ] No published ports unless required; joined the `proxy` network; proxy labels/route added
+- [ ] `security_opt: no-new-privileges`, `read_only` where possible, `cap_drop: [ALL]` + `cap_add` as needed, `mem_limit`
+- [ ] Healthcheck defined; `depends_on` with conditions for DB/cache
+- [ ] Behind SSO/forward-auth if it lacks solid native auth; `lan-only` if it should never be public
+- [ ] DNS name added (rewrite or record); certificate verified
+- [ ] Added to Uptime Kuma/Gatus and dashboard
+- [ ] Data paths added to backup script; DB dump added if applicable
+- [ ] **Restore tested once**
+- [ ] Release-notes feed subscribed (`releases.atom`) / Renovate tracking it
+
+### Before an upgrade
+
+- [ ] Read the release notes / migration guide
+- [ ] Snapshot (ZFS/Proxmox) or fresh backup taken **and** verified
+- [ ] Know the rollback: previous image tag, DB dump, snapshot name
+- [ ] Off-peak time; household warned if it's a shared service
+- [ ] After: check logs, run the app's post-upgrade tasks (`occ upgrade`, migrations), verify from a client, update the pinned tag in Git, commit
+
+### Quarterly maintenance
+
+- [ ] Restore test (different app each quarter); PBS/Restic `check`
+- [ ] Review SMART, ZFS scrub results, disk fill trends
+- [ ] Prune Docker images/volumes; check log sizes
+- [ ] Rotate secrets that were exposed or are > 1 year old (API tokens, ACME DNS token)
+- [ ] Review who has access (IdP users, Tailscale devices, SSH keys, Vaultwarden org)
+- [ ] Test UPS: pull the plug, watch NUT shut things down
+- [ ] Update the break-glass sheet; verify offline copy of recovery codes
+- [ ] Firmware: router, switch, UPS, BIOS (if there's a reason)
+- [ ] Re-read your own docs; fix what's outdated
+
+### Incident / outage
+
+1. Don't reboot yet. Capture: `docker ps -a`, `journalctl -b -p err`, `dmesg -T | tail`, `zpool status`, `df -h`.
+2. What changed? (updates, power, network, cert expiry, disk full)
+3. Restore service first (rollback, restart, failover), root-cause second.
+4. Write three lines in the notes: symptom, cause, fix. Add a monitor that would have caught it.
+
+---
+
+## Docker Compose cheat-sheet
+
+### Skeleton with the good defaults
+
+```yaml
+services:
+  app:
+    image: ghcr.io/org/app:1.2.3            # pin for stateful apps
+    container_name: app
+    restart: unless-stopped
+    user: "1000:1000"                        # or PUID/PGID for LSIO images
+    environment:
+      TZ: Europe/Berlin
+      APP_SECRET: ${APP_SECRET}              # from .env
+    env_file: .env                           # or everything from here
+    volumes:
+      - /srv/appdata/app:/config
+      - /srv/media:/media:ro
+    networks: [proxy, app-internal]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID]         # only what it needs; many images need none
+    read_only: true
+    tmpfs: [/tmp, /run]
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.app.rule: Host(`app.home.example.com`)
+      traefik.http.services.app.loadbalancer.server.port: 8080
+
+  db:
+    image: postgres:16-alpine
+    container_name: app-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - /srv/appdata/app/postgres:/var/lib/postgresql/data
+    networks: [app-internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 10s
+      retries: 5
+
+networks:
+  proxy:
+    external: true
+  app-internal:
+    internal: true                           # no internet from the DB
+```
+
+### Snippets
+
+```yaml
+# Hardware
+devices: [/dev/dri:/dev/dri]                       # Intel/AMD GPU
+group_add: ["render", "video"]
+deploy: { resources: { reservations: { devices: [{ driver: nvidia, count: all, capabilities: [gpu] }] } } }
+devices: [/dev/ttyUSB0:/dev/ttyUSB0]              # Zigbee stick; prefer /dev/serial/by-id/...
+
+# Networking
+network_mode: host                                 # mDNS/discovery apps (HA, Plex, Jellyfin DLNA)
+network_mode: service:gluetun                      # route through a VPN container
+ports: ["127.0.0.1:8080:80"]                       # localhost only
+ports: ["53:53/udp", "53:53/tcp"]
+extra_hosts: ["host.docker.internal:host-gateway"]
+dns: [192.168.1.10]
+
+# Storage
+volumes:
+  - type: bind
+    source: /srv/media
+    target: /media
+    read_only: true
+  - type: tmpfs
+    target: /transcode
+    tmpfs: { size: 4g }
+shm_size: 256m                                     # Postgres, Chromium-based apps
+
+# Secrets (Compose file-based secrets)
+secrets:
+  db_password:
+    file: ./secrets/db_password
+services:
+  db:
+    secrets: [db_password]
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+
+# Reuse
+x-common: &common
+  restart: unless-stopped
+  logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }
+services:
+  a:
+    <<: *common
+    image: ...
+
+# Profiles (optional services)
+services:
+  debug-tool:
+    profiles: [debug]        # docker compose --profile debug up
+```
+
+### Commands
+
+```bash
+docker compose up -d                       # start/update (recreates changed services)
+docker compose pull && docker compose up -d # update images
+docker compose down                        # stop and remove containers (keeps volumes)
+docker compose down -v                     # ALSO deletes named volumes — data loss
+docker compose logs -f --tail 100 app
+docker compose ps; docker compose top
+docker compose config                      # resolved file with env substituted
+docker compose exec app sh                 # shell in running container
+docker compose run --rm app <cmd>          # one-off
+docker compose restart app
+docker compose up -d --force-recreate app  # recreate without changes
+docker compose --profile debug up -d
+docker compose -f a.yaml -f override.yaml up -d
+docker system df; docker system prune      # space; remove stopped/unused (asks)
+docker image prune -a                      # remove ALL unused images
+docker network create proxy
+docker inspect app | jq '.[0].Mounts, .[0].NetworkSettings.Networks'
+docker stats --no-stream
+docker events --since 1h
+```
+
+---
+
+## Command references
+
+### ZFS
+
+```bash
+zpool create -o ashift=12 -O compression=zstd -O atime=off -O xattr=sa -O acltype=posixacl \
+    tank mirror /dev/disk/by-id/ata-A /dev/disk/by-id/ata-B
+zpool create ... tank raidz1 A B C D
+zpool status -v; zpool list -v; zpool iostat -v 5
+zpool scrub tank; zpool replace tank OLD NEW; zpool clear tank
+zpool import; zpool import -f tank; zpool export tank
+zfs create tank/media; zfs create -o recordsize=1M tank/media   # large files
+zfs set compression=zstd tank; zfs get all tank/media | grep -v default
+zfs list -o name,used,avail,refer,mountpoint
+zfs snapshot tank/appdata@pre-upgrade; zfs list -t snapshot -r tank/appdata
+zfs rollback tank/appdata@pre-upgrade; zfs destroy tank/appdata@pre-upgrade
+zfs send -R tank/photos@snap | zfs recv -F backup/photos           # local
+zfs send -w tank/photos@snap | ssh nas zfs recv backup/photos      # raw/encrypted
+zfs send -i @old tank/photos@new | ssh nas zfs recv backup/photos  # incremental
+zfs diff tank/appdata@a tank/appdata@b
+arc_summary | head -40
+# Sanoid/Syncoid: /etc/sanoid/sanoid.conf templates; syncoid tank/photos nas:backup/photos
+```
+
+### Systemd
+
+```bash
+systemctl status docker; systemctl restart docker
+systemctl enable --now foo.timer; systemctl list-timers
+journalctl -u docker -f; journalctl -b -p err; journalctl --since "1 hour ago"
+journalctl --disk-usage; journalctl --vacuum-size=500M
+systemctl daemon-reload
+systemd-analyze blame                     # slow boot
+# minimal service + timer
+# /etc/systemd/system/backup.service   [Service] Type=oneshot ExecStart=/srv/stacks/backup/backup.sh EnvironmentFile=/srv/stacks/backup/.env
+# /etc/systemd/system/backup.timer     [Timer] OnCalendar=*-*-* 03:00:00 Persistent=true  [Install] WantedBy=timers.target
+```
+
+### Networking
+
+```bash
+ip -br a; ip r; ip -6 r                    # addresses, routes
+ss -tlnpu                                  # listening sockets
+dig @1.1.1.1 example.com; dig +trace example.com; dig -x 192.168.1.10
+resolvectl status; resolvectl flush-caches
+curl -vkI https://x.home.example.com; curl --resolve host:443:IP https://host/
+openssl s_client -connect host:443 -servername host </dev/null | openssl x509 -noout -dates -subject
+nmap -sT -p- 192.168.1.10                  # what's actually open
+tcpdump -ni eth0 port 53                   # watch DNS
+mtr 1.1.1.1; tracepath
+iperf3 -s   /   iperf3 -c server -R        # throughput between two hosts
+wg show; wg-quick up wg0
+tailscale status; tailscale netcheck; tailscale ping peer
+nft list ruleset; iptables -L DOCKER-USER -n -v
+```
+
+### Disks & SMART
+
+```bash
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT,MODEL,SERIAL
+ls -l /dev/disk/by-id/
+smartctl -a /dev/sda; smartctl -t long /dev/sda; smartctl -l selftest /dev/sda
+nvme smart-log /dev/nvme0
+hdparm -S 241 /dev/sdb                     # spin down after 30 min (media disks only)
+fio --name=t --rw=randrw --bs=4k --size=1G --numjobs=4 --iodepth=32 --direct=1 --runtime=30 --time_based
+badblocks -wsv /dev/sdX                    # destructive burn-in for new disks
+```
+
+### Restic
+
+```bash
+export RESTIC_REPOSITORY=b2:bucket:path RESTIC_PASSWORD_FILE=~/.restic
+restic init
+restic backup /srv/appdata --exclude-file=excludes.txt --tag daily
+restic snapshots; restic ls latest; restic find 'db.sqlite3'
+restic restore latest --target /tmp/restore --include /srv/appdata/vaultwarden
+restic mount /mnt/restic                   # browse snapshots
+restic forget --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --prune
+restic check; restic check --read-data-subset=5%
+restic stats; restic unlock
+```
+
+## Sample `.env.example`
+
+Commit *this*, never `.env`:
+
+```dotenv
+# Domain & proxy
+DOMAIN=home.example.com
+ACME_EMAIL=you@example.com
+CF_DNS_API_TOKEN=            # Cloudflare token: Zone.DNS edit on example.com
+
+# Identity
+TINYAUTH_SECRET=             # openssl rand -hex 32
+TINYAUTH_OIDC_CLIENT_ID=
+TINYAUTH_OIDC_CLIENT_SECRET=
+
+# Databases
+IMMICH_DB_PASSWORD=          # openssl rand -base64 32
+NC_DB_PASSWORD=
+PL_DB_PASSWORD=
+
+# Apps
+IMMICH_VERSION=v1.135.3
+VW_ADMIN_TOKEN=              # vaultwarden hash (argon2)
+PL_SECRET_KEY=
+
+# Notifications
+NTFY_TOPIC_URL=https://ntfy.home.example.com/alerts
+SHOUTRRR_URL=ntfy://ntfy.home.example.com/alerts
+
+# Backups
+RESTIC_PASSWORD=
+B2_ACCOUNT_ID=
+B2_ACCOUNT_KEY=
+```
+
+## Break-glass sheet template
+
+Print it. Put it in the safe with the recovery codes. Update it quarterly.
+
+```
+HOME LAB — EMERGENCY SHEET                          updated: YYYY-MM-DD
+
+Router admin ...........  https://10.0.10.1     user/pass: ________  (2FA backup codes attached)
+Proxmox ................  https://10.0.10.2:8006  root@pam: ________
+NAS ....................  https://10.0.10.5      admin: ________
+IdP admin recovery .....  https://id.home.example.com  codes attached
+Vaultwarden admin token   ________   (emergency access set up for: ________)
+Domain registrar .......  ________   2FA backup codes attached
+Backups
+  PBS: datastore ______  password ______  encryption key: on USB key #1
+  Restic repo(s): ______ password: on USB key #1 / in sealed envelope
+  B2: account ______ key: sealed envelope
+Where the data is
+  Photos: NAS tank/photos + B2 bucket "______" + cold disk in ______
+  Documents: Paperless export in tank/backups + B2
+  Passwords: Vaultwarden (Bitwarden clients keep an offline copy)
+If I'm gone
+  1. Photos & documents: restore from B2 with rclone (instructions: ______)
+  2. Passwords: emergency access in Bitwarden app → ______
+  3. Everything else can be switched off.
+```
+
+---
+
+*End of the guide. Start with [Introduction](#introduction-what-self-hosting-is-and-why-it-matters), or jump to the [Reference Architectures](#reference-architectures) and build something.*
 
 ---

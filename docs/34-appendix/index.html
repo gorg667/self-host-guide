@@ -1,0 +1,1891 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Appendix — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li><li><a href="../25-misc-apps/"><span class="num">25</span> The Long Tail: Household, Finance, Web, and Utility Apps</a></li><li><a href="../26-databases-backing-services/"><span class="num">26</span> Databases and Backing Services</a></li></ul></div><div class="part"><div class="part-title">Part IV — Operations &amp; reference</div><ul><li><a href="../27-automation-iac/"><span class="num">27</span> Infrastructure as Code and Automation</a></li><li><a href="../28-maintenance-operations/"><span class="num">28</span> Maintenance and Operations</a></li><li><a href="../29-power-cost-environment/"><span class="num">29</span> Power, Cost, and the Physical Environment</a></li><li><a href="../30-legal-ethical/"><span class="num">30</span> Legal and Ethical Considerations</a></li><li><a href="../31-reference-architectures/"><span class="num">31</span> Reference Architectures</a></li><li><a href="../32-troubleshooting-faq/"><span class="num">32</span> Troubleshooting and FAQ</a></li><li><a href="../33-resources-community/"><span class="num">33</span> Resources and Community</a></li><li class="active"><a href="../34-appendix/"><span class="num">34</span> Appendix</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 34 · ~3,768 words · 17 min read</div>
+    <article class="prose">
+      <h1 id="appendix">Appendix<a class="headerlink" href="#appendix" title="Permanent link">#</a></h1>
+<p>Reference material to keep open in another tab: a glossary of the jargon used throughout the guide, a port table for the services it covers, the checklists that were scattered across chapters gathered in one place, a Docker Compose cheat-sheet, and a handful of command references (ZFS, Docker, systemd, networking) that you'll reach for repeatedly.</p>
+<h2 id="glossary">Glossary<a class="headerlink" href="#glossary" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>3-2-1(-1-0)</strong></td>
+<td>Backup rule: 3 copies, 2 media, 1 off-site (+1 offline/immutable, 0 verification errors). See <a href="../11-backups/">Backups</a></td>
+</tr>
+<tr>
+<td><strong>ACME</strong></td>
+<td>Protocol for automated certificate issuance (Let's Encrypt, ZeroSSL). Challenges: HTTP-01, DNS-01, TLS-ALPN-01</td>
+</tr>
+<tr>
+<td><strong>AGPL</strong></td>
+<td>GNU Affero GPL; copyleft that also triggers when software is offered over a network. See <a href="../30-legal-ethical/">Legal</a></td>
+</tr>
+<tr>
+<td><strong>ARC / L2ARC / SLOG</strong></td>
+<td>ZFS read cache in RAM / on SSD / separate intent log for sync writes. Most home labs need only ARC</td>
+</tr>
+<tr>
+<td><strong>ARM64 / amd64</strong></td>
+<td>CPU architectures (Raspberry Pi, Apple Silicon / Intel &amp; AMD). Images must match or be multi-arch</td>
+</tr>
+<tr>
+<td><strong>Bind mount</strong></td>
+<td>Host directory mapped into a container (<code>/srv/appdata/x:/config</code>) vs a Docker-managed <strong>named volume</strong></td>
+</tr>
+<tr>
+<td><strong>Bus factor</strong></td>
+<td>How many people can be hit by a bus before a project (or your home lab) dies</td>
+</tr>
+<tr>
+<td><strong>CARP / VRRP</strong></td>
+<td>Router failover protocols (OPNsense/pfSense, Keepalived)</td>
+</tr>
+<tr>
+<td><strong>CGNAT</strong></td>
+<td>Carrier-grade NAT: your ISP shares one public IPv4 among many customers; inbound port forwarding impossible</td>
+</tr>
+<tr>
+<td><strong>CMR / SMR</strong></td>
+<td>Conventional vs Shingled Magnetic Recording. SMR drives have terrible sustained-write/rewrite performance; avoid for RAID/ZFS</td>
+</tr>
+<tr>
+<td><strong>Copyleft / permissive</strong></td>
+<td>Licence families: GPL/AGPL require sharing derivative source; MIT/Apache/BSD do not</td>
+</tr>
+<tr>
+<td><strong>CrowdSec</strong></td>
+<td>Collaborative IPS: parses logs, shares reputation, "bouncers" block at proxy/firewall</td>
+</tr>
+<tr>
+<td><strong>DDNS</strong></td>
+<td>Dynamic DNS: updates a hostname when your public IP changes</td>
+</tr>
+<tr>
+<td><strong>DERP</strong></td>
+<td>Tailscale's relay servers used when direct NAT traversal fails</td>
+</tr>
+<tr>
+<td><strong>DNS-01</strong></td>
+<td>ACME challenge proving domain control via a TXT record; enables wildcards and needs no open ports</td>
+</tr>
+<tr>
+<td><strong>DoH / DoT / DoQ</strong></td>
+<td>DNS over HTTPS / TLS / QUIC — encrypted DNS transport</td>
+</tr>
+<tr>
+<td><strong>Docker socket</strong></td>
+<td><code>/var/run/docker.sock</code>; mounting it grants root-equivalent on the host. Use a socket proxy</td>
+</tr>
+<tr>
+<td><strong>ECC</strong></td>
+<td>Error-correcting RAM; detects/corrects bit flips. Nice for ZFS, not mandatory</td>
+</tr>
+<tr>
+<td><strong>Forward auth</strong></td>
+<td>Reverse proxy asks an auth service (Authelia, TinyAuth, Authentik outpost) whether to allow each request</td>
+</tr>
+<tr>
+<td><strong>GitOps</strong></td>
+<td>Desired state lives in Git; a tool (Komodo, Flux, Argo) reconciles the running system to match</td>
+</tr>
+<tr>
+<td><strong>HBA</strong></td>
+<td>Host Bus Adapter — a SAS/SATA controller in "IT mode" (no RAID) presenting raw disks to ZFS</td>
+</tr>
+<tr>
+<td><strong>Headless</strong></td>
+<td>No monitor/keyboard; managed over SSH/web</td>
+</tr>
+<tr>
+<td><strong>IaC</strong></td>
+<td>Infrastructure as Code: Ansible, OpenTofu/Terraform, cloud-init, Compose</td>
+</tr>
+<tr>
+<td><strong>IdP / OIDC / OAuth2 / SAML / LDAP</strong></td>
+<td>Identity Provider; the protocols apps use to delegate login (OIDC is the modern default; LDAP is the legacy directory protocol)</td>
+</tr>
+<tr>
+<td><strong>iGPU / Quick Sync / VA-API / NVENC</strong></td>
+<td>Integrated GPU; Intel's hardware codec engine; Linux video-acceleration API; NVIDIA's encoder</td>
+</tr>
+<tr>
+<td><strong>IOMMU / VFIO</strong></td>
+<td>CPU feature and kernel framework for passing PCI devices to VMs</td>
+</tr>
+<tr>
+<td><strong>IPMI / iDRAC / iLO</strong></td>
+<td>Out-of-band management (remote console/power) on server boards</td>
+</tr>
+<tr>
+<td><strong>LXC</strong></td>
+<td>Linux Containers — OS-level virtualisation; Proxmox "CT"</td>
+</tr>
+<tr>
+<td><strong>mDNS / Avahi / Bonjour</strong></td>
+<td>Multicast local name resolution (<code>*.local</code>); doesn't cross VLANs without a reflector</td>
+</tr>
+<tr>
+<td><strong>MergerFS</strong></td>
+<td>Union filesystem pooling disks into one mount; pair with <strong>SnapRAID</strong> for parity</td>
+</tr>
+<tr>
+<td><strong>Mesh VPN / overlay</strong></td>
+<td>Tailscale, NetBird, ZeroTier, Nebula: peer-to-peer WireGuard-based networks with a coordination server</td>
+</tr>
+<tr>
+<td><strong>NAT / hairpin NAT / NAT reflection</strong></td>
+<td>Address translation; hairpin lets LAN clients reach the public IP of their own router</td>
+</tr>
+<tr>
+<td><strong>NUT</strong></td>
+<td>Network UPS Tools — monitors a UPS and shuts hosts down cleanly</td>
+</tr>
+<tr>
+<td><strong>OOM</strong></td>
+<td>Out of memory; the kernel kills the largest process (<code>OOMKilled</code> in Docker)</td>
+</tr>
+<tr>
+<td><strong>Passkey / WebAuthn / FIDO2</strong></td>
+<td>Phishing-resistant public-key login (Pocket ID is passkey-only)</td>
+</tr>
+<tr>
+<td><strong>PBS</strong></td>
+<td>Proxmox Backup Server — deduplicating, incremental backups of VMs/CTs/hosts</td>
+</tr>
+<tr>
+<td><strong>PoE</strong></td>
+<td>Power over Ethernet (802.3af/at/bt) for APs and cameras</td>
+</tr>
+<tr>
+<td><strong>PUID / PGID</strong></td>
+<td>LinuxServer.io convention: run the app as this user/group so bind-mount ownership works</td>
+</tr>
+<tr>
+<td><strong>QDevice / quorum</strong></td>
+<td>Tie-breaker for two-node Proxmox clusters; majority needed to operate</td>
+</tr>
+<tr>
+<td><strong>RAIDZ1/2/3, mirror, stripe</strong></td>
+<td>ZFS redundancy levels (1/2/3 disks' parity; identical copies; none)</td>
+</tr>
+<tr>
+<td><strong>Resilver / scrub</strong></td>
+<td>ZFS rebuilding redundancy after disk replacement / verifying every block's checksum</td>
+</tr>
+<tr>
+<td><strong>Reverse proxy</strong></td>
+<td>Terminates TLS and routes <code>host.example.com</code> to the right backend (Traefik, Caddy, nginx, NPM)</td>
+</tr>
+<tr>
+<td><strong>RTO / RPO</strong></td>
+<td>How long until service is back / how much data you can lose (time since last backup)</td>
+</tr>
+<tr>
+<td><strong>SBC</strong></td>
+<td>Single-board computer (Raspberry Pi, Orange Pi, Rock 5)</td>
+</tr>
+<tr>
+<td><strong>SFF / USFF / 1L / TinyMiniMicro</strong></td>
+<td>Small-form-factor PCs; Lenovo Tiny, HP Mini, Dell Micro</td>
+</tr>
+<tr>
+<td><strong>Snapshot</strong></td>
+<td>Point-in-time filesystem/volume copy (ZFS, Btrfs, LVM, Proxmox) — cheap rollback, <strong>not</strong> a backup</td>
+</tr>
+<tr>
+<td><strong>Split-horizon DNS</strong></td>
+<td>Same name resolves to a private IP internally and a public IP (or nothing) externally</td>
+</tr>
+<tr>
+<td><strong>SR-IOV</strong></td>
+<td>PCI feature letting one device (NIC, Intel iGPU 12th-gen+) appear as several virtual functions for VMs</td>
+</tr>
+<tr>
+<td><strong>SSO</strong></td>
+<td>Single sign-on — one login for many apps via an IdP</td>
+</tr>
+<tr>
+<td><strong>Subnet router / exit node</strong></td>
+<td>Tailscale node that advertises a LAN / routes all internet traffic</td>
+</tr>
+<tr>
+<td><strong>Tailnet</strong></td>
+<td>Your private Tailscale network</td>
+</tr>
+<tr>
+<td><strong>TBW / DWPD</strong></td>
+<td>SSD endurance: total terabytes written / drive writes per day</td>
+</tr>
+<tr>
+<td><strong>Trunk / access port / PVID</strong></td>
+<td>Switch port carrying multiple tagged VLANs / one untagged VLAN / the untagged VLAN ID</td>
+</tr>
+<tr>
+<td><strong>UPS</strong></td>
+<td>Uninterruptible power supply; line-interactive is the home-lab sweet spot</td>
+</tr>
+<tr>
+<td><strong>VLAN (802.1Q)</strong></td>
+<td>Virtual LAN tags to segment one physical network</td>
+</tr>
+<tr>
+<td><strong>Wildcard certificate</strong></td>
+<td><code>*.home.example.com</code> — one cert for all first-level subdomains; requires DNS-01</td>
+</tr>
+<tr>
+<td><strong>WireGuard</strong></td>
+<td>Modern minimal VPN protocol; basis of Tailscale, NetBird, Pangolin's Newt</td>
+</tr>
+<tr>
+<td><strong>ZFS dataset / zvol</strong></td>
+<td>Filesystem within a pool / block device within a pool (used for VM disks, iSCSI)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="default-port-reference">Default port reference<a class="headerlink" href="#default-port-reference" title="Permanent link">#</a></h2>
+<p>Container-internal ports; publish or proxy as needed. Where two are listed, the second is HTTPS or an alternate.</p>
+<h3 id="infrastructure">Infrastructure<a class="headerlink" href="#infrastructure" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Port(s)</th>
+<th>Proto</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSH</td>
+<td>22</td>
+<td>TCP</td>
+<td>Change only if you like; use keys and fail2ban/CrowdSec</td>
+</tr>
+<tr>
+<td>DNS (AdGuard Home, Pi-hole, Unbound, Blocky, Technitium)</td>
+<td>53</td>
+<td>TCP+UDP</td>
+<td>AdGuard UI 3000 (setup) → 80; Pi-hole UI 80/443; Unbound as upstream often 5335; Technitium 5380</td>
+</tr>
+<tr>
+<td>DHCP</td>
+<td>67/68</td>
+<td>UDP</td>
+<td></td>
+</tr>
+<tr>
+<td>HTTP / HTTPS</td>
+<td>80 / 443</td>
+<td>TCP (+UDP 443 for HTTP/3)</td>
+<td>Owned by the reverse proxy</td>
+</tr>
+<tr>
+<td>DoT / DoH / DoQ</td>
+<td>853 / 443 / 853</td>
+<td>TCP / TCP / UDP</td>
+<td></td>
+</tr>
+<tr>
+<td>Traefik dashboard</td>
+<td>8080</td>
+<td>TCP</td>
+<td>Route via <code>api@internal</code> instead of exposing</td>
+</tr>
+<tr>
+<td>Nginx Proxy Manager</td>
+<td>81 (UI), 80, 443</td>
+<td>TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>Caddy admin API</td>
+<td>2019</td>
+<td>TCP</td>
+<td>Keep on localhost</td>
+</tr>
+<tr>
+<td>Portainer</td>
+<td>9443 / 9000 (legacy) / 8000 (agent tunnel)</td>
+<td>TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>Dockge</td>
+<td>5001</td>
+<td>TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>Komodo Core / Periphery</td>
+<td>9120 / 8120</td>
+<td>TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>Proxmox VE</td>
+<td>8006 (UI), 5900–5999 (VNC), 3128 (SPICE), 5405–5412 (corosync UDP), 60000–60050 (migration)</td>
+<td>TCP/UDP</td>
+<td></td>
+</tr>
+<tr>
+<td>Proxmox Backup Server</td>
+<td>8007</td>
+<td>TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>TrueNAS SCALE</td>
+<td>80 / 443</td>
+<td>TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>Unraid</td>
+<td>80 / 443</td>
+<td>TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>Cockpit</td>
+<td>9090</td>
+<td>TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>Webmin</td>
+<td>10000</td>
+<td>TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>NUT (upsd)</td>
+<td>3493</td>
+<td>TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>SNMP</td>
+<td>161</td>
+<td>UDP</td>
+<td></td>
+</tr>
+<tr>
+<td>Syslog</td>
+<td>514</td>
+<td>UDP/TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>NTP</td>
+<td>123</td>
+<td>UDP</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="storage-file-sharing">Storage &amp; file sharing<a class="headerlink" href="#storage-file-sharing" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Port(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SMB/CIFS</td>
+<td>445 (139 legacy)</td>
+<td></td>
+</tr>
+<tr>
+<td>NFS</td>
+<td>2049 (+111 rpcbind for v3)</td>
+<td>v4 needs only 2049</td>
+</tr>
+<tr>
+<td>iSCSI</td>
+<td>3260</td>
+<td></td>
+</tr>
+<tr>
+<td>SFTP/SCP</td>
+<td>22</td>
+<td></td>
+</tr>
+<tr>
+<td>FTP/FTPS</td>
+<td>21 (+ passive range)</td>
+<td>Don't</td>
+</tr>
+<tr>
+<td>rsync daemon</td>
+<td>873</td>
+<td></td>
+</tr>
+<tr>
+<td>WebDAV</td>
+<td>80/443 (path)</td>
+<td></td>
+</tr>
+<tr>
+<td>Syncthing</td>
+<td>8384 (UI), 22000 (TCP+UDP sync), 21027 (UDP discovery)</td>
+<td></td>
+</tr>
+<tr>
+<td>MinIO</td>
+<td>9000 (S3), 9001 (console)</td>
+<td></td>
+</tr>
+<tr>
+<td>Garage</td>
+<td>3900 (S3), 3902 (web), 3903 (admin)</td>
+<td></td>
+</tr>
+<tr>
+<td>SeaweedFS</td>
+<td>9333 (master), 8080 (volume), 8888 (filer)</td>
+<td></td>
+</tr>
+<tr>
+<td>FileBrowser</td>
+<td>80 (image) / 8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Nextcloud</td>
+<td>80 (Apache image) / 9000 (FPM)</td>
+<td>AIO: 8080 (setup), 11000 (Apache)</td>
+</tr>
+<tr>
+<td>Seafile</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Copyparty</td>
+<td>3923</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="remote-access-networking">Remote access &amp; networking<a class="headerlink" href="#remote-access-networking" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Port(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WireGuard</td>
+<td>51820 UDP (convention)</td>
+<td>Any UDP port works</td>
+</tr>
+<tr>
+<td>OpenVPN</td>
+<td>1194 UDP/TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>Tailscale</td>
+<td>41641 UDP (outbound; forward for direct connections)</td>
+<td>Control plane over 443</td>
+</tr>
+<tr>
+<td>Headscale</td>
+<td>8080 (API), 9090 (metrics), 50443 (gRPC)</td>
+<td>Put behind proxy on 443</td>
+</tr>
+<tr>
+<td>NetBird</td>
+<td>80/443 (mgmt), 33073 (mgmt gRPC), 10000 (signal), 3478 (STUN), 49152–65535 (TURN)</td>
+<td></td>
+</tr>
+<tr>
+<td>ZeroTier</td>
+<td>9993 UDP</td>
+<td></td>
+</tr>
+<tr>
+<td>Pangolin</td>
+<td>80/443 (Traefik), 51820 UDP (Gerbil/WireGuard), 3001–3003 internal</td>
+<td>On the VPS</td>
+</tr>
+<tr>
+<td>Cloudflare Tunnel (cloudflared)</td>
+<td>outbound 7844</td>
+<td>No inbound</td>
+</tr>
+<tr>
+<td>Guacamole</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>RustDesk (hbbs/hbbr)</td>
+<td>21115–21117 TCP, 21116 UDP, 21118–21119 (web)</td>
+<td></td>
+</tr>
+<tr>
+<td>MeshCentral</td>
+<td>443 (or 4430)</td>
+<td></td>
+</tr>
+<tr>
+<td>Wazuh</td>
+<td>1514/1515 (agents), 55000 (API), 443 (dashboard)</td>
+<td></td>
+</tr>
+<tr>
+<td>Speedtest Tracker</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>LibreSpeed</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>UniFi Controller</td>
+<td>8443 (UI), 8080 (inform), 3478 UDP (STUN), 10001 UDP (discovery)</td>
+<td></td>
+</tr>
+<tr>
+<td>Omada Controller</td>
+<td>8043 (UI), 8088, 29810–29814</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="identity-security-monitoring">Identity, security, monitoring<a class="headerlink" href="#identity-security-monitoring" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Port(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Authelia</td>
+<td>9091</td>
+<td></td>
+</tr>
+<tr>
+<td>Authentik</td>
+<td>9000 / 9443</td>
+<td>Outposts: 9000</td>
+</tr>
+<tr>
+<td>Pocket ID</td>
+<td>1411</td>
+<td></td>
+</tr>
+<tr>
+<td>TinyAuth</td>
+<td>3000</td>
+<td></td>
+</tr>
+<tr>
+<td>Kanidm</td>
+<td>8443 (HTTPS), 636 (LDAPS)</td>
+<td></td>
+</tr>
+<tr>
+<td>LLDAP</td>
+<td>17170 (UI), 3890 (LDAP), 6360 (LDAPS)</td>
+<td></td>
+</tr>
+<tr>
+<td>Keycloak</td>
+<td>8080 / 8443</td>
+<td></td>
+</tr>
+<tr>
+<td>Zitadel</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Vaultwarden</td>
+<td>80 (3012 legacy WS)</td>
+<td></td>
+</tr>
+<tr>
+<td>Bitwarden (official)</td>
+<td>80/443</td>
+<td></td>
+</tr>
+<tr>
+<td>Psono</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>HashiCorp Vault / OpenBao</td>
+<td>8200</td>
+<td></td>
+</tr>
+<tr>
+<td>Infisical</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>CrowdSec LAPI</td>
+<td>8080</td>
+<td>Metrics 6060</td>
+</tr>
+<tr>
+<td>Uptime Kuma</td>
+<td>3001</td>
+<td></td>
+</tr>
+<tr>
+<td>Gatus</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Beszel hub / agent</td>
+<td>8090 / 45876</td>
+<td></td>
+</tr>
+<tr>
+<td>Prometheus</td>
+<td>9090</td>
+<td></td>
+</tr>
+<tr>
+<td>Alertmanager</td>
+<td>9093</td>
+<td></td>
+</tr>
+<tr>
+<td>Grafana</td>
+<td>3000</td>
+<td></td>
+</tr>
+<tr>
+<td>Loki</td>
+<td>3100</td>
+<td></td>
+</tr>
+<tr>
+<td>Alloy / Promtail</td>
+<td>12345 / 9080</td>
+<td></td>
+</tr>
+<tr>
+<td>node_exporter</td>
+<td>9100</td>
+<td></td>
+</tr>
+<tr>
+<td>cAdvisor</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Netdata</td>
+<td>19999</td>
+<td></td>
+</tr>
+<tr>
+<td>Zabbix</td>
+<td>10051 (server), 10050 (agent), 8080 (web)</td>
+<td></td>
+</tr>
+<tr>
+<td>InfluxDB</td>
+<td>8086</td>
+<td></td>
+</tr>
+<tr>
+<td>VictoriaMetrics</td>
+<td>8428</td>
+<td></td>
+</tr>
+<tr>
+<td>Dozzle</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Glances</td>
+<td>61208</td>
+<td></td>
+</tr>
+<tr>
+<td>ntfy</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Gotify</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Apprise API</td>
+<td>8000</td>
+<td></td>
+</tr>
+<tr>
+<td>Scrutiny</td>
+<td>8080</td>
+<td>Collector talks to 8080</td>
+</tr>
+<tr>
+<td>Diun</td>
+<td>—</td>
+<td>No UI</td>
+</tr>
+<tr>
+<td>Watchtower</td>
+<td>8080 (metrics, optional)</td>
+<td></td>
+</tr>
+<tr>
+<td>Healthchecks.io</td>
+<td>8000</td>
+<td></td>
+</tr>
+<tr>
+<td>Changedetection.io</td>
+<td>5000</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="media-downloads">Media &amp; downloads<a class="headerlink" href="#media-downloads" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Port(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jellyfin</td>
+<td>8096 (HTTP), 8920 (HTTPS), 1900 UDP (DLNA), 7359 UDP (discovery)</td>
+<td></td>
+</tr>
+<tr>
+<td>Plex</td>
+<td>32400, 32410–32414 UDP (GDM), 1900 UDP, 32469 (DLNA)</td>
+<td></td>
+</tr>
+<tr>
+<td>Emby</td>
+<td>8096 / 8920</td>
+<td></td>
+</tr>
+<tr>
+<td>Jellyseerr / Overseerr</td>
+<td>5055</td>
+<td></td>
+</tr>
+<tr>
+<td>Radarr / Sonarr / Lidarr / Readarr / Whisparr</td>
+<td>7878 / 8989 / 8686 / 8787 / 6969</td>
+<td></td>
+</tr>
+<tr>
+<td>Prowlarr</td>
+<td>9696</td>
+<td></td>
+</tr>
+<tr>
+<td>Bazarr</td>
+<td>6767</td>
+<td></td>
+</tr>
+<tr>
+<td>Tdarr</td>
+<td>8265 (UI), 8266 (server)</td>
+<td></td>
+</tr>
+<tr>
+<td>qBittorrent</td>
+<td>8080 (UI), 6881 TCP+UDP (peers)</td>
+<td></td>
+</tr>
+<tr>
+<td>Transmission</td>
+<td>9091 (UI), 51413</td>
+<td></td>
+</tr>
+<tr>
+<td>Deluge</td>
+<td>8112 (UI), 58846 (daemon), 6881</td>
+<td></td>
+</tr>
+<tr>
+<td>SABnzbd</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>NZBGet</td>
+<td>6789</td>
+<td></td>
+</tr>
+<tr>
+<td>Gluetun</td>
+<td>8888 (HTTP proxy), 8388 (Shadowsocks), 8000 (control)</td>
+<td>Route download clients through it</td>
+</tr>
+<tr>
+<td>Audiobookshelf</td>
+<td>80 (image) / 13378</td>
+<td></td>
+</tr>
+<tr>
+<td>Navidrome</td>
+<td>4533</td>
+<td></td>
+</tr>
+<tr>
+<td>Kavita</td>
+<td>5000</td>
+<td></td>
+</tr>
+<tr>
+<td>Komga</td>
+<td>25600</td>
+<td></td>
+</tr>
+<tr>
+<td>Calibre-Web</td>
+<td>8083</td>
+<td></td>
+</tr>
+<tr>
+<td>Tautulli</td>
+<td>8181</td>
+<td></td>
+</tr>
+<tr>
+<td>Stash</td>
+<td>9999</td>
+<td></td>
+</tr>
+<tr>
+<td>Tube Archivist</td>
+<td>8000</td>
+<td></td>
+</tr>
+<tr>
+<td>MeTube</td>
+<td>8081</td>
+<td></td>
+</tr>
+<tr>
+<td>Pinchflat</td>
+<td>8945</td>
+<td></td>
+</tr>
+<tr>
+<td>Lidarr</td>
+<td>8686</td>
+<td></td>
+</tr>
+<tr>
+<td>ErsatzTV</td>
+<td>8409</td>
+<td></td>
+</tr>
+<tr>
+<td>Threadfin / xTeVe</td>
+<td>34400</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="photos-documents-productivity-communication">Photos, documents, productivity, communication<a class="headerlink" href="#photos-documents-productivity-communication" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Port(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Immich</td>
+<td>2283</td>
+<td>ML 3003 internal</td>
+</tr>
+<tr>
+<td>PhotoPrism</td>
+<td>2342</td>
+<td></td>
+</tr>
+<tr>
+<td>Ente (Museum API)</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Paperless-ngx</td>
+<td>8000</td>
+<td></td>
+</tr>
+<tr>
+<td>Docspell</td>
+<td>7880</td>
+<td></td>
+</tr>
+<tr>
+<td>Stirling-PDF</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Homepage</td>
+<td>3000</td>
+<td></td>
+</tr>
+<tr>
+<td>Homarr</td>
+<td>7575</td>
+<td></td>
+</tr>
+<tr>
+<td>Dashy</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Heimdall</td>
+<td>80/443</td>
+<td></td>
+</tr>
+<tr>
+<td>Glance</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Miniflux</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>FreshRSS</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Wallabag</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Linkding</td>
+<td>9090</td>
+<td></td>
+</tr>
+<tr>
+<td>Karakeep (Hoarder)</td>
+<td>3000</td>
+<td></td>
+</tr>
+<tr>
+<td>Joplin Server</td>
+<td>22300</td>
+<td></td>
+</tr>
+<tr>
+<td>Trilium</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Outline</td>
+<td>3000</td>
+<td></td>
+</tr>
+<tr>
+<td>Docmost</td>
+<td>3000</td>
+<td></td>
+</tr>
+<tr>
+<td>BookStack</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Wiki.js</td>
+<td>3000</td>
+<td></td>
+</tr>
+<tr>
+<td>SilverBullet</td>
+<td>3000</td>
+<td></td>
+</tr>
+<tr>
+<td>Memos</td>
+<td>5230</td>
+<td></td>
+</tr>
+<tr>
+<td>Vikunja</td>
+<td>3456</td>
+<td></td>
+</tr>
+<tr>
+<td>Planka</td>
+<td>1337</td>
+<td></td>
+</tr>
+<tr>
+<td>Actual Budget</td>
+<td>5006</td>
+<td></td>
+</tr>
+<tr>
+<td>Firefly III</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Grocy</td>
+<td>80 (LSIO: 9283)</td>
+<td></td>
+</tr>
+<tr>
+<td>Mealie</td>
+<td>9000</td>
+<td></td>
+</tr>
+<tr>
+<td>Tandoor</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Radicale</td>
+<td>5232</td>
+<td></td>
+</tr>
+<tr>
+<td>Baïkal</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Matrix Synapse</td>
+<td>8008 (client), 8448 (federation)</td>
+<td></td>
+</tr>
+<tr>
+<td>Conduwuit / Conduit</td>
+<td>6167</td>
+<td></td>
+</tr>
+<tr>
+<td>Element Web</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Mattermost</td>
+<td>8065</td>
+<td></td>
+</tr>
+<tr>
+<td>Rocket.Chat</td>
+<td>3000</td>
+<td></td>
+</tr>
+<tr>
+<td>Jitsi</td>
+<td>443, 10000 UDP (JVB)</td>
+<td></td>
+</tr>
+<tr>
+<td>Mumble</td>
+<td>64738 TCP+UDP</td>
+<td></td>
+</tr>
+<tr>
+<td>TeamSpeak</td>
+<td>9987 UDP, 10011, 30033</td>
+<td></td>
+</tr>
+<tr>
+<td>Mailcow</td>
+<td>25, 465, 587, 143, 993, 110, 995, 4190, 80/443</td>
+<td></td>
+</tr>
+<tr>
+<td>Stalwart</td>
+<td>25, 465, 587, 143, 993, 4190, 8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Postfix / Dovecot</td>
+<td>25/587/465 / 143/993</td>
+<td></td>
+</tr>
+<tr>
+<td>Roundcube</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>ntfy</td>
+<td>80</td>
+<td>(listed above)</td>
+</tr>
+<tr>
+<td>Home Assistant</td>
+<td>8123</td>
+<td></td>
+</tr>
+<tr>
+<td>Mosquitto (MQTT)</td>
+<td>1883, 8883 (TLS), 9001 (WS)</td>
+<td></td>
+</tr>
+<tr>
+<td>Zigbee2MQTT</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Z-Wave JS UI</td>
+<td>8091 (UI), 3000 (WS)</td>
+<td></td>
+</tr>
+<tr>
+<td>Node-RED</td>
+<td>1880</td>
+<td></td>
+</tr>
+<tr>
+<td>ESPHome</td>
+<td>6052</td>
+<td></td>
+</tr>
+<tr>
+<td>Frigate</td>
+<td>5000 (UI), 8971 (auth UI), 8554 (RTSP), 8555 (WebRTC)</td>
+<td></td>
+</tr>
+<tr>
+<td>Scrypted</td>
+<td>10443</td>
+<td></td>
+</tr>
+<tr>
+<td>go2rtc</td>
+<td>1984 (API), 8554 (RTSP), 8555 (WebRTC)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="dev-ai-gaming-databases">Dev, AI, gaming, databases<a class="headerlink" href="#dev-ai-gaming-databases" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Port(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Forgejo / Gitea</td>
+<td>3000 (HTTP), 22 or 2222 (SSH)</td>
+<td></td>
+</tr>
+<tr>
+<td>GitLab</td>
+<td>80/443, 22</td>
+<td></td>
+</tr>
+<tr>
+<td>Woodpecker CI</td>
+<td>8000 (UI), 9000 (gRPC)</td>
+<td></td>
+</tr>
+<tr>
+<td>Drone</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Jenkins</td>
+<td>8080, 50000 (agents)</td>
+<td></td>
+</tr>
+<tr>
+<td>code-server / OpenVSCode</td>
+<td>8080 / 3000</td>
+<td></td>
+</tr>
+<tr>
+<td>Coder</td>
+<td>7080</td>
+<td></td>
+</tr>
+<tr>
+<td>Harbor</td>
+<td>80/443</td>
+<td></td>
+</tr>
+<tr>
+<td>Docker Registry</td>
+<td>5000</td>
+<td></td>
+</tr>
+<tr>
+<td>Verdaccio</td>
+<td>4873</td>
+<td></td>
+</tr>
+<tr>
+<td>n8n</td>
+<td>5678</td>
+<td></td>
+</tr>
+<tr>
+<td>Activepieces</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Windmill</td>
+<td>8000</td>
+<td></td>
+</tr>
+<tr>
+<td>Huginn</td>
+<td>3000</td>
+<td></td>
+</tr>
+<tr>
+<td>Ollama</td>
+<td>11434</td>
+<td></td>
+</tr>
+<tr>
+<td>Open WebUI</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>LocalAI</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>llama.cpp server</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>vLLM</td>
+<td>8000</td>
+<td></td>
+</tr>
+<tr>
+<td>text-generation-webui</td>
+<td>7860, 5000 (API)</td>
+<td></td>
+</tr>
+<tr>
+<td>ComfyUI</td>
+<td>8188</td>
+<td></td>
+</tr>
+<tr>
+<td>AUTOMATIC1111</td>
+<td>7860</td>
+<td></td>
+</tr>
+<tr>
+<td>SearXNG</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Whisper ASR / Speaches</td>
+<td>9000 / 8000</td>
+<td></td>
+</tr>
+<tr>
+<td>Piper / Wyoming</td>
+<td>10200</td>
+<td>Whisper-Wyoming 10300</td>
+</tr>
+<tr>
+<td>Minecraft Java / Bedrock</td>
+<td>25565 TCP / 19132 UDP</td>
+<td></td>
+</tr>
+<tr>
+<td>Valheim</td>
+<td>2456–2458 UDP</td>
+<td></td>
+</tr>
+<tr>
+<td>Palworld</td>
+<td>8211 UDP</td>
+<td></td>
+</tr>
+<tr>
+<td>Satisfactory</td>
+<td>7777 UDP+TCP</td>
+<td></td>
+</tr>
+<tr>
+<td>Terraria</td>
+<td>7777</td>
+<td></td>
+</tr>
+<tr>
+<td>Factorio</td>
+<td>34197 UDP</td>
+<td></td>
+</tr>
+<tr>
+<td>Pterodactyl / Pelican</td>
+<td>80/443 (panel), 8080 (Wings), 2022 (SFTP)</td>
+<td></td>
+</tr>
+<tr>
+<td>Crafty</td>
+<td>8443</td>
+<td></td>
+</tr>
+<tr>
+<td>Steam cache (LanCache)</td>
+<td>80, 443, 53</td>
+<td></td>
+</tr>
+<tr>
+<td>RomM</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>Sunshine</td>
+<td>47984–47990 TCP, 47998–48000 UDP, 48010</td>
+<td></td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td>5432</td>
+<td></td>
+</tr>
+<tr>
+<td>MariaDB / MySQL</td>
+<td>3306</td>
+<td></td>
+</tr>
+<tr>
+<td>Redis / Valkey</td>
+<td>6379</td>
+<td></td>
+</tr>
+<tr>
+<td>MongoDB</td>
+<td>27017</td>
+<td></td>
+</tr>
+<tr>
+<td>InfluxDB</td>
+<td>8086</td>
+<td></td>
+</tr>
+<tr>
+<td>ClickHouse</td>
+<td>8123 (HTTP), 9000 (native)</td>
+<td></td>
+</tr>
+<tr>
+<td>Elasticsearch / OpenSearch</td>
+<td>9200, 9300</td>
+<td></td>
+</tr>
+<tr>
+<td>Meilisearch</td>
+<td>7700</td>
+<td></td>
+</tr>
+<tr>
+<td>Typesense</td>
+<td>8108</td>
+<td></td>
+</tr>
+<tr>
+<td>RabbitMQ</td>
+<td>5672, 15672 (UI)</td>
+<td></td>
+</tr>
+<tr>
+<td>NATS</td>
+<td>4222, 8222 (monitoring)</td>
+<td></td>
+</tr>
+<tr>
+<td>pgAdmin</td>
+<td>80</td>
+<td></td>
+</tr>
+<tr>
+<td>Adminer</td>
+<td>8080</td>
+<td></td>
+</tr>
+<tr>
+<td>CloudBeaver</td>
+<td>8978</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="consolidated-checklists">Consolidated checklists<a class="headerlink" href="#consolidated-checklists" title="Permanent link">#</a></h2>
+<h3 id="new-host-bootstrap">New host bootstrap<a class="headerlink" href="#new-host-bootstrap" title="Permanent link">#</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Static IP or DHCP reservation; hostname set; <code>/etc/hosts</code> correct</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Non-root user with sudo; SSH keys; <code>PasswordAuthentication no</code>; <code>PermitRootLogin no</code></li>
+<li class="task-list-item"><input type="checkbox" disabled/> <code>unattended-upgrades</code> (security only) enabled; reboot policy decided</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Time sync verified (<code>timedatectl</code>)</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Firewall default-deny inbound; allow SSH from LAN/VPN only, 80/443, 53 if DNS</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Docker installed from the official repo; user in <code>docker</code> group (or rootless); <code>daemon.json</code> with log rotation and <code>default-address-pools</code></li>
+<li class="task-list-item"><input type="checkbox" disabled/> Directory layout created (<code>/srv/stacks</code>, <code>/srv/appdata</code>, data mounts) with correct ownership</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Network mounts in <code>fstab</code> with <code>nofail,_netdev,x-systemd.automount</code></li>
+<li class="task-list-item"><input type="checkbox" disabled/> Tailscale/WireGuard installed on the host (not in a container)</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Monitoring agent (Beszel/node_exporter) + <code>smartd</code> + ntfy notifications</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Host added to the backup plan <strong>before</strong> the first service goes live</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Documented in your notes/Git: what, why, IP, purpose</li>
+</ul>
+<h3 id="new-service-deployment">New service deployment<a class="headerlink" href="#new-service-deployment" title="Permanent link">#</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Evaluated (activity, licence, backup docs — see <a href="../33-resources-community/">Resources</a>)</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Compose file in Git; secrets in <code>.env</code>/secret files, gitignored</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Image tag pinned for stateful apps; <code>restart: unless-stopped</code></li>
+<li class="task-list-item"><input type="checkbox" disabled/> Bind mounts under <code>/srv/appdata/&lt;app&gt;</code>; ownership matches <code>PUID/PGID</code>/<code>user:</code></li>
+<li class="task-list-item"><input type="checkbox" disabled/> No published ports unless required; joined the <code>proxy</code> network; proxy labels/route added</li>
+<li class="task-list-item"><input type="checkbox" disabled/> <code>security_opt: no-new-privileges</code>, <code>read_only</code> where possible, <code>cap_drop: [ALL]</code> + <code>cap_add</code> as needed, <code>mem_limit</code></li>
+<li class="task-list-item"><input type="checkbox" disabled/> Healthcheck defined; <code>depends_on</code> with conditions for DB/cache</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Behind SSO/forward-auth if it lacks solid native auth; <code>lan-only</code> if it should never be public</li>
+<li class="task-list-item"><input type="checkbox" disabled/> DNS name added (rewrite or record); certificate verified</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Added to Uptime Kuma/Gatus and dashboard</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Data paths added to backup script; DB dump added if applicable</li>
+<li class="task-list-item"><input type="checkbox" disabled/> <strong>Restore tested once</strong></li>
+<li class="task-list-item"><input type="checkbox" disabled/> Release-notes feed subscribed (<code>releases.atom</code>) / Renovate tracking it</li>
+</ul>
+<h3 id="before-an-upgrade">Before an upgrade<a class="headerlink" href="#before-an-upgrade" title="Permanent link">#</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Read the release notes / migration guide</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Snapshot (ZFS/Proxmox) or fresh backup taken <strong>and</strong> verified</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Know the rollback: previous image tag, DB dump, snapshot name</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Off-peak time; household warned if it's a shared service</li>
+<li class="task-list-item"><input type="checkbox" disabled/> After: check logs, run the app's post-upgrade tasks (<code>occ upgrade</code>, migrations), verify from a client, update the pinned tag in Git, commit</li>
+</ul>
+<h3 id="quarterly-maintenance">Quarterly maintenance<a class="headerlink" href="#quarterly-maintenance" title="Permanent link">#</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Restore test (different app each quarter); PBS/Restic <code>check</code></li>
+<li class="task-list-item"><input type="checkbox" disabled/> Review SMART, ZFS scrub results, disk fill trends</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Prune Docker images/volumes; check log sizes</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Rotate secrets that were exposed or are &gt; 1 year old (API tokens, ACME DNS token)</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Review who has access (IdP users, Tailscale devices, SSH keys, Vaultwarden org)</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Test UPS: pull the plug, watch NUT shut things down</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Update the break-glass sheet; verify offline copy of recovery codes</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Firmware: router, switch, UPS, BIOS (if there's a reason)</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Re-read your own docs; fix what's outdated</li>
+</ul>
+<h3 id="incident-outage">Incident / outage<a class="headerlink" href="#incident-outage" title="Permanent link">#</a></h3>
+<ol>
+<li>Don't reboot yet. Capture: <code>docker ps -a</code>, <code>journalctl -b -p err</code>, <code>dmesg -T | tail</code>, <code>zpool status</code>, <code>df -h</code>.</li>
+<li>What changed? (updates, power, network, cert expiry, disk full)</li>
+<li>Restore service first (rollback, restart, failover), root-cause second.</li>
+<li>Write three lines in the notes: symptom, cause, fix. Add a monitor that would have caught it.</li>
+</ol>
+<hr />
+<h2 id="docker-compose-cheat-sheet">Docker Compose cheat-sheet<a class="headerlink" href="#docker-compose-cheat-sheet" title="Permanent link">#</a></h2>
+<h3 id="skeleton-with-the-good-defaults">Skeleton with the good defaults<a class="headerlink" href="#skeleton-with-the-good-defaults" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">app</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/org/app:1.2.3</span><span class="w">            </span><span class="c1"># pin for stateful apps</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1000:1000&quot;</span><span class="w">                        </span><span class="c1"># or PUID/PGID for LSIO images</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">TZ</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Europe/Berlin</span>
+<span class="w">      </span><span class="nt">APP_SECRET</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${APP_SECRET}</span><span class="w">              </span><span class="c1"># from .env</span>
+<span class="w">    </span><span class="nt">env_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.env</span><span class="w">                           </span><span class="c1"># or everything from here</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/app:/config</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/media:/media:ro</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">app-internal</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">db</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_healthy</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;wget&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-qO-&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;http://127.0.0.1:8080/health&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">      </span><span class="nt">start_period</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<span class="w">    </span><span class="nt">security_opt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">no-new-privileges</span><span class="p p-Indicator">:</span><span class="nv">true</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">cap_drop</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">ALL</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">cap_add</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">CHOWN</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">SETUID</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">SETGID</span><span class="p p-Indicator">]</span><span class="w">         </span><span class="c1"># only what it needs; many images need none</span>
+<span class="w">    </span><span class="nt">read_only</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">tmpfs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">/tmp</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">/run</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">mem_limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1g</span>
+<span class="w">    </span><span class="nt">logging</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">driver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json-file</span>
+<span class="w">      </span><span class="nt">options</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> max-size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10m&quot;</span><span class="p p-Indicator">,</span><span class="nt"> max-file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">traefik.enable</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">traefik.http.routers.app.rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Host(`app.home.example.com`)</span>
+<span class="w">      </span><span class="nt">traefik.http.services.app.loadbalancer.server.port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
+
+<span class="w">  </span><span class="nt">db</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:16-alpine</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-db</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DB_PASSWORD}</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/app/postgres:/var/lib/postgresql/data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">app-internal</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD-SHELL&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">app</span><span class="nv"> </span><span class="s">-d</span><span class="nv"> </span><span class="s">app&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">app-internal</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">internal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                           </span><span class="c1"># no internet from the DB</span>
+</code></pre></div>
+<h3 id="snippets">Snippets<a class="headerlink" href="#snippets" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Hardware</span>
+<span class="nt">devices</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">/dev/dri</span><span class="p p-Indicator">:</span><span class="nv">/dev/dri</span><span class="p p-Indicator">]</span><span class="w">                       </span><span class="c1"># Intel/AMD GPU</span>
+<span class="nt">group_add</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;render&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;video&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">deploy</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> reservations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> devices</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="nt"> driver</span><span class="p">:</span><span class="w"> </span><span class="nv">nvidia</span><span class="p p-Indicator">,</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">all</span><span class="p p-Indicator">,</span><span class="nt"> capabilities</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gpu</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}]</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="nt">devices</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">/dev/ttyUSB0</span><span class="p p-Indicator">:</span><span class="nv">/dev/ttyUSB0</span><span class="p p-Indicator">]</span><span class="w">              </span><span class="c1"># Zigbee stick; prefer /dev/serial/by-id/...</span>
+
+<span class="c1"># Networking</span>
+<span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host</span><span class="w">                                 </span><span class="c1"># mDNS/discovery apps (HA, Plex, Jellyfin DLNA)</span>
+<span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service:gluetun</span><span class="w">                      </span><span class="c1"># route through a VPN container</span>
+<span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;127.0.0.1:8080:80&quot;</span><span class="p p-Indicator">]</span><span class="w">                       </span><span class="c1"># localhost only</span>
+<span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;53:53/udp&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;53:53/tcp&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">extra_hosts</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;host.docker.internal:host-gateway&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">dns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">192.168.1.10</span><span class="p p-Indicator">]</span>
+
+<span class="c1"># Storage</span>
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bind</span>
+<span class="w">    </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/media</span>
+<span class="w">    </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/media</span>
+<span class="w">    </span><span class="nt">read_only</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tmpfs</span>
+<span class="w">    </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/transcode</span>
+<span class="w">    </span><span class="nt">tmpfs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> size</span><span class="p">:</span><span class="w"> </span><span class="nv">4g</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="nt">shm_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256m</span><span class="w">                                     </span><span class="c1"># Postgres, Chromium-based apps</span>
+
+<span class="c1"># Secrets (Compose file-based secrets)</span>
+<span class="nt">secrets</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">db_password</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./secrets/db_password</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">db</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">db_password</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/secrets/db_password</span>
+
+<span class="c1"># Reuse</span>
+<span class="nt">x-common</span><span class="p">:</span><span class="w"> </span><span class="nl">&amp;common</span>
+<span class="w">  </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">  </span><span class="nt">logging</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> driver</span><span class="p">:</span><span class="w"> </span><span class="nv">json-file</span><span class="p p-Indicator">,</span><span class="nt"> options</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> max-size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10m&quot;</span><span class="p p-Indicator">,</span><span class="nt"> max-file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">a</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">&lt;&lt;</span><span class="p">:</span><span class="w"> </span><span class="nv">*common</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+
+<span class="c1"># Profiles (optional services)</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">debug-tool</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">profiles</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">debug</span><span class="p p-Indicator">]</span><span class="w">        </span><span class="c1"># docker compose --profile debug up</span>
+</code></pre></div>
+<h3 id="commands">Commands<a class="headerlink" href="#commands" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w">                       </span><span class="c1"># start/update (recreates changed services)</span>
+docker<span class="w"> </span>compose<span class="w"> </span>pull<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span><span class="c1"># update images</span>
+docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w">                        </span><span class="c1"># stop and remove containers (keeps volumes)</span>
+docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w"> </span>-v<span class="w">                     </span><span class="c1"># ALSO deletes named volumes — data loss</span>
+docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>--tail<span class="w"> </span><span class="m">100</span><span class="w"> </span>app
+docker<span class="w"> </span>compose<span class="w"> </span>ps<span class="p">;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>top
+docker<span class="w"> </span>compose<span class="w"> </span>config<span class="w">                      </span><span class="c1"># resolved file with env substituted</span>
+docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>app<span class="w"> </span>sh<span class="w">                 </span><span class="c1"># shell in running container</span>
+docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>app<span class="w"> </span>&lt;cmd&gt;<span class="w">          </span><span class="c1"># one-off</span>
+docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>app
+docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--force-recreate<span class="w"> </span>app<span class="w">  </span><span class="c1"># recreate without changes</span>
+docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>debug<span class="w"> </span>up<span class="w"> </span>-d
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>a.yaml<span class="w"> </span>-f<span class="w"> </span>override.yaml<span class="w"> </span>up<span class="w"> </span>-d
+docker<span class="w"> </span>system<span class="w"> </span>df<span class="p">;</span><span class="w"> </span>docker<span class="w"> </span>system<span class="w"> </span>prune<span class="w">      </span><span class="c1"># space; remove stopped/unused (asks)</span>
+docker<span class="w"> </span>image<span class="w"> </span>prune<span class="w"> </span>-a<span class="w">                      </span><span class="c1"># remove ALL unused images</span>
+docker<span class="w"> </span>network<span class="w"> </span>create<span class="w"> </span>proxy
+docker<span class="w"> </span>inspect<span class="w"> </span>app<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[0].Mounts, .[0].NetworkSettings.Networks&#39;</span>
+docker<span class="w"> </span>stats<span class="w"> </span>--no-stream
+docker<span class="w"> </span>events<span class="w"> </span>--since<span class="w"> </span>1h
+</code></pre></div>
+<hr />
+<h2 id="command-references">Command references<a class="headerlink" href="#command-references" title="Permanent link">#</a></h2>
+<h3 id="zfs">ZFS<a class="headerlink" href="#zfs" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>zpool<span class="w"> </span>create<span class="w"> </span>-o<span class="w"> </span><span class="nv">ashift</span><span class="o">=</span><span class="m">12</span><span class="w"> </span>-O<span class="w"> </span><span class="nv">compression</span><span class="o">=</span>zstd<span class="w"> </span>-O<span class="w"> </span><span class="nv">atime</span><span class="o">=</span>off<span class="w"> </span>-O<span class="w"> </span><span class="nv">xattr</span><span class="o">=</span>sa<span class="w"> </span>-O<span class="w"> </span><span class="nv">acltype</span><span class="o">=</span>posixacl<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>tank<span class="w"> </span>mirror<span class="w"> </span>/dev/disk/by-id/ata-A<span class="w"> </span>/dev/disk/by-id/ata-B
+zpool<span class="w"> </span>create<span class="w"> </span>...<span class="w"> </span>tank<span class="w"> </span>raidz1<span class="w"> </span>A<span class="w"> </span>B<span class="w"> </span>C<span class="w"> </span>D
+zpool<span class="w"> </span>status<span class="w"> </span>-v<span class="p">;</span><span class="w"> </span>zpool<span class="w"> </span>list<span class="w"> </span>-v<span class="p">;</span><span class="w"> </span>zpool<span class="w"> </span>iostat<span class="w"> </span>-v<span class="w"> </span><span class="m">5</span>
+zpool<span class="w"> </span>scrub<span class="w"> </span>tank<span class="p">;</span><span class="w"> </span>zpool<span class="w"> </span>replace<span class="w"> </span>tank<span class="w"> </span>OLD<span class="w"> </span>NEW<span class="p">;</span><span class="w"> </span>zpool<span class="w"> </span>clear<span class="w"> </span>tank
+zpool<span class="w"> </span>import<span class="p">;</span><span class="w"> </span>zpool<span class="w"> </span>import<span class="w"> </span>-f<span class="w"> </span>tank<span class="p">;</span><span class="w"> </span>zpool<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tank
+zfs<span class="w"> </span>create<span class="w"> </span>tank/media<span class="p">;</span><span class="w"> </span>zfs<span class="w"> </span>create<span class="w"> </span>-o<span class="w"> </span><span class="nv">recordsize</span><span class="o">=</span>1M<span class="w"> </span>tank/media<span class="w">   </span><span class="c1"># large files</span>
+zfs<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="nv">compression</span><span class="o">=</span>zstd<span class="w"> </span>tank<span class="p">;</span><span class="w"> </span>zfs<span class="w"> </span>get<span class="w"> </span>all<span class="w"> </span>tank/media<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>default
+zfs<span class="w"> </span>list<span class="w"> </span>-o<span class="w"> </span>name,used,avail,refer,mountpoint
+zfs<span class="w"> </span>snapshot<span class="w"> </span>tank/appdata@pre-upgrade<span class="p">;</span><span class="w"> </span>zfs<span class="w"> </span>list<span class="w"> </span>-t<span class="w"> </span>snapshot<span class="w"> </span>-r<span class="w"> </span>tank/appdata
+zfs<span class="w"> </span>rollback<span class="w"> </span>tank/appdata@pre-upgrade<span class="p">;</span><span class="w"> </span>zfs<span class="w"> </span>destroy<span class="w"> </span>tank/appdata@pre-upgrade
+zfs<span class="w"> </span>send<span class="w"> </span>-R<span class="w"> </span>tank/photos@snap<span class="w"> </span><span class="p">|</span><span class="w"> </span>zfs<span class="w"> </span>recv<span class="w"> </span>-F<span class="w"> </span>backup/photos<span class="w">           </span><span class="c1"># local</span>
+zfs<span class="w"> </span>send<span class="w"> </span>-w<span class="w"> </span>tank/photos@snap<span class="w"> </span><span class="p">|</span><span class="w"> </span>ssh<span class="w"> </span>nas<span class="w"> </span>zfs<span class="w"> </span>recv<span class="w"> </span>backup/photos<span class="w">      </span><span class="c1"># raw/encrypted</span>
+zfs<span class="w"> </span>send<span class="w"> </span>-i<span class="w"> </span>@old<span class="w"> </span>tank/photos@new<span class="w"> </span><span class="p">|</span><span class="w"> </span>ssh<span class="w"> </span>nas<span class="w"> </span>zfs<span class="w"> </span>recv<span class="w"> </span>backup/photos<span class="w">  </span><span class="c1"># incremental</span>
+zfs<span class="w"> </span>diff<span class="w"> </span>tank/appdata@a<span class="w"> </span>tank/appdata@b
+arc_summary<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-40
+<span class="c1"># Sanoid/Syncoid: /etc/sanoid/sanoid.conf templates; syncoid tank/photos nas:backup/photos</span>
+</code></pre></div>
+<h3 id="systemd">Systemd<a class="headerlink" href="#systemd" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>systemctl<span class="w"> </span>status<span class="w"> </span>docker<span class="p">;</span><span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>docker
+systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>foo.timer<span class="p">;</span><span class="w"> </span>systemctl<span class="w"> </span>list-timers
+journalctl<span class="w"> </span>-u<span class="w"> </span>docker<span class="w"> </span>-f<span class="p">;</span><span class="w"> </span>journalctl<span class="w"> </span>-b<span class="w"> </span>-p<span class="w"> </span>err<span class="p">;</span><span class="w"> </span>journalctl<span class="w"> </span>--since<span class="w"> </span><span class="s2">&quot;1 hour ago&quot;</span>
+journalctl<span class="w"> </span>--disk-usage<span class="p">;</span><span class="w"> </span>journalctl<span class="w"> </span>--vacuum-size<span class="o">=</span>500M
+systemctl<span class="w"> </span>daemon-reload
+systemd-analyze<span class="w"> </span>blame<span class="w">                     </span><span class="c1"># slow boot</span>
+<span class="c1"># minimal service + timer</span>
+<span class="c1"># /etc/systemd/system/backup.service   [Service] Type=oneshot ExecStart=/srv/stacks/backup/backup.sh EnvironmentFile=/srv/stacks/backup/.env</span>
+<span class="c1"># /etc/systemd/system/backup.timer     [Timer] OnCalendar=*-*-* 03:00:00 Persistent=true  [Install] WantedBy=timers.target</span>
+</code></pre></div>
+<h3 id="networking">Networking<a class="headerlink" href="#networking" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>ip<span class="w"> </span>-br<span class="w"> </span>a<span class="p">;</span><span class="w"> </span>ip<span class="w"> </span>r<span class="p">;</span><span class="w"> </span>ip<span class="w"> </span>-6<span class="w"> </span>r<span class="w">                    </span><span class="c1"># addresses, routes</span>
+ss<span class="w"> </span>-tlnpu<span class="w">                                  </span><span class="c1"># listening sockets</span>
+dig<span class="w"> </span>@1.1.1.1<span class="w"> </span>example.com<span class="p">;</span><span class="w"> </span>dig<span class="w"> </span>+trace<span class="w"> </span>example.com<span class="p">;</span><span class="w"> </span>dig<span class="w"> </span>-x<span class="w"> </span><span class="m">192</span>.168.1.10
+resolvectl<span class="w"> </span>status<span class="p">;</span><span class="w"> </span>resolvectl<span class="w"> </span>flush-caches
+curl<span class="w"> </span>-vkI<span class="w"> </span>https://x.home.example.com<span class="p">;</span><span class="w"> </span>curl<span class="w"> </span>--resolve<span class="w"> </span>host:443:IP<span class="w"> </span>https://host/
+openssl<span class="w"> </span>s_client<span class="w"> </span>-connect<span class="w"> </span>host:443<span class="w"> </span>-servername<span class="w"> </span>host<span class="w"> </span>&lt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>openssl<span class="w"> </span>x509<span class="w"> </span>-noout<span class="w"> </span>-dates<span class="w"> </span>-subject
+nmap<span class="w"> </span>-sT<span class="w"> </span>-p-<span class="w"> </span><span class="m">192</span>.168.1.10<span class="w">                  </span><span class="c1"># what&#39;s actually open</span>
+tcpdump<span class="w"> </span>-ni<span class="w"> </span>eth0<span class="w"> </span>port<span class="w"> </span><span class="m">53</span><span class="w">                   </span><span class="c1"># watch DNS</span>
+mtr<span class="w"> </span><span class="m">1</span>.1.1.1<span class="p">;</span><span class="w"> </span>tracepath
+iperf3<span class="w"> </span>-s<span class="w">   </span>/<span class="w">   </span>iperf3<span class="w"> </span>-c<span class="w"> </span>server<span class="w"> </span>-R<span class="w">        </span><span class="c1"># throughput between two hosts</span>
+wg<span class="w"> </span>show<span class="p">;</span><span class="w"> </span>wg-quick<span class="w"> </span>up<span class="w"> </span>wg0
+tailscale<span class="w"> </span>status<span class="p">;</span><span class="w"> </span>tailscale<span class="w"> </span>netcheck<span class="p">;</span><span class="w"> </span>tailscale<span class="w"> </span>ping<span class="w"> </span>peer
+nft<span class="w"> </span>list<span class="w"> </span>ruleset<span class="p">;</span><span class="w"> </span>iptables<span class="w"> </span>-L<span class="w"> </span>DOCKER-USER<span class="w"> </span>-n<span class="w"> </span>-v
+</code></pre></div>
+<h3 id="disks-smart">Disks &amp; SMART<a class="headerlink" href="#disks-smart" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>lsblk<span class="w"> </span>-o<span class="w"> </span>NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT,MODEL,SERIAL
+ls<span class="w"> </span>-l<span class="w"> </span>/dev/disk/by-id/
+smartctl<span class="w"> </span>-a<span class="w"> </span>/dev/sda<span class="p">;</span><span class="w"> </span>smartctl<span class="w"> </span>-t<span class="w"> </span>long<span class="w"> </span>/dev/sda<span class="p">;</span><span class="w"> </span>smartctl<span class="w"> </span>-l<span class="w"> </span>selftest<span class="w"> </span>/dev/sda
+nvme<span class="w"> </span>smart-log<span class="w"> </span>/dev/nvme0
+hdparm<span class="w"> </span>-S<span class="w"> </span><span class="m">241</span><span class="w"> </span>/dev/sdb<span class="w">                     </span><span class="c1"># spin down after 30 min (media disks only)</span>
+fio<span class="w"> </span>--name<span class="o">=</span>t<span class="w"> </span>--rw<span class="o">=</span>randrw<span class="w"> </span>--bs<span class="o">=</span>4k<span class="w"> </span>--size<span class="o">=</span>1G<span class="w"> </span>--numjobs<span class="o">=</span><span class="m">4</span><span class="w"> </span>--iodepth<span class="o">=</span><span class="m">32</span><span class="w"> </span>--direct<span class="o">=</span><span class="m">1</span><span class="w"> </span>--runtime<span class="o">=</span><span class="m">30</span><span class="w"> </span>--time_based
+badblocks<span class="w"> </span>-wsv<span class="w"> </span>/dev/sdX<span class="w">                    </span><span class="c1"># destructive burn-in for new disks</span>
+</code></pre></div>
+<h3 id="restic">Restic<a class="headerlink" href="#restic" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">RESTIC_REPOSITORY</span><span class="o">=</span>b2:bucket:path<span class="w"> </span><span class="nv">RESTIC_PASSWORD_FILE</span><span class="o">=</span>~/.restic
+restic<span class="w"> </span>init
+restic<span class="w"> </span>backup<span class="w"> </span>/srv/appdata<span class="w"> </span>--exclude-file<span class="o">=</span>excludes.txt<span class="w"> </span>--tag<span class="w"> </span>daily
+restic<span class="w"> </span>snapshots<span class="p">;</span><span class="w"> </span>restic<span class="w"> </span>ls<span class="w"> </span>latest<span class="p">;</span><span class="w"> </span>restic<span class="w"> </span>find<span class="w"> </span><span class="s1">&#39;db.sqlite3&#39;</span>
+restic<span class="w"> </span>restore<span class="w"> </span>latest<span class="w"> </span>--target<span class="w"> </span>/tmp/restore<span class="w"> </span>--include<span class="w"> </span>/srv/appdata/vaultwarden
+restic<span class="w"> </span>mount<span class="w"> </span>/mnt/restic<span class="w">                   </span><span class="c1"># browse snapshots</span>
+restic<span class="w"> </span>forget<span class="w"> </span>--keep-daily<span class="w"> </span><span class="m">14</span><span class="w"> </span>--keep-weekly<span class="w"> </span><span class="m">8</span><span class="w"> </span>--keep-monthly<span class="w"> </span><span class="m">12</span><span class="w"> </span>--prune
+restic<span class="w"> </span>check<span class="p">;</span><span class="w"> </span>restic<span class="w"> </span>check<span class="w"> </span>--read-data-subset<span class="o">=</span><span class="m">5</span>%
+restic<span class="w"> </span>stats<span class="p">;</span><span class="w"> </span>restic<span class="w"> </span>unlock
+</code></pre></div>
+<h2 id="sample-envexample">Sample <code>.env.example</code><a class="headerlink" href="#sample-envexample" title="Permanent link">#</a></h2>
+<p>Commit <em>this</em>, never <code>.env</code>:</p>
+<div class="highlight"><pre><span></span><code># Domain &amp; proxy
+DOMAIN=home.example.com
+ACME_EMAIL=you@example.com
+CF_DNS_API_TOKEN=            # Cloudflare token: Zone.DNS edit on example.com
+
+# Identity
+TINYAUTH_SECRET=             # openssl rand -hex 32
+TINYAUTH_OIDC_CLIENT_ID=
+TINYAUTH_OIDC_CLIENT_SECRET=
+
+# Databases
+IMMICH_DB_PASSWORD=          # openssl rand -base64 32
+NC_DB_PASSWORD=
+PL_DB_PASSWORD=
+
+# Apps
+IMMICH_VERSION=v1.135.3
+VW_ADMIN_TOKEN=              # vaultwarden hash (argon2)
+PL_SECRET_KEY=
+
+# Notifications
+NTFY_TOPIC_URL=https://ntfy.home.example.com/alerts
+SHOUTRRR_URL=ntfy://ntfy.home.example.com/alerts
+
+# Backups
+RESTIC_PASSWORD=
+B2_ACCOUNT_ID=
+B2_ACCOUNT_KEY=
+</code></pre></div>
+<h2 id="break-glass-sheet-template">Break-glass sheet template<a class="headerlink" href="#break-glass-sheet-template" title="Permanent link">#</a></h2>
+<p>Print it. Put it in the safe with the recovery codes. Update it quarterly.</p>
+<div class="highlight"><pre><span></span><code>HOME LAB — EMERGENCY SHEET                          updated: YYYY-MM-DD
+
+Router admin ...........  https://10.0.10.1     user/pass: ________  (2FA backup codes attached)
+Proxmox ................  https://10.0.10.2:8006  root@pam: ________
+NAS ....................  https://10.0.10.5      admin: ________
+IdP admin recovery .....  https://id.home.example.com  codes attached
+Vaultwarden admin token   ________   (emergency access set up for: ________)
+Domain registrar .......  ________   2FA backup codes attached
+Backups
+  PBS: datastore ______  password ______  encryption key: on USB key #1
+  Restic repo(s): ______ password: on USB key #1 / in sealed envelope
+  B2: account ______ key: sealed envelope
+Where the data is
+  Photos: NAS tank/photos + B2 bucket &quot;______&quot; + cold disk in ______
+  Documents: Paperless export in tank/backups + B2
+  Passwords: Vaultwarden (Bitwarden clients keep an offline copy)
+If I&#39;m gone
+  1. Photos &amp; documents: restore from B2 with rclone (instructions: ______)
+  2. Passwords: emergency access in Bitwarden app → ______
+  3. Everything else can be switched off.
+</code></pre></div>
+<hr />
+<p><em>End of the guide. Start with <a href="../00-introduction/">Introduction</a>, or jump to the <a href="../31-reference-architectures/">Reference Architectures</a> and build something.</em></p>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../33-resources-community/">← 33. Resources and Community</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/34-appendix.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#glossary">Glossary</a></li>
+<li><a href="#default-port-reference">Default port reference</a><ul>
+<li><a href="#infrastructure">Infrastructure</a></li>
+<li><a href="#storage-file-sharing">Storage &amp; file sharing</a></li>
+<li><a href="#remote-access-networking">Remote access &amp; networking</a></li>
+<li><a href="#identity-security-monitoring">Identity, security, monitoring</a></li>
+<li><a href="#media-downloads">Media &amp; downloads</a></li>
+<li><a href="#photos-documents-productivity-communication">Photos, documents, productivity, communication</a></li>
+<li><a href="#dev-ai-gaming-databases">Dev, AI, gaming, databases</a></li>
+</ul>
+</li>
+<li><a href="#consolidated-checklists">Consolidated checklists</a><ul>
+<li><a href="#new-host-bootstrap">New host bootstrap</a></li>
+<li><a href="#new-service-deployment">New service deployment</a></li>
+<li><a href="#before-an-upgrade">Before an upgrade</a></li>
+<li><a href="#quarterly-maintenance">Quarterly maintenance</a></li>
+<li><a href="#incident-outage">Incident / outage</a></li>
+</ul>
+</li>
+<li><a href="#docker-compose-cheat-sheet">Docker Compose cheat-sheet</a><ul>
+<li><a href="#skeleton-with-the-good-defaults">Skeleton with the good defaults</a></li>
+<li><a href="#snippets">Snippets</a></li>
+<li><a href="#commands">Commands</a></li>
+</ul>
+</li>
+<li><a href="#command-references">Command references</a><ul>
+<li><a href="#zfs">ZFS</a></li>
+<li><a href="#systemd">Systemd</a></li>
+<li><a href="#networking">Networking</a></li>
+<li><a href="#disks-smart">Disks &amp; SMART</a></li>
+<li><a href="#restic">Restic</a></li>
+</ul>
+</li>
+<li><a href="#sample-envexample">Sample .env.example</a></li>
+<li><a href="#break-glass-sheet-template">Break-glass sheet template</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

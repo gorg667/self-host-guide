@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resources and Community — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li><li><a href="../25-misc-apps/"><span class="num">25</span> The Long Tail: Household, Finance, Web, and Utility Apps</a></li><li><a href="../26-databases-backing-services/"><span class="num">26</span> Databases and Backing Services</a></li></ul></div><div class="part"><div class="part-title">Part IV — Operations &amp; reference</div><ul><li><a href="../27-automation-iac/"><span class="num">27</span> Infrastructure as Code and Automation</a></li><li><a href="../28-maintenance-operations/"><span class="num">28</span> Maintenance and Operations</a></li><li><a href="../29-power-cost-environment/"><span class="num">29</span> Power, Cost, and the Physical Environment</a></li><li><a href="../30-legal-ethical/"><span class="num">30</span> Legal and Ethical Considerations</a></li><li><a href="../31-reference-architectures/"><span class="num">31</span> Reference Architectures</a></li><li><a href="../32-troubleshooting-faq/"><span class="num">32</span> Troubleshooting and FAQ</a></li><li class="active"><a href="../33-resources-community/"><span class="num">33</span> Resources and Community</a></li><li><a href="../34-appendix/"><span class="num">34</span> Appendix</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 33 · ~2,481 words · 11 min read</div>
+    <article class="prose">
+      <h1 id="resources-and-community">Resources and Community<a class="headerlink" href="#resources-and-community" title="Permanent link">#</a></h1>
+<p>No guide stays current for long in this space. Projects fork, licences change, a new reverse proxy becomes fashionable every eighteen months. What <em>does</em> stay useful is knowing where the reliable information lives, who explains things well, and how to evaluate a project before you trust it with your data. This chapter is that map: directories, communities, documentation you should actually read, creators worth your time, newsletters, and a short checklist for judging a project's health. Nothing here is sponsored; everything here has been useful to real self-hosters for years.</p>
+<div class="admonition note">
+<p class="admonition-title">Link rot is inevitable</p>
+<p>Names are given alongside URLs so you can search when a link dies. Where a project has a canonical home (GitHub org, docs site), that is preferred over third-party mirrors.</p>
+</div>
+<h2 id="software-directories">Software directories<a class="headerlink" href="#software-directories" title="Permanent link">#</a></h2>
+<p>Start here when you know <em>what</em> you want to do but not <em>which</em> project does it.</p>
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>URL</th>
+<th>What it's good for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>awesome-selfhosted</strong></td>
+<td>github.com/awesome-selfhosted/awesome-selfhosted · awesome-selfhosted.net</td>
+<td>The canonical list. Categorised, licence-tagged, actively curated with strict inclusion rules (must be actively maintained, must be self-hostable). The website version is filterable</td>
+</tr>
+<tr>
+<td><strong>selfh.st apps</strong></td>
+<td>selfh.st/apps</td>
+<td>Curated, searchable, with icons, GitHub stars, last-release dates. Companion to the selfh.st newsletter</td>
+</tr>
+<tr>
+<td><strong>Awesome-Sysadmin</strong></td>
+<td>github.com/awesome-foss/awesome-sysadmin</td>
+<td>Infra-side tooling: monitoring, backup, config management</td>
+</tr>
+<tr>
+<td><strong>awesome-docker-compose</strong> / <strong>Haxxnet Compose-Examples</strong></td>
+<td>github.com/Haxxnet/Compose-Examples</td>
+<td>Hundreds of working compose files with Traefik labels; great for "how do others run X"</td>
+</tr>
+<tr>
+<td><strong>LinuxServer.io</strong></td>
+<td>linuxserver.io · docs.linuxserver.io</td>
+<td>Consistent, well-documented images for ~200 apps with PUID/PGID conventions; the fleet page lists everything</td>
+</tr>
+<tr>
+<td><strong>Proxmox VE Helper-Scripts</strong></td>
+<td>community-scripts.github.io/ProxmoxVE</td>
+<td>One-line LXC/VM creators for ~300 apps. Read the script before running it, as with anything <code>curl | bash</code></td>
+</tr>
+<tr>
+<td><strong>AlternativeTo</strong> / <strong>European Alternatives</strong></td>
+<td>alternativeto.net · european-alternatives.eu</td>
+<td>"What replaces Google Photos?" style discovery, including non-self-hosted options</td>
+</tr>
+<tr>
+<td><strong>Privacy Guides</strong></td>
+<td>privacyguides.org</td>
+<td>Vetted recommendations with reasoning; overlaps with self-hosting on VPN, DNS, passwords, email</td>
+</tr>
+<tr>
+<td><strong>OpenAlternative</strong></td>
+<td>openalternative.co</td>
+<td>Open-source alternatives to SaaS, with health metrics</td>
+</tr>
+<tr>
+<td><strong>Selfhosted Show wiki</strong> / <strong>r/selfhosted wiki</strong></td>
+<td>reddit.com/r/selfhosted/wiki</td>
+<td>Community FAQ, beginner links</td>
+</tr>
+<tr>
+<td><strong>Docker Hub / GHCR / Quay</strong></td>
+<td>hub.docker.com · ghcr.io</td>
+<td>Check pull counts, tag history and whether the image is <em>official</em>, <em>verified</em> or random</td>
+</tr>
+</tbody>
+</table>
+<h2 id="communities">Communities<a class="headerlink" href="#communities" title="Permanent link">#</a></h2>
+<p>Where to ask, lurk and learn. Each has a personality.</p>
+<table>
+<thead>
+<tr>
+<th>Community</th>
+<th>Where</th>
+<th>Personality &amp; etiquette</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>r/selfhosted</strong></td>
+<td>reddit.com/r/selfhosted</td>
+<td>Largest general community (~500k). Weekly "what are you running" threads, project announcements, lots of beginners. Search before posting; read the wiki. Tolerant of newbies, allergic to ads</td>
+</tr>
+<tr>
+<td><strong>r/homelab</strong> / <strong>r/HomeServer</strong> / <strong>r/minilab</strong></td>
+<td>reddit</td>
+<td>Hardware-heavy. r/homelab loves racks and eBay enterprise gear; r/HomeServer is more practical; r/minilab is small-form-factor</td>
+</tr>
+<tr>
+<td><strong>r/Proxmox</strong>, <strong>r/truenas</strong>, <strong>r/unRAID</strong>, <strong>r/DataHoarder</strong>, <strong>r/zfs</strong>, <strong>r/docker</strong>, <strong>r/Traefik</strong>, <strong>r/homeassistant</strong>, <strong>r/jellyfin</strong>, <strong>r/immich</strong></td>
+<td>reddit</td>
+<td>Per-project subs; devs often read them. r/DataHoarder for disk deals and storage philosophy</td>
+</tr>
+<tr>
+<td><strong>Lemmy: selfhosted@lemmy.world</strong>, <strong>selfhost@lemmy.ml</strong>, <strong>homelab@lemmy.ml</strong></td>
+<td>lemmy.world / lemmy.ml</td>
+<td>The federated Reddit alternative; smaller, technical, very friendly; good if you left Reddit in 2023</td>
+</tr>
+<tr>
+<td><strong>Self-Hosted Podcast Discord</strong> / <strong>selfh.st Discord</strong></td>
+<td>invite via selfhosted.show / selfh.st</td>
+<td>Active chat, project maintainers present</td>
+</tr>
+<tr>
+<td><strong>LinuxServer.io Discord/Discourse</strong></td>
+<td>discord.gg/YWrKVTn · discourse.linuxserver.io</td>
+<td>Support for their images; very responsive</td>
+</tr>
+<tr>
+<td><strong>Level1Techs forum</strong></td>
+<td>forum.level1techs.com</td>
+<td>Hardware, ZFS, virtualisation; Wendell's community, high signal</td>
+</tr>
+<tr>
+<td><strong>ServeTheHome forum</strong></td>
+<td>forums.servethehome.com</td>
+<td>Enterprise-ish hardware, "TinyMiniMicro" thread, NIC/HBA deep dives, great for used-gear questions</td>
+</tr>
+<tr>
+<td><strong>Proxmox forum</strong></td>
+<td>forum.proxmox.com</td>
+<td>Official; staff answer. Search first — most questions are duplicates</td>
+</tr>
+<tr>
+<td><strong>TrueNAS forum</strong></td>
+<td>forums.truenas.com</td>
+<td>Official; strong opinions on ZFS best practice</td>
+</tr>
+<tr>
+<td><strong>Unraid forum</strong></td>
+<td>forums.unraid.net</td>
+<td>Official; Community Apps discussions</td>
+</tr>
+<tr>
+<td><strong>Home Assistant Community</strong></td>
+<td>community.home-assistant.io</td>
+<td>Enormous, well-moderated, integration-specific threads</td>
+</tr>
+<tr>
+<td><strong>Matrix rooms</strong></td>
+<td>#selfhosted:matrix.org and per-project rooms (Immich, Nextcloud, Jellyfin, Authelia…)</td>
+<td>Real-time, decentralised, often where developers actually hang out</td>
+</tr>
+<tr>
+<td><strong>Hacker News</strong></td>
+<td>news.ycombinator.com</td>
+<td>"Show HN" launches of new self-hosted tools; skeptical, useful comment threads</td>
+</tr>
+<tr>
+<td><strong>Stack Exchange: Server Fault, Unix &amp; Linux, Super User</strong></td>
+<td>*.stackexchange.com</td>
+<td>For precise technical questions with reproducible detail</td>
+</tr>
+<tr>
+<td><strong>Project GitHub Discussions / Issues</strong></td>
+<td>per project</td>
+<td>The most authoritative place; search closed issues for your exact error</td>
+</tr>
+</tbody>
+</table>
+<p>How to ask well: state goal, environment (host OS, Docker version, how you deployed), exact error text, the relevant compose/config with secrets removed, what you already tried and what changed recently. Format code as code. Say thanks and post the fix when you find it — the next person searching will bless you.</p>
+<h2 id="documentation-worth-reading-end-to-end">Documentation worth reading end to end<a class="headerlink" href="#documentation-worth-reading-end-to-end" title="Permanent link">#</a></h2>
+<p>Most people skim docs. These are worth an evening each and will save you weeks.</p>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Docker docs: Compose specification, networking, storage</strong> — docs.docker.com</td>
+<td>Understand <code>networks</code>, bind vs volume, <code>user:</code>, healthchecks and you'll debug 80 % of container issues without asking</td>
+</tr>
+<tr>
+<td><strong>Traefik docs (Routing &amp; Load Balancing, Middlewares, Let's Encrypt)</strong> — doc.traefik.io</td>
+<td>Dense but precise; the "Docker provider" page explains labels properly</td>
+</tr>
+<tr>
+<td><strong>Caddy docs (Caddyfile concepts, reverse_proxy, Automatic HTTPS)</strong> — caddyserver.com/docs</td>
+<td>Short and excellent; the Caddyfile tutorial takes 30 minutes</td>
+</tr>
+<tr>
+<td><strong>OpenZFS docs &amp; Aaron Toponce's ZFS series</strong> — openzfs.github.io/openzfs-docs · pthree.org/2012/04/17/install-zfs-on-debian-gnulinux</td>
+<td>The Toponce series is old but the mental model is timeless (vdevs, ARC, snapshots)</td>
+</tr>
+<tr>
+<td><strong>Proxmox VE Administration Guide</strong> — pve.proxmox.com/pve-docs</td>
+<td>The PDF is 500 pages; read Storage, Backup, Cluster, PCI passthrough chapters</td>
+</tr>
+<tr>
+<td><strong>Proxmox Backup Server docs</strong> — pbs.proxmox.com/docs</td>
+<td>Especially Datastore, Prune &amp; GC, Verification, Sync jobs</td>
+</tr>
+<tr>
+<td><strong>Tailscale docs &amp; KB</strong> — tailscale.com/kb</td>
+<td>Model documentation; subnet routers, exit nodes, MagicDNS, ACLs are all explained with diagrams</td>
+</tr>
+<tr>
+<td><strong>WireGuard whitepaper &amp; Quick Start</strong> — wireguard.com</td>
+<td>The whitepaper is readable and explains why it's simple</td>
+</tr>
+<tr>
+<td><strong>Let's Encrypt: Challenge Types, Rate Limits, Chain of Trust</strong> — letsencrypt.org/docs</td>
+<td>Understand DNS-01 vs HTTP-01 and the rate limits before you hit them</td>
+</tr>
+<tr>
+<td><strong>Restic docs / Borg docs / Kopia docs</strong> — restic.readthedocs.io · borgbackup.readthedocs.io · kopia.io/docs</td>
+<td>Read the "Removing snapshots" and "Repository format/encryption" sections; know how to restore before you need to</td>
+</tr>
+<tr>
+<td><strong>Authelia / Authentik / Pocket ID docs</strong></td>
+<td>OIDC concepts, forward-auth headers, and per-app integration guides (Authentik's integrations list is huge)</td>
+</tr>
+<tr>
+<td><strong>Immich docs (Install, Backup &amp; Restore, Hardware Transcoding, ML)</strong> — immich.app/docs</td>
+<td>Read <em>before</em> every update; the release notes are mandatory</td>
+</tr>
+<tr>
+<td><strong>Nextcloud Admin Manual (Server tuning, Background jobs, Reverse proxy)</strong> — docs.nextcloud.com</td>
+<td>Most "Nextcloud is slow" complaints are a skipped chapter</td>
+</tr>
+<tr>
+<td><strong>Home Assistant docs (Installation methods, Networking, Reverse proxy)</strong> — home-assistant.io/docs</td>
+<td>Understand HAOS vs Container vs Core before choosing</td>
+</tr>
+<tr>
+<td><strong>Arch Wiki</strong> — wiki.archlinux.org</td>
+<td>Distro-agnostic gold for systemd, networking, PipeWire, disks, power management</td>
+</tr>
+<tr>
+<td><strong>Debian Administrator's Handbook</strong> — debian-handbook.info</td>
+<td>Free; the fundamentals of the OS most of this runs on</td>
+</tr>
+<tr>
+<td><strong>Mozilla SSL Configuration Generator / SSL Labs</strong> — ssl-config.mozilla.org · ssllabs.com/ssltest</td>
+<td>Sensible TLS defaults and a way to test public endpoints</td>
+</tr>
+<tr>
+<td><strong>OWASP Docker Security Cheat Sheet</strong> — cheatsheetseries.owasp.org</td>
+<td>The security baseline for containers in one page</td>
+</tr>
+<tr>
+<td><strong>NIST SP 800-63B (Digital Identity)</strong></td>
+<td>Why passkeys/2FA matter and how to think about authenticator strength</td>
+</tr>
+<tr>
+<td><strong>Backblaze Drive Stats</strong> — backblaze.com/cloud-storage/resources/hard-drive-test-data</td>
+<td>Real failure rates by model; published quarterly</td>
+</tr>
+</tbody>
+</table>
+<h2 id="blogs-and-creators">Blogs and creators<a class="headerlink" href="#blogs-and-creators" title="Permanent link">#</a></h2>
+<p>Quality over quantity. All of these show their work.</p>
+<h3 id="written">Written<a class="headerlink" href="#written" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Author / site</th>
+<th>Focus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>selfh.st (Ethan Sholly)</strong></td>
+<td>Weekly roundup of releases, new apps, community content; the best single feed for staying current</td>
+</tr>
+<tr>
+<td><strong>noted.lol</strong></td>
+<td>Reviews and how-tos of self-hosted apps, honest about rough edges</td>
+</tr>
+<tr>
+<td><strong>mariushosting</strong></td>
+<td>Synology-centric Docker guides; hundreds of step-by-step tutorials</td>
+</tr>
+<tr>
+<td><strong>ServeTheHome (Patrick Kennedy)</strong></td>
+<td>Hardware reviews, the "Project TinyMiniMicro" series on 1L PCs, NICs, switches, power measurements</td>
+</tr>
+<tr>
+<td><strong>Wolfgang's Channel blog / notthebee</strong></td>
+<td>Low-power builds and ZFS; measured idle-power tables</td>
+</tr>
+<tr>
+<td><strong>Jeff Geerling</strong></td>
+<td>Raspberry Pi, Ansible (he wrote <em>Ansible for DevOps</em>), homelab experiments; rigorous</td>
+</tr>
+<tr>
+<td><strong>Wolfgang, Louwrentius (Blog Louwrentius)</strong></td>
+<td>Storage and ZFS deep dives; 71 TiB build write-ups</td>
+</tr>
+<tr>
+<td><strong>Jim Salter (Ars Technica, jrs-s.net)</strong></td>
+<td>ZFS explained properly; Sanoid/Syncoid author</td>
+</tr>
+<tr>
+<td><strong>Chris Titus Tech, Christian Lempa (blog)</strong></td>
+<td>Practical Linux/Docker/Proxmox tutorials</td>
+</tr>
+<tr>
+<td><strong>smallstep blog, Scott Helme (scotthelme.co.uk)</strong></td>
+<td>TLS, PKI, HTTP security headers</td>
+</tr>
+<tr>
+<td><strong>Julia Evans (jvns.ca)</strong></td>
+<td>Networking, DNS, Linux fundamentals as comics/zines; <em>How DNS Works</em> is the best DNS primer anywhere</td>
+</tr>
+<tr>
+<td><strong>Michael Stapelberg</strong></td>
+<td>Router7, gokrazy, Go-based homelab infrastructure; meticulous</td>
+</tr>
+<tr>
+<td><strong>Ben Cox (blog.benjojo.co.uk), Cloudflare blog, Tailscale blog</strong></td>
+<td>Networking internals; the Tailscale NAT traversal post is essential reading</td>
+</tr>
+<tr>
+<td><strong>Awesome Selfhosted blog / AlternativeTo blog</strong></td>
+<td>Project comparisons</td>
+</tr>
+<tr>
+<td><strong>DB-Tech, Techno Tim (docs.technotim.live)</strong></td>
+<td>Written companions to their videos; Techno Tim's docs repo has all his configs</td>
+</tr>
+</tbody>
+</table>
+<h3 id="video">Video<a class="headerlink" href="#video" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Focus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Techno Tim</strong></td>
+<td>Homelab, Kubernetes, Proxmox, Traefik; clear and structured; all configs on GitHub</td>
+</tr>
+<tr>
+<td><strong>Christian Lempa</strong></td>
+<td>Docker, Proxmox, security, Traefik, Authentik; teaches concepts, not just clicks</td>
+</tr>
+<tr>
+<td><strong>Wolfgang's Channel</strong></td>
+<td>Low-power NAS builds, Jellyfin, Immich; measured, no hype</td>
+</tr>
+<tr>
+<td><strong>Hardware Haven</strong></td>
+<td>Budget/used hardware for homelab, honest reviews</td>
+</tr>
+<tr>
+<td><strong>Jeff Geerling</strong></td>
+<td>Pi, Ansible, NAS builds, weird hardware experiments</td>
+</tr>
+<tr>
+<td><strong>NetworkChuck</strong></td>
+<td>Entertaining intros; good for enthusiasm, verify details elsewhere</td>
+</tr>
+<tr>
+<td><strong>Lawrence Systems (Tom Lawrence)</strong></td>
+<td>pfSense/OPNsense, TrueNAS, UniFi, business-grade networking explained for home users; very thorough</td>
+</tr>
+<tr>
+<td><strong>Craft Computing</strong></td>
+<td>Proxmox, GPU passthrough, enterprise hardware, cloud gaming</td>
+</tr>
+<tr>
+<td><strong>DB Tech</strong></td>
+<td>Fast Docker app walkthroughs; high volume, so pick the ones you need</td>
+</tr>
+<tr>
+<td><strong>Raid Owl, Jim's Garage, Novaspirit Tech, The Digital Life</strong></td>
+<td>Practical homelab builds and app setups</td>
+</tr>
+<tr>
+<td><strong>Level1Techs (Wendell)</strong></td>
+<td>Deep hardware, ZFS, Linux; long-form</td>
+</tr>
+<tr>
+<td><strong>apalrd's adventures</strong></td>
+<td>Proxmox, networking, VLANs, Ceph — very technical</td>
+</tr>
+<tr>
+<td><strong>Home Network Guy</strong></td>
+<td>OPNsense, VLANs, Omada/UniFi; step-by-step</td>
+</tr>
+<tr>
+<td><strong>Everything Smart Home, Smart Home Solver, The Hook Up</strong></td>
+<td>Home Assistant and devices, with actual testing</td>
+</tr>
+<tr>
+<td><strong>Awesome Open Source</strong></td>
+<td>Ten-minute overviews of a project a week</td>
+</tr>
+</tbody>
+</table>
+<h3 id="podcasts">Podcasts<a class="headerlink" href="#podcasts" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Podcast</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Self-Hosted (Jupiter Broadcasting)</strong></td>
+<td>Alex Kretzschmar &amp; Chris Fisher; the community's flagship show; app picks, Home Assistant, hardware</td>
+</tr>
+<tr>
+<td><strong>2.5 Admins</strong></td>
+<td>Allan Jude, Jim Salter, Joe Ressington; ZFS, sysadmin war stories, news</td>
+</tr>
+<tr>
+<td><strong>Linux Unplugged</strong>, <strong>Late Night Linux</strong>, <strong>Ask Noah</strong></td>
+<td>Broader Linux; frequent self-hosting segments</td>
+</tr>
+<tr>
+<td><strong>Selfhosted Show / Homelab Show</strong></td>
+<td>Interviews with maintainers</td>
+</tr>
+<tr>
+<td><strong>The Homelab Show</strong></td>
+<td>Tom Lawrence &amp; Jay LaCroix; networking and infra</td>
+</tr>
+<tr>
+<td><strong>Darknet Diaries</strong></td>
+<td>Security storytelling; motivational for locking things down</td>
+</tr>
+</tbody>
+</table>
+<h2 id="newsletters-and-feeds">Newsletters and feeds<a class="headerlink" href="#newsletters-and-feeds" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>selfh.st Weekly</strong> — the one to subscribe to.</li>
+<li><strong>This Week in Self-Hosted</strong> (r/selfhosted stickied / selfh.st) — release notes roundup.</li>
+<li><strong>Console.dev</strong> — weekly two-tool newsletter for developers; many self-hostable finds.</li>
+<li><strong>TLDR / TLDR DevOps</strong> — broader, but flags new infra tools.</li>
+<li><strong>Changelog Nightly</strong> — trending GitHub repos.</li>
+<li><strong>Awesome-Selfhosted commits feed</strong> — watch the repo to see additions.</li>
+<li><strong>GitHub Releases RSS</strong> for the projects you run: <code>https://github.com/&lt;org&gt;/&lt;repo&gt;/releases.atom</code> into Miniflux/FreshRSS — the most reliable way to learn about breaking changes before Renovate opens the PR.</li>
+<li><strong>Security</strong>: <strong>CISA KEV</strong>, <strong>oss-security list</strong>, per-project security advisories (GitHub "Security" tab, watch → custom → security alerts).</li>
+</ul>
+<h2 id="evaluating-a-project-before-you-adopt-it">Evaluating a project before you adopt it<a class="headerlink" href="#evaluating-a-project-before-you-adopt-it" title="Permanent link">#</a></h2>
+<p>A self-hosted app is a long relationship. Ten minutes of due diligence:</p>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Check</th>
+<th>Green</th>
+<th>Yellow</th>
+<th>Red</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Activity</strong></td>
+<td>Commits, releases in last 3–6 months</td>
+<td>Regular releases, changelog</td>
+<td>Sporadic, "looking for maintainers"</td>
+<td>Last commit &gt; 1 year, issues piling up</td>
+</tr>
+<tr>
+<td><strong>Bus factor</strong></td>
+<td>Contributors graph</td>
+<td>Several active</td>
+<td>One person, responsive</td>
+<td>One person, silent</td>
+</tr>
+<tr>
+<td><strong>Issues</strong></td>
+<td>Open/closed ratio, response time, tone</td>
+<td>Triaged, labelled, answered</td>
+<td>Backlog, but polite</td>
+<td>Hostile or ignored</td>
+</tr>
+<tr>
+<td><strong>Licence</strong></td>
+<td>LICENSE file; recent changes</td>
+<td>OSI-approved (MIT/Apache/GPL/AGPL)</td>
+<td>Source-available (BSL/SSPL), stable</td>
+<td>Recent relicensing, "open core" with critical features paywalled</td>
+</tr>
+<tr>
+<td><strong>Docs</strong></td>
+<td>Install, upgrade, <strong>backup/restore</strong>, reverse-proxy pages</td>
+<td>All present, current</td>
+<td>Install only</td>
+<td>Wiki last edited years ago</td>
+</tr>
+<tr>
+<td><strong>Data portability</strong></td>
+<td>Export formats, open file storage</td>
+<td>Standard formats, plain files on disk</td>
+<td>Export via API only</td>
+<td>Proprietary blobs, no export</td>
+</tr>
+<tr>
+<td><strong>Upgrade story</strong></td>
+<td>Migration notes; does <code>:latest</code> break?</td>
+<td>Semver, migration guides</td>
+<td>"Read the release notes"</td>
+<td>Frequent breaking changes without notes</td>
+</tr>
+<tr>
+<td><strong>Security</strong></td>
+<td>SECURITY.md, past CVE handling, default auth</td>
+<td>Responsible disclosure, quick fixes, auth on by default</td>
+<td>Slow but fixed</td>
+<td>Unauthenticated by default, dismissive of reports</td>
+</tr>
+<tr>
+<td><strong>Image provenance</strong></td>
+<td>Who builds the Docker image?</td>
+<td>Project or LinuxServer.io, multi-arch, signed/attested</td>
+<td>Trusted third party</td>
+<td>Random user's image with no Dockerfile</td>
+</tr>
+<tr>
+<td><strong>Dependencies</strong></td>
+<td>DB/queue requirements</td>
+<td>SQLite or Postgres, Redis optional</td>
+<td>Needs 4 services</td>
+<td>Requires a specific ancient DB version</td>
+</tr>
+<tr>
+<td><strong>Community</strong></td>
+<td>Discord/Matrix/forum size and tone</td>
+<td>Active, helpful</td>
+<td>Small but present</td>
+<td>None</td>
+</tr>
+<tr>
+<td><strong>Funding</strong></td>
+<td>Sponsors, company backing, roadmap</td>
+<td>Transparent</td>
+<td>Unknown</td>
+<td>VC-backed with no revenue model (see the relicensing pattern in <a href="../30-legal-ethical/">Legal</a>)</td>
+</tr>
+</tbody>
+</table>
+<p>Two extra tests: <strong>install it in a throwaway VM/LXC first</strong>, and <strong>perform a backup and restore on day one</strong>. If restoring is undocumented or painful, that's your answer.</p>
+<h2 id="giving-back">Giving back<a class="headerlink" href="#giving-back" title="Permanent link">#</a></h2>
+<p>Self-hosting runs on volunteer labour. Ways to sustain it that don't require writing code:</p>
+<ul>
+<li><strong>Sponsor</strong> the two or three projects you rely on most (GitHub Sponsors, Open Collective, Liberapay). €5/month to Immich, Jellyfin, Vaultwarden, Paperless or Home Assistant is less than one streaming subscription.</li>
+<li><strong>Report bugs well</strong> and confirm fixes. Reproducible reports are gifts.</li>
+<li><strong>Improve documentation</strong>: fix the typo, add the reverse-proxy example that took you an hour to figure out.</li>
+<li><strong>Translate</strong>, <strong>triage issues</strong>, <strong>answer questions</strong> in the community you learned from.</li>
+<li><strong>Publish your compose files and notes</strong> (redacted) — someone's Sunday will be shorter for it.</li>
+<li><strong>Buy a licence</strong> for the commercial-but-fair projects you use (Unraid, Plex Pass if you use Plex, JetBrains, Proxmox subscription for enterprise repo access).</li>
+<li>Support the <strong>infrastructure</strong> the ecosystem leans on: Let's Encrypt (ISRG), the OpenZFS/FreeBSD/Debian foundations, Wikipedia, Internet Archive.</li>
+</ul>
+<h2 id="books">Books<a class="headerlink" href="#books" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Book</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><em>The Debian Administrator's Handbook</em> (Hertzog &amp; Mas, free online)</td>
+<td>Fundamentals of the base OS</td>
+</tr>
+<tr>
+<td><em>UNIX and Linux System Administration Handbook</em>, 5th ed. (Nemeth et al.)</td>
+<td>The comprehensive reference; skim chapters as needed</td>
+</tr>
+<tr>
+<td><em>Ansible for DevOps</em> (Jeff Geerling)</td>
+<td>The friendly Ansible book, homelab-relevant examples</td>
+</tr>
+<tr>
+<td><em>Docker Deep Dive</em> (Nigel Poulton)</td>
+<td>Concise, current, covers Compose and security</td>
+</tr>
+<tr>
+<td><em>FreeBSD Mastery: ZFS</em> and <em>Advanced ZFS</em> (Lucas &amp; Jude)</td>
+<td>Best ZFS books; concepts apply to OpenZFS on Linux</td>
+</tr>
+<tr>
+<td><em>Practical Monitoring</em> (Mike Julian)</td>
+<td>Philosophy of alerts that matter</td>
+</tr>
+<tr>
+<td><em>Site Reliability Engineering</em> (Google, free online)</td>
+<td>Overkill for home, but the chapters on toil, SLOs and postmortems reframe how you run things</td>
+</tr>
+<tr>
+<td><em>Network Warrior</em> (Gary Donahue) / <em>Computer Networking: A Top-Down Approach</em> (Kurose &amp; Ross)</td>
+<td>Networking fundamentals; VLANs and routing will stop being mysterious</td>
+</tr>
+<tr>
+<td><em>Security Engineering</em> (Ross Anderson, free online)</td>
+<td>Threat modelling, why systems fail</td>
+</tr>
+<tr>
+<td><em>The Practice of System and Network Administration</em> (Limoncelli et al.)</td>
+<td>Process, documentation, change management — the parts hobbyists skip</td>
+</tr>
+</tbody>
+</table>
+<h2 id="keeping-this-guide-current">Keeping this guide current<a class="headerlink" href="#keeping-this-guide-current" title="Permanent link">#</a></h2>
+<p>This guide is a snapshot. When something here contradicts a project's current documentation, the project is right. Suggested cadence: revisit the <a href="../28-maintenance-operations/">maintenance chapter</a> quarterly, re-read a project's release notes before every major version, and check awesome-selfhosted or selfh.st once a year for whether a better tool has appeared in a category you care about. Contributions and corrections to this guide's repository are welcome — see the README.</p>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../32-troubleshooting-faq/">← 32. Troubleshooting and FAQ</a><a class="next" href="../34-appendix/">34. Appendix →</a></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/33-resources-community.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#software-directories">Software directories</a></li>
+<li><a href="#communities">Communities</a></li>
+<li><a href="#documentation-worth-reading-end-to-end">Documentation worth reading end to end</a></li>
+<li><a href="#blogs-and-creators">Blogs and creators</a><ul>
+<li><a href="#written">Written</a></li>
+<li><a href="#video">Video</a></li>
+<li><a href="#podcasts">Podcasts</a></li>
+</ul>
+</li>
+<li><a href="#newsletters-and-feeds">Newsletters and feeds</a></li>
+<li><a href="#evaluating-a-project-before-you-adopt-it">Evaluating a project before you adopt it</a></li>
+<li><a href="#giving-back">Giving back</a></li>
+<li><a href="#books">Books</a></li>
+<li><a href="#keeping-this-guide-current">Keeping this guide current</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

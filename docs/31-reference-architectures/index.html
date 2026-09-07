@@ -1,0 +1,1479 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference Architectures — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li><li><a href="../25-misc-apps/"><span class="num">25</span> The Long Tail: Household, Finance, Web, and Utility Apps</a></li><li><a href="../26-databases-backing-services/"><span class="num">26</span> Databases and Backing Services</a></li></ul></div><div class="part"><div class="part-title">Part IV — Operations &amp; reference</div><ul><li><a href="../27-automation-iac/"><span class="num">27</span> Infrastructure as Code and Automation</a></li><li><a href="../28-maintenance-operations/"><span class="num">28</span> Maintenance and Operations</a></li><li><a href="../29-power-cost-environment/"><span class="num">29</span> Power, Cost, and the Physical Environment</a></li><li><a href="../30-legal-ethical/"><span class="num">30</span> Legal and Ethical Considerations</a></li><li class="active"><a href="../31-reference-architectures/"><span class="num">31</span> Reference Architectures</a></li><li><a href="../32-troubleshooting-faq/"><span class="num">32</span> Troubleshooting and FAQ</a></li><li><a href="../33-resources-community/"><span class="num">33</span> Resources and Community</a></li><li><a href="../34-appendix/"><span class="num">34</span> Appendix</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 31 · ~7,152 words · 32 min read</div>
+    <article class="prose">
+      <h1 id="reference-architectures">Reference Architectures<a class="headerlink" href="#reference-architectures" title="Permanent link">#</a></h1>
+<p>Everything before this chapter has been a menu. This one plates three complete meals: a <strong>Starter</strong> lab on a single mini PC, an <strong>Intermediate</strong> lab that adds a hypervisor, real storage, a proper reverse proxy, SSO and a monitoring stack, and an <strong>Advanced</strong> lab with a dedicated router, VLANs, a NAS, a Proxmox cluster and a Kubernetes-free but fully declarative, GitOps-managed service layer. Each blueprint gives you the hardware bill of materials, the network layout, a diagram, the full Compose stacks (not snippets), the backup plan, the exposure model and an honest list of what it does <em>not</em> do. Pick the one that matches where you are, build it end to end, then take the upgrade paths at the end of each section as your needs grow.</p>
+<div class="admonition note">
+<p class="admonition-title">How to use these blueprints</p>
+<p>They are opinionated on purpose. Every choice (Caddy vs Traefik, Restic vs Kopia, Pocket ID vs Authelia) has a chapter earlier in the guide explaining the alternatives; the blueprints simply pick one so that the pieces are known to fit together. Swap components once the whole thing is running, not before.</p>
+</div>
+<h2 id="blueprint-comparison">Blueprint comparison<a class="headerlink" href="#blueprint-comparison" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Starter</th>
+<th>Intermediate</th>
+<th>Advanced</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hardware</strong></td>
+<td>1 × mini PC (N100/N305 or used USFF), 16–32 GB, 1 × NVMe + 1 × external SSD</td>
+<td>1 × mini PC or small tower (i5/Ryzen 5, 64 GB), 2 × NVMe (mirror) + 2–4 × HDD; 1 × Pi/thin client for the "second node"</td>
+<td>Dedicated router box, managed PoE switch, NAS (4–8 bays), 2–3 Proxmox nodes, small UPS for each rack shelf</td>
+</tr>
+<tr>
+<td><strong>Cost (used/new, approx.)</strong></td>
+<td>€200–450</td>
+<td>€700–1,500</td>
+<td>€2,000–5,000+</td>
+</tr>
+<tr>
+<td><strong>Idle power</strong></td>
+<td>8–15 W</td>
+<td>25–45 W</td>
+<td>80–200 W</td>
+</tr>
+<tr>
+<td><strong>Host OS</strong></td>
+<td>Debian 12 / Ubuntu 24.04 LTS + Docker</td>
+<td>Proxmox VE → Debian VM for Docker + LXCs</td>
+<td>Proxmox VE cluster + TrueNAS SCALE (or Proxmox ZFS) NAS</td>
+</tr>
+<tr>
+<td><strong>Storage</strong></td>
+<td>ext4 NVMe + external SSD for backups</td>
+<td>ZFS mirror (boot/VMs) + ZFS RAIDZ1 or MergerFS+SnapRAID (bulk)</td>
+<td>ZFS on NAS, NFS/iSCSI to nodes, replication between pools</td>
+</tr>
+<tr>
+<td><strong>Networking</strong></td>
+<td>ISP router, flat LAN</td>
+<td>ISP router in bridge → OPNsense VM <em>or</em> keep ISP router; two VLANs</td>
+<td>OPNsense/VyOS bare metal, 4–6 VLANs, 2.5/10 GbE spine</td>
+</tr>
+<tr>
+<td><strong>Reverse proxy / TLS</strong></td>
+<td>Caddy, DNS-01 wildcard</td>
+<td>Traefik, DNS-01 wildcard, split-horizon DNS</td>
+<td>Traefik + CrowdSec bouncer; Pangolin for public apps</td>
+</tr>
+<tr>
+<td><strong>Remote access</strong></td>
+<td>Tailscale</td>
+<td>Tailscale + Headscale option</td>
+<td>WireGuard on OPNsense + Tailscale subnet router; Pangolin</td>
+</tr>
+<tr>
+<td><strong>Identity</strong></td>
+<td>none / app-native</td>
+<td>Pocket ID (OIDC) + Traefik forward-auth via TinyAuth</td>
+<td>Authentik or Kanidm, LDAP + OIDC, groups</td>
+</tr>
+<tr>
+<td><strong>DNS</strong></td>
+<td>AdGuard Home</td>
+<td>AdGuard Home ×2 (HA), Unbound upstream</td>
+<td>Unbound + AdGuard on two nodes, DHCP on OPNsense</td>
+</tr>
+<tr>
+<td><strong>Monitoring</strong></td>
+<td>Uptime Kuma, Dozzle</td>
+<td>Beszel + Uptime Kuma + ntfy</td>
+<td>Prometheus/Grafana/Loki, Alertmanager → ntfy, Uptime Kuma external</td>
+</tr>
+<tr>
+<td><strong>Backups</strong></td>
+<td>Restic → external SSD + Backblaze B2</td>
+<td>PBS for VMs, Restic for app data, ZFS snapshots, off-site B2</td>
+<td>PBS + ZFS replication to second pool + off-site (B2 / friend's NAS via Tailscale)</td>
+</tr>
+<tr>
+<td><strong>IaC</strong></td>
+<td>Compose in Git</td>
+<td>Compose in Git + Komodo + Renovate</td>
+<td>Ansible + OpenTofu (Proxmox provider) + Komodo/GitOps + Renovate</td>
+</tr>
+<tr>
+<td><strong>Services</strong></td>
+<td>Jellyfin, Immich, Vaultwarden, Nextcloud <em>or</em> FileBrowser, Paperless, Homepage</td>
+<td>+ Home Assistant, Forgejo, Miniflux, Audiobookshelf, *arr stack, Grafana</td>
+<td>+ Matrix/Synapse, Mailcow (optional), Ollama/Open WebUI, game servers, Frigate</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="starter-one-box-ten-services-a-weekend">Starter: one box, ten services, a weekend<a class="headerlink" href="#starter-one-box-ten-services-a-weekend" title="Permanent link">#</a></h2>
+<h3 id="goals">Goals<a class="headerlink" href="#goals" title="Permanent link">#</a></h3>
+<ul>
+<li>Everything on one low-power box you can switch off without anyone noticing (until they do).</li>
+<li>HTTPS everywhere with real certificates and <em>no</em> open ports.</li>
+<li>Backups that would actually restore.</li>
+<li>A path to Intermediate that does not require starting over.</li>
+</ul>
+<h3 id="bill-of-materials">Bill of materials<a class="headerlink" href="#bill-of-materials" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Suggested</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Compute</td>
+<td>Intel N100/N305 mini PC (Beelink, GMKtec, MINISFORUM) <strong>or</strong> used Lenovo M720q/M920q / HP 800 G4 Mini / Dell 7060 Micro</td>
+<td>Intel iGPU gives Quick Sync for Jellyfin and Immich ML runs fine on CPU. 8th-gen+ Intel for used units (see <a href="../02-hardware/">Hardware</a>)</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>16 GB minimum, 32 GB comfortable</td>
+<td>Immich + Nextcloud + Jellyfin + Paperless sit around 6–8 GB</td>
+</tr>
+<tr>
+<td>Boot/app storage</td>
+<td>1 TB NVMe</td>
+<td>ext4 is fine here; a single disk has no redundancy so backups are non-negotiable</td>
+</tr>
+<tr>
+<td>Bulk storage</td>
+<td>2–4 TB USB 3 SSD or a second internal SATA SSD</td>
+<td>Media + photos. Avoid USB <strong>HDD</strong> enclosures that spin down aggressively</td>
+</tr>
+<tr>
+<td>Backup target</td>
+<td>Second external SSD (kept unplugged except during backups) + Backblaze B2</td>
+<td>Fulfils 3-2-1 at ~€1–3/month</td>
+</tr>
+<tr>
+<td>UPS</td>
+<td>Optional small line-interactive (APC BE-series or Eaton 3S)</td>
+<td>Protects the ext4 filesystem from power-loss corruption; NUT is overkill at this stage</td>
+</tr>
+</tbody>
+</table>
+<h3 id="network-layout">Network layout<a class="headerlink" href="#network-layout" title="Permanent link">#</a></h3>
+<p>Keep the ISP router. Give the box a <strong>DHCP reservation</strong> (e.g. <code>192.168.1.10</code>) and point the router's DHCP DNS at it once AdGuard is running (or set the DNS on individual devices first while testing).</p>
+<pre class="mermaid">flowchart LR
+    Internet((Internet)) --- ISP[ISP router&lt;br/&gt;192.168.1.1&lt;br/&gt;DHCP, NAT, Wi-Fi]
+    ISP --- Box[Mini PC 192.168.1.10&lt;br/&gt;Debian + Docker]
+    ISP --- Clients[Phones, laptops, TV]
+    Box -.Tailscale.-&gt; Phone[Your phone&lt;br/&gt;away from home]
+    subgraph Box services
+        Caddy[Caddy :443&lt;br/&gt;*.home.example.com]
+        AGH[AdGuard Home :53]
+        Apps[Jellyfin, Immich, Vaultwarden,&lt;br/&gt;Nextcloud, Paperless, Homepage,&lt;br/&gt;Uptime Kuma, Dozzle]
+        Caddy --&gt; Apps
+    end</pre>
+<p>Name resolution: buy a cheap domain (e.g. <code>example.com</code>) at a registrar with an API that Caddy's DNS plugins support (Cloudflare, Porkbun, deSEC, Hetzner…). Create a <strong>wildcard DNS rewrite</strong> in AdGuard Home so <code>*.home.example.com → 192.168.1.10</code>. Caddy obtains a wildcard certificate via DNS-01 (see <a href="../07-reverse-proxy-tls/">Reverse proxy &amp; TLS</a>). Nothing is ever forwarded on the router; away from home you use Tailscale, which also lets you set AdGuard as the tailnet DNS so the same names work everywhere.</p>
+<h3 id="host-preparation">Host preparation<a class="headerlink" href="#host-preparation" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Debian 12 minimal install, then:</span>
+sudo<span class="w"> </span>apt<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>curl<span class="w"> </span>git<span class="w"> </span>ufw<span class="w"> </span>unattended-upgrades
+curl<span class="w"> </span>-fsSL<span class="w"> </span>https://get.docker.com<span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>sh
+sudo<span class="w"> </span>usermod<span class="w"> </span>-aG<span class="w"> </span>docker<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$USER</span><span class="s2">&quot;</span>
+
+<span class="c1"># Firewall: only SSH (LAN), DNS, HTTP/S, and Tailscale</span>
+sudo<span class="w"> </span>ufw<span class="w"> </span>default<span class="w"> </span>deny<span class="w"> </span>incoming
+sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span>from<span class="w"> </span><span class="m">192</span>.168.1.0/24<span class="w"> </span>to<span class="w"> </span>any<span class="w"> </span>port<span class="w"> </span><span class="m">22</span><span class="w"> </span>proto<span class="w"> </span>tcp
+sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">53</span>
+sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">80</span>,443/tcp
+sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span><span class="k">in</span><span class="w"> </span>on<span class="w"> </span>tailscale0
+sudo<span class="w"> </span>ufw<span class="w"> </span><span class="nb">enable</span>
+
+<span class="c1"># Tailscale on the host (not in a container) so SSH survives Docker restarts</span>
+curl<span class="w"> </span>-fsSL<span class="w"> </span>https://tailscale.com/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+sudo<span class="w"> </span>tailscale<span class="w"> </span>up<span class="w"> </span>--ssh<span class="w"> </span>--advertise-routes<span class="o">=</span><span class="m">192</span>.168.1.0/24
+
+<span class="c1"># Layout</span>
+sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/srv/<span class="o">{</span>stacks,appdata,media,photos,backups<span class="o">}</span>
+sudo<span class="w"> </span>chown<span class="w"> </span>-R<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$USER</span><span class="s2">&quot;</span>:<span class="s2">&quot;</span><span class="nv">$USER</span><span class="s2">&quot;</span><span class="w"> </span>/srv
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Disable the host's stub resolver before AdGuard</p>
+<p>On Ubuntu/Debian with <code>systemd-resolved</code>, port 53 is taken. Edit <code>/etc/systemd/resolved.conf</code> → <code>DNSStubListener=no</code>, then <code>ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf</code> and restart <code>systemd-resolved</code>. Details in <a href="../09-dns-adblock/">DNS &amp; ad blocking</a>.</p>
+</div>
+<h3 id="compose-stacks">Compose stacks<a class="headerlink" href="#compose-stacks" title="Permanent link">#</a></h3>
+<p>Directory layout: one directory per stack under <code>/srv/stacks</code>, each with <code>compose.yaml</code> and a <code>.env</code> that is <strong>not</strong> committed. Commit the directory to a private Git repo (a <code>.gitignore</code> with <code>.env</code> and <code>*.secret</code>).</p>
+<p><strong><code>/srv/stacks/proxy/compose.yaml</code></strong> — Caddy with the Cloudflare DNS module (swap for your provider; images exist for most, or build with <code>xcaddy</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">caddy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/caddybuilds/caddy-cloudflare:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">caddy</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;80:80&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;443:443&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;443:443/udp&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">CLOUDFLARE_API_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${CLOUDFLARE_API_TOKEN}</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./Caddyfile:/etc/caddy/Caddyfile:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/caddy/data:/data</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/caddy/config:/config</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">proxy</span>
+</code></pre></div>
+<p><strong><code>/srv/stacks/proxy/Caddyfile</code></strong>:</p>
+<div class="highlight"><pre><span></span><code>{
+    email you@example.com
+}
+
+*.home.example.com {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+
+    @jellyfin  host jellyfin.home.example.com
+    handle @jellyfin  { reverse_proxy jellyfin:8096 }
+
+    @immich    host photos.home.example.com
+    handle @immich    { reverse_proxy immich-server:2283 }
+
+    @vault     host vault.home.example.com
+    handle @vault     { reverse_proxy vaultwarden:80 }
+
+    @cloud     host cloud.home.example.com
+    handle @cloud     { reverse_proxy nextcloud:80 }
+
+    @paper     host paper.home.example.com
+    handle @paper     { reverse_proxy paperless:8000 }
+
+    @home      host home.home.example.com
+    handle @home      { reverse_proxy homepage:3000 }
+
+    @status    host status.home.example.com
+    handle @status    { reverse_proxy uptime-kuma:3001 }
+
+    @logs      host logs.home.example.com
+    handle @logs      { reverse_proxy dozzle:8080 }
+
+    @dns       host dns.home.example.com
+    handle @dns       { reverse_proxy adguard:80 }
+
+    handle { respond &quot;No such service&quot; 404 }
+}
+</code></pre></div>
+<p>Every app container joins the external <code>proxy</code> network and publishes <strong>no ports</strong> of its own — Caddy reaches them by container name.</p>
+<p><strong><code>/srv/stacks/dns/compose.yaml</code></strong> — AdGuard Home:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">adguard</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">adguard/adguardhome:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">adguard</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;53:53/tcp&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;53:53/udp&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;3000:3000/tcp&quot;</span><span class="w">   </span><span class="c1"># first-run wizard only; remove after setup</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/adguard/work:/opt/adguardhome/work</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/adguard/conf:/opt/adguardhome/conf</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p>After the wizard, set the web UI to port 80 inside the container (or leave 3000 and adjust the Caddyfile), add the DNS rewrite <code>*.home.example.com → 192.168.1.10</code>, and choose upstreams (<code>https://dns.quad9.net/dns-query</code> or <code>tls://one.one.one.one</code>).</p>
+<p><strong><code>/srv/stacks/media/compose.yaml</code></strong> — Jellyfin with Intel Quick Sync:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">jellyfin</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jellyfin/jellyfin:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jellyfin</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1000:1000&quot;</span>
+<span class="w">    </span><span class="nt">group_add</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;render&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;video&quot;</span><span class="p p-Indicator">]</span><span class="w">        </span><span class="c1"># or the numeric GIDs from `getent group render video`</span>
+<span class="w">    </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/dev/dri:/dev/dri</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">JELLYFIN_PublishedServerUrl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://jellyfin.home.example.com</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/jellyfin/config:/config</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/jellyfin/cache:/cache</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/media:/media:ro</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p><strong><code>/srv/stacks/photos/compose.yaml</code></strong> — Immich (pin the version; Immich moves fast and its release notes contain breaking changes):</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">immich-server</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">immich-server</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/dev/dri:/dev/dri</span><span class="w">              </span><span class="c1"># hardware transcoding for videos</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/photos/library:/usr/src/app/upload</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/localtime:/etc/localtime:ro</span>
+<span class="w">    </span><span class="nt">env_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.env</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">immich-redis</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">immich-db</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">immich</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">immich-machine-learning</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">immich-ml</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/immich/model-cache:/cache</span>
+<span class="w">    </span><span class="nt">env_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.env</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">immich</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">immich-redis</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker.io/valkey/valkey:8-bookworm</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">immich-redis</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis-cli ping || exit 1</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">immich</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">immich-db</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">immich-db</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DB_PASSWORD}</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DB_USERNAME}</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DB_DATABASE_NAME}</span>
+<span class="w">      </span><span class="nt">POSTGRES_INITDB_ARGS</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;--data-checksums&#39;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/immich/postgres:/var/lib/postgresql/data</span>
+<span class="w">    </span><span class="nt">shm_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128mb</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">immich</span><span class="p p-Indicator">]</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">immich</span><span class="p">:</span>
+</code></pre></div>
+<p><code>.env</code>:</p>
+<div class="highlight"><pre><span></span><code>IMMICH_VERSION=v1.135.3
+DB_PASSWORD=change-me-long-random
+DB_USERNAME=postgres
+DB_DATABASE_NAME=immich
+DB_HOSTNAME=immich-db
+REDIS_HOSTNAME=immich-redis
+TZ=Europe/Berlin
+</code></pre></div>
+<p><strong><code>/srv/stacks/vault/compose.yaml</code></strong> — Vaultwarden:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vaultwarden</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vaultwarden/server:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vaultwarden</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">DOMAIN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://vault.home.example.com</span>
+<span class="w">      </span><span class="nt">SIGNUPS_ALLOWED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span><span class="w">          </span><span class="c1"># set true for the first account, then back to false</span>
+<span class="w">      </span><span class="nt">ADMIN_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${VW_ADMIN_TOKEN}</span><span class="w">   </span><span class="c1"># generate with: vaultwarden hash  (argon2)</span>
+<span class="w">      </span><span class="nt">SMTP_HOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SMTP_HOST}</span>
+<span class="w">      </span><span class="nt">SMTP_FROM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vault@example.com</span>
+<span class="w">      </span><span class="nt">SMTP_USERNAME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SMTP_USER}</span>
+<span class="w">      </span><span class="nt">SMTP_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SMTP_PASS}</span>
+<span class="w">      </span><span class="nt">SMTP_SECURITY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">starttls</span>
+<span class="w">      </span><span class="nt">SMTP_PORT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">587</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/vaultwarden:/data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p><strong><code>/srv/stacks/cloud/compose.yaml</code></strong> — Nextcloud AIO is simpler on Proxmox; on a single Docker host the plain image with Postgres and Redis is more transparent:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">nextcloud</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud:31-apache</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_HOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud-db</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${NC_DB_PASSWORD}</span>
+<span class="w">      </span><span class="nt">REDIS_HOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud-redis</span>
+<span class="w">      </span><span class="nt">NEXTCLOUD_TRUSTED_DOMAINS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloud.home.example.com</span>
+<span class="w">      </span><span class="nt">OVERWRITEPROTOCOL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https</span>
+<span class="w">      </span><span class="nt">OVERWRITECLIURL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://cloud.home.example.com</span>
+<span class="w">      </span><span class="nt">TRUSTED_PROXIES</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.16.0.0/12</span>
+<span class="w">      </span><span class="nt">PHP_MEMORY_LIMIT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1G</span>
+<span class="w">      </span><span class="nt">PHP_UPLOAD_LIMIT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16G</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/nextcloud/html:/var/www/html</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/nextcloud/data:/var/www/html/data</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">nextcloud-db</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">nextcloud-redis</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">nextcloud</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">nextcloud-cron</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud:31-apache</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud-cron</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/cron.sh</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/nextcloud/html:/var/www/html</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/nextcloud/data:/var/www/html/data</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">nextcloud-db</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">nextcloud-redis</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">nextcloud</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">nextcloud-db</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:16-alpine</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud-db</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${NC_DB_PASSWORD}</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/nextcloud/postgres:/var/lib/postgresql/data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">nextcloud</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">nextcloud-redis</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis:7-alpine</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nextcloud-redis</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">nextcloud</span><span class="p p-Indicator">]</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">nextcloud</span><span class="p">:</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Don't want Nextcloud?</p>
+<p>If all you need is a file browser and WebDAV for a few people, FileBrowser (or FileBrowser Quantum) is one container and ~50 MB of RAM. Syncthing covers device sync. See <a href="../17-files-sync-documents/">Files, sync &amp; documents</a> for the trade-offs.</p>
+</div>
+<p><strong><code>/srv/stacks/paperless/compose.yaml</code></strong> — Paperless-ngx:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">paperless</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/paperless-ngx/paperless-ngx:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">paperless</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">paperless-db</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">paperless-redis</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">PAPERLESS_REDIS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis://paperless-redis:6379</span>
+<span class="w">      </span><span class="nt">PAPERLESS_DBHOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">paperless-db</span>
+<span class="w">      </span><span class="nt">PAPERLESS_DBPASS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${PL_DB_PASSWORD}</span>
+<span class="w">      </span><span class="nt">PAPERLESS_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://paper.home.example.com</span>
+<span class="w">      </span><span class="nt">PAPERLESS_SECRET_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${PL_SECRET_KEY}</span>
+<span class="w">      </span><span class="nt">PAPERLESS_OCR_LANGUAGE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eng+deu</span>
+<span class="w">      </span><span class="nt">PAPERLESS_TIME_ZONE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Europe/Berlin</span>
+<span class="w">      </span><span class="nt">PAPERLESS_CONSUMER_POLLING</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">      </span><span class="nt">USERMAP_UID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">      </span><span class="nt">USERMAP_GID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/paperless/data:/usr/src/paperless/data</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/paperless/media:/usr/src/paperless/media</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/paperless/export:/usr/src/paperless/export</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/paperless/consume:/usr/src/paperless/consume</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">paperless</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">paperless-db</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:16-alpine</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">paperless-db</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">paperless</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">paperless</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${PL_DB_PASSWORD}</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/paperless/postgres:/var/lib/postgresql/data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">paperless</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">paperless-redis</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis:7-alpine</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">paperless-redis</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">paperless</span><span class="p p-Indicator">]</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">paperless</span><span class="p">:</span>
+</code></pre></div>
+<p><strong><code>/srv/stacks/ops/compose.yaml</code></strong> — dashboard, uptime, logs:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">homepage</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/gethomepage/homepage:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">homepage</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">HOMEPAGE_ALLOWED_HOSTS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">home.home.example.com</span>
+<span class="w">      </span><span class="nt">PUID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">      </span><span class="nt">PGID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/homepage:/app/config</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/docker.sock:/var/run/docker.sock:ro</span><span class="w">   </span><span class="c1"># for Docker widgets; use a socket proxy later</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">uptime-kuma</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">louislam/uptime-kuma:2</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uptime-kuma</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/uptime-kuma:/app/data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">dozzle</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">amir20/dozzle:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dozzle</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/docker.sock:/var/run/docker.sock:ro</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">watchtower</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">containrrr/watchtower:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watchtower</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--monitor-only --schedule &quot;0 0 6 * * *&quot; --notifications shoutrrr</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">WATCHTOWER_NOTIFICATION_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SHOUTRRR_URL}</span><span class="w">   </span><span class="c1"># e.g. ntfy://ntfy.sh/your-topic</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/docker.sock:/var/run/docker.sock:ro</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p>Watchtower in <strong>monitor-only</strong> mode tells you updates exist without applying them; auto-updating Immich or Nextcloud unattended is how you learn about breaking changes at 2 a.m. (see <a href="../28-maintenance-operations/">Maintenance</a>).</p>
+<p>Bring it all up:</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>s<span class="w"> </span><span class="k">in</span><span class="w"> </span>proxy<span class="w"> </span>dns<span class="w"> </span>media<span class="w"> </span>photos<span class="w"> </span>vault<span class="w"> </span>cloud<span class="w"> </span>paperless<span class="w"> </span>ops<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>/srv/stacks/<span class="nv">$s</span>/compose.yaml<span class="w"> </span>up<span class="w"> </span>-d
+<span class="k">done</span>
+</code></pre></div>
+<h3 id="backups-starter">Backups (Starter)<a class="headerlink" href="#backups-starter" title="Permanent link">#</a></h3>
+<p>Two Restic repositories from the same script: one on the external SSD, one on B2. App data is quiesced by dumping databases first; media and photos are just files.</p>
+<p><strong><code>/srv/stacks/backup/backup.sh</code></strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env bash</span>
+<span class="nb">set</span><span class="w"> </span>-euo<span class="w"> </span>pipefail
+<span class="nb">export</span><span class="w"> </span><span class="nv">RESTIC_PASSWORD_FILE</span><span class="o">=</span>/srv/stacks/backup/restic.pass
+<span class="nv">DUMPS</span><span class="o">=</span>/srv/backups/dumps<span class="p">;</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DUMPS</span><span class="s2">&quot;</span>
+
+<span class="c1"># 1. Consistent DB dumps</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>immich-db<span class="w">     </span>pg_dumpall<span class="w"> </span>-c<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w">  </span><span class="p">|</span><span class="w"> </span>gzip<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DUMPS</span><span class="s2">/immich.sql.gz&quot;</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>nextcloud-db<span class="w">  </span>pg_dump<span class="w">  </span>-U<span class="w"> </span>nextcloud<span class="w"> </span>nextcloud<span class="w"> </span><span class="p">|</span><span class="w"> </span>gzip<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DUMPS</span><span class="s2">/nextcloud.sql.gz&quot;</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>paperless-db<span class="w">  </span>pg_dump<span class="w">  </span>-U<span class="w"> </span>paperless<span class="w"> </span>paperless<span class="w"> </span><span class="p">|</span><span class="w"> </span>gzip<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DUMPS</span><span class="s2">/paperless.sql.gz&quot;</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>vaultwarden<span class="w">   </span>sqlite3<span class="w"> </span>/data/db.sqlite3<span class="w"> </span><span class="s2">&quot;.backup /data/db.backup&quot;</span>
+
+<span class="c1"># 2. Back up to each repo</span>
+<span class="k">for</span><span class="w"> </span>REPO<span class="w"> </span><span class="k">in</span><span class="w"> </span>/mnt/backup-ssd/restic<span class="w"> </span><span class="s2">&quot;b2:my-bucket:homelab&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="nb">export</span><span class="w"> </span><span class="nv">RESTIC_REPOSITORY</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$REPO</span><span class="s2">&quot;</span>
+<span class="w">  </span>restic<span class="w"> </span>backup<span class="w"> </span>/srv/appdata<span class="w"> </span>/srv/photos<span class="w"> </span>/srv/stacks<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DUMPS</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>--exclude<span class="w"> </span>/srv/appdata/immich/postgres<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>--exclude<span class="w"> </span>/srv/appdata/nextcloud/postgres<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>--exclude<span class="w"> </span>/srv/appdata/paperless/postgres<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>--exclude<span class="w"> </span>/srv/appdata/jellyfin/cache<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>--exclude<span class="w"> </span>/srv/appdata/immich/model-cache<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>--tag<span class="w"> </span>daily
+<span class="w">  </span>restic<span class="w"> </span>forget<span class="w"> </span>--keep-daily<span class="w"> </span><span class="m">14</span><span class="w"> </span>--keep-weekly<span class="w"> </span><span class="m">8</span><span class="w"> </span>--keep-monthly<span class="w"> </span><span class="m">12</span><span class="w"> </span>--prune
+<span class="k">done</span>
+
+<span class="c1"># 3. Media to the SSD only (large, replaceable)</span>
+<span class="nv">RESTIC_REPOSITORY</span><span class="o">=</span>/mnt/backup-ssd/restic<span class="w"> </span>restic<span class="w"> </span>backup<span class="w"> </span>/srv/media<span class="w"> </span>--tag<span class="w"> </span>media
+
+curl<span class="w"> </span>-s<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;Backup OK </span><span class="k">$(</span>date<span class="w"> </span>+%F<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span>ntfy.sh/your-topic<span class="w"> </span>&gt;/dev/null
+</code></pre></div>
+<p>Run with a systemd timer at 03:00 (a unit that sets <code>Environment=B2_ACCOUNT_ID=… B2_ACCOUNT_KEY=…</code> from an <code>EnvironmentFile</code>). The DB dirs are excluded because live Postgres data directories are not consistent; the dumps are. <strong>Restore test</strong> once a quarter: <code>restic restore latest --target /tmp/rt --include /srv/appdata/vaultwarden</code> and open the SQLite file. Fuller patterns in <a href="../11-backups/">Backups</a>.</p>
+<h3 id="what-starter-deliberately-leaves-out">What Starter deliberately leaves out<a class="headerlink" href="#what-starter-deliberately-leaves-out" title="Permanent link">#</a></h3>
+<ul>
+<li>No hypervisor: a kernel update reboots everything. Acceptable for a household.</li>
+<li>No storage redundancy: single disks, so backups carry all the weight.</li>
+<li>No SSO: each app has its own users. Fine for 1–4 people.</li>
+<li>No public exposure: sharing an Immich album with grandma means she installs Tailscale or you generate a link and accept she can't open it. (If you need public sharing, jump to the Intermediate exposure model.)</li>
+<li>No VLANs: IoT junk shares the LAN with the server. Mitigate with client isolation on the Wi-Fi if the router supports it.</li>
+</ul>
+<h3 id="upgrade-path-intermediate">Upgrade path → Intermediate<a class="headerlink" href="#upgrade-path-intermediate" title="Permanent link">#</a></h3>
+<ol>
+<li>Add a second disk and convert to a ZFS mirror (a fresh Proxmox install is the least painful route; restore appdata from Restic).</li>
+<li>Move Caddy → Traefik only if you need middlewares, forward-auth or Docker label routing; otherwise Caddy stays.</li>
+<li>Add Pocket ID + TinyAuth in front of the admin-ish apps.</li>
+<li>Add Beszel for host metrics and ntfy for push alerts.</li>
+<li>Keep every Compose file; they run unchanged inside a Debian VM.</li>
+</ol>
+<hr />
+<h2 id="intermediate-hypervisor-redundant-storage-sso-real-monitoring">Intermediate: hypervisor, redundant storage, SSO, real monitoring<a class="headerlink" href="#intermediate-hypervisor-redundant-storage-sso-real-monitoring" title="Permanent link">#</a></h2>
+<h3 id="goals_1">Goals<a class="headerlink" href="#goals_1" title="Permanent link">#</a></h3>
+<ul>
+<li>Survive a single disk failure and a botched OS upgrade (snapshots + rollback).</li>
+<li>Segregate IoT and guests from servers with two VLANs.</li>
+<li>One login for everything that supports OIDC; forward-auth for what does not.</li>
+<li>Alerts on your phone when a disk, backup, certificate or service goes bad.</li>
+<li>Public exposure for a <em>small</em> set of apps without touching the router's port-forward table.</li>
+</ul>
+<h3 id="bill-of-materials_1">Bill of materials<a class="headerlink" href="#bill-of-materials_1" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Suggested</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Main node</td>
+<td>Used SFF/tower (Dell 3070/7070 SFF, HP 800 G5 SFF) or a 6-core mini PC (MINISFORUM MS-01, ASUS NUC 13 Pro)</td>
+<td>i5-9500+/Ryzen 5 5600+ ; iGPU for transcoding. MS-01 gives 2×2.5 GbE + 2×10 GbE SFP+ and 3 NVMe slots</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>64 GB (2×32 DDR4/DDR5 SODIMM)</td>
+<td>ZFS ARC + 6–10 VMs/LXCs. ECC if the platform allows (see <a href="../02-hardware/">Hardware</a>)</td>
+</tr>
+<tr>
+<td>Boot + VM pool</td>
+<td>2 × 1–2 TB NVMe, <strong>ZFS mirror</strong></td>
+<td>Choose enterprise-ish drives or expect TBW to be consumed by Proxmox's logging; set <code>zfs_arc_max</code></td>
+</tr>
+<tr>
+<td>Bulk pool</td>
+<td>2–4 × 8–16 TB CMR HDD (WD Red Plus/Pro, Seagate IronWolf, Toshiba N300)</td>
+<td>RAIDZ1 with 3–4 drives, or a mirror with 2. Or MergerFS + SnapRAID if mostly media</td>
+</tr>
+<tr>
+<td>Second node</td>
+<td>Raspberry Pi 5 / used thin client (Fujitsu Futro S740, HP t640)</td>
+<td>Runs second AdGuard, Uptime Kuma <em>externally to the main node</em>, PBS if it has a USB SSD</td>
+</tr>
+<tr>
+<td>Switch</td>
+<td>8-port managed 2.5 GbE (or 1 GbE with 2.5 GbE uplinks) that does 802.1Q VLANs</td>
+<td>TP-Link TL-SG108E class is enough; PoE if you want APs/cameras</td>
+</tr>
+<tr>
+<td>Router</td>
+<td>Keep the ISP router <strong>or</strong> move routing to an OPNsense VM with a dedicated NIC</td>
+<td>The VM route is elegant but ties your internet to the hypervisor rebooting. See <a href="../03-networking/">Networking</a></td>
+</tr>
+<tr>
+<td>UPS</td>
+<td>600–1000 VA line-interactive with USB (Eaton Ellipse, APC Back-UPS Pro, CyberPower CP series)</td>
+<td>NUT on the Proxmox host shuts down cleanly</td>
+</tr>
+</tbody>
+</table>
+<h3 id="network-layout_1">Network layout<a class="headerlink" href="#network-layout_1" title="Permanent link">#</a></h3>
+<pre class="mermaid">flowchart TB
+    Internet((Internet)) --- Router[Router / OPNsense&lt;br/&gt;VLAN 10 Servers 10.0.10.0/24&lt;br/&gt;VLAN 20 Trusted 10.0.20.0/24&lt;br/&gt;VLAN 30 IoT 10.0.30.0/24]
+    Router --- Switch[Managed switch&lt;br/&gt;trunk to PVE, access ports]
+    Switch --- PVE[Proxmox VE node&lt;br/&gt;vmbr0 trunk]
+    Switch --- Pi[Second node&lt;br/&gt;AdGuard #2, Uptime Kuma, PBS]
+    Switch --- AP[Wi-Fi AP&lt;br/&gt;SSIDs mapped to VLAN 20 / 30]
+    subgraph PVE
+        Docker[VM: docker-01&lt;br/&gt;Debian, 16 GB]
+        HA[VM: Home Assistant OS]
+        LXC1[LXC: AdGuard #1 + Unbound]
+        LXC2[LXC: PBS or Samba]
+        Traefik[Traefik in docker-01&lt;br/&gt;*.home.example.com]
+    end
+    Docker --&gt; Traefik
+    Pangolin[VPS: Pangolin&lt;br/&gt;public apps] -. WireGuard/Newt .-&gt; Docker</pre>
+<p>Rules on the router firewall, in order:</p>
+<ol>
+<li>IoT → Servers: allow only what the integration needs (e.g. TCP 8123 to Home Assistant, MQTT 1883, DNS 53); block the rest.</li>
+<li>Trusted → Servers: allow all.</li>
+<li>Servers → Trusted/IoT: allow <em>established</em> only, plus specific exceptions (HA → IoT devices, Jellyfin → Chromecast on IoT via mDNS reflector).</li>
+<li>Guest Wi-Fi → Internet only.</li>
+</ol>
+<p>mDNS across VLANs needs a reflector (Avahi on OPNsense, or <code>mdns-repeater</code>); Chromecast discovery is the classic casualty. Details and IPv6 considerations in <a href="../03-networking/">Networking</a>.</p>
+<h3 id="proxmox-layout">Proxmox layout<a class="headerlink" href="#proxmox-layout" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Guest</th>
+<th>Type</th>
+<th>vCPU / RAM</th>
+<th>Storage</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docker-01</code></td>
+<td>VM (Debian 12, q35, virtio)</td>
+<td>6 / 16–24 GB</td>
+<td>200 GB on NVMe mirror; <strong>bind-mount bulk via NFS or virtiofs</strong></td>
+<td>The main Compose host. iGPU passthrough <em>or</em> leave the GPU on the host and give Jellyfin its own LXC with <code>/dev/dri</code> mapped</td>
+</tr>
+<tr>
+<td><code>haos</code></td>
+<td>VM (Home Assistant OS)</td>
+<td>2 / 4 GB</td>
+<td>32 GB</td>
+<td>Use the community helper script or import the qcow2. USB Zigbee/Z-Wave stick passthrough</td>
+</tr>
+<tr>
+<td><code>dns-01</code></td>
+<td>LXC (Debian, unprivileged)</td>
+<td>1 / 512 MB</td>
+<td>4 GB</td>
+<td>AdGuard Home + Unbound. Static IP <code>10.0.10.53</code></td>
+</tr>
+<tr>
+<td><code>pbs</code></td>
+<td>LXC or VM</td>
+<td>2 / 4 GB</td>
+<td>datastore on bulk pool</td>
+<td>Proxmox Backup Server. Better on the second node if it has the disk</td>
+</tr>
+<tr>
+<td><code>files</code></td>
+<td>LXC</td>
+<td>2 / 2 GB</td>
+<td>bind-mounts from bulk pool</td>
+<td>Samba/NFS exports for the LAN; keeps SMB out of the Docker VM</td>
+</tr>
+</tbody>
+</table>
+<p>ZFS specifics: <code>zfs set compression=zstd atime=off xattr=sa</code> on pools; datasets per purpose (<code>tank/media</code>, <code>tank/photos</code>, <code>tank/appdata-backups</code>); <code>zfs_arc_max</code> ≈ 25 % of RAM in <code>/etc/modprobe.d/zfs.conf</code>; monthly scrubs via the default timer; <code>zfs-auto-snapshot</code> or Sanoid for 15-min/hourly/daily snapshots on the VM pool. Full treatment in <a href="../06-storage/">Storage</a> and <a href="../04-os-and-hypervisors/">OS &amp; hypervisors</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Proxmox on consumer NVMe</p>
+<p>Proxmox writes constantly (pmxcfs, RRD, journal). Two mitigations: <code>zfs set sync=disabled</code> is <strong>not</strong> one of them. Use <code>log2ram</code>-style tmpfs for <code>/var/log</code> sparingly, disable the HA services if you have a single node (<code>systemctl disable --now pve-ha-lrm pve-ha-crm</code>), and buy drives with ≥600 TBW.</p>
+</div>
+<h3 id="compose-on-docker-01">Compose on <code>docker-01</code><a class="headerlink" href="#compose-on-docker-01" title="Permanent link">#</a></h3>
+<p>The Starter stacks carry over. What changes: Traefik replaces Caddy (Docker labels, middlewares, forward-auth), a socket proxy hides the Docker socket, Pocket ID provides OIDC, TinyAuth guards apps that lack native OIDC, and Beszel + ntfy add metrics and alerts.</p>
+<p><strong><code>/srv/stacks/proxy/compose.yaml</code></strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">socket-proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lscr.io/linuxserver/socket-proxy:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">socket-proxy</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">CONTAINERS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">POST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/docker.sock:/var/run/docker.sock:ro</span>
+<span class="w">    </span><span class="nt">read_only</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">tmpfs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">/run</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">socket</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">traefik</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik:v3.4</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">socket-proxy</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">security_opt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">no-new-privileges</span><span class="p p-Indicator">:</span><span class="nv">true</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;80:80&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;443:443&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">CF_DNS_API_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${CF_DNS_API_TOKEN}</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--api.dashboard=true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--providers.docker=true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--providers.docker.endpoint=tcp://socket-proxy:2375</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--providers.docker.exposedbydefault=false</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--providers.docker.network=proxy</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--providers.file.directory=/dynamic</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--providers.file.watch=true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--entrypoints.web.address=:80</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--entrypoints.web.http.redirections.entrypoint.to=websecure</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--entrypoints.web.http.redirections.entrypoint.scheme=https</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--entrypoints.websecure.address=:443</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--entrypoints.websecure.http.tls.certresolver=le</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--entrypoints.websecure.http.tls.domains[0].main=home.example.com</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--entrypoints.websecure.http.tls.domains[0].sans=*.home.example.com</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--certificatesresolvers.le.acme.dnschallenge=true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--certificatesresolvers.le.acme.dnschallenge.provider=cloudflare</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--certificatesresolvers.le.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--certificatesresolvers.le.acme.email=you@example.com</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--log.level=INFO</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--accesslog=true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--metrics.prometheus=true</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/traefik/letsencrypt:/letsencrypt</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./dynamic:/dynamic:ro</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">socket</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">traefik.enable</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">traefik.http.routers.traefik.rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Host(`traefik.home.example.com`)</span>
+<span class="w">      </span><span class="nt">traefik.http.routers.traefik.service</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api@internal</span>
+<span class="w">      </span><span class="nt">traefik.http.routers.traefik.middlewares</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tinyauth@docker,secure-headers@file</span>
+
+<span class="w">  </span><span class="nt">tinyauth</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/steveiliop56/tinyauth:v3</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tinyauth</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">APP_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://auth.home.example.com</span>
+<span class="w">      </span><span class="nt">SECRET</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${TINYAUTH_SECRET}</span>
+<span class="w">      </span><span class="nt">GENERIC_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${TINYAUTH_OIDC_CLIENT_ID}</span>
+<span class="w">      </span><span class="nt">GENERIC_CLIENT_SECRET</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${TINYAUTH_OIDC_CLIENT_SECRET}</span>
+<span class="w">      </span><span class="nt">GENERIC_AUTH_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://id.home.example.com/authorize</span>
+<span class="w">      </span><span class="nt">GENERIC_TOKEN_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://id.home.example.com/api/oidc/token</span>
+<span class="w">      </span><span class="nt">GENERIC_USER_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://id.home.example.com/api/oidc/userinfo</span>
+<span class="w">      </span><span class="nt">GENERIC_SCOPES</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openid email profile groups</span>
+<span class="w">      </span><span class="nt">GENERIC_NAME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pocket ID</span>
+<span class="w">      </span><span class="nt">OAUTH_WHITELIST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">you@example.com,partner@example.com</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">traefik.enable</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">traefik.http.routers.tinyauth.rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Host(`auth.home.example.com`)</span>
+<span class="w">      </span><span class="nt">traefik.http.middlewares.tinyauth.forwardauth.address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://tinyauth:3000/api/auth/traefik</span>
+
+<span class="w">  </span><span class="nt">pocket-id</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/pocket-id/pocket-id:v1</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pocket-id</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">APP_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://id.home.example.com</span>
+<span class="w">      </span><span class="nt">TRUST_PROXY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">PUID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">      </span><span class="nt">PGID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/pocket-id:/app/data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">traefik.enable</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">traefik.http.routers.pocket-id.rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Host(`id.home.example.com`)</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">proxy</span>
+<span class="w">  </span><span class="nt">socket</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">internal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p><strong><code>/srv/stacks/proxy/dynamic/middlewares.yaml</code></strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">http</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">middlewares</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">secure-headers</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">stsSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">31536000</span>
+<span class="w">        </span><span class="nt">stsIncludeSubdomains</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">browserXssFilter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">contentTypeNosniff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">referrerPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">strict-origin-when-cross-origin</span>
+<span class="w">        </span><span class="nt">frameDeny</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">        </span><span class="c1"># Homepage iframes; set true per-router if desired</span>
+<span class="w">    </span><span class="nt">lan-only</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">ipAllowList</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">sourceRange</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;10.0.10.0/24&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;10.0.20.0/24&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;100.64.0.0/10&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>An app then needs only labels, e.g. Jellyfin (native login, so no TinyAuth):</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">traefik.enable</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">traefik.http.routers.jellyfin.rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Host(`jellyfin.home.example.com`)</span>
+<span class="w">      </span><span class="nt">traefik.http.services.jellyfin.loadbalancer.server.port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8096</span>
+<span class="w">      </span><span class="nt">traefik.http.routers.jellyfin.middlewares</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secure-headers@file</span>
+</code></pre></div>
+<p>and something like Dozzle (no auth of its own) gets <code>traefik.http.routers.dozzle.middlewares: tinyauth@docker,lan-only@file</code>.</p>
+<p>Apps with native OIDC — Immich, Paperless (via <code>PAPERLESS_SOCIALACCOUNT_PROVIDERS</code>), Nextcloud (<code>user_oidc</code> app), Forgejo, Miniflux, Audiobookshelf, Grafana, Komodo, Home Assistant (through the <em>hass-oidc</em> custom integration) — get a client in Pocket ID and log in with a passkey. The mechanics are in <a href="../10-identity-sso/">Identity &amp; SSO</a>.</p>
+<p><strong><code>/srv/stacks/ops/compose.yaml</code></strong> (additions):</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">beszel</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">henrygd/beszel:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">beszel</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/beszel:/beszel_data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">traefik.enable</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">traefik.http.routers.beszel.rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Host(`metrics.home.example.com`)</span>
+<span class="w">      </span><span class="nt">traefik.http.services.beszel.loadbalancer.server.port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8090</span>
+
+<span class="w">  </span><span class="nt">beszel-agent</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">henrygd/beszel-agent:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">beszel-agent</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">LISTEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">45876</span>
+<span class="w">      </span><span class="nt">KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${BESZEL_PUBLIC_KEY}</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/docker.sock:/var/run/docker.sock:ro</span>
+
+<span class="w">  </span><span class="nt">ntfy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">binwiederhier/ntfy:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ntfy</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">serve</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">NTFY_BASE_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://ntfy.home.example.com</span>
+<span class="w">      </span><span class="nt">NTFY_CACHE_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/cache/ntfy/cache.db</span>
+<span class="w">      </span><span class="nt">NTFY_AUTH_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/ntfy/user.db</span>
+<span class="w">      </span><span class="nt">NTFY_AUTH_DEFAULT_ACCESS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deny-all</span>
+<span class="w">      </span><span class="nt">NTFY_BEHIND_PROXY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">NTFY_ENABLE_LOGIN</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/ntfy/cache:/var/cache/ntfy</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/srv/appdata/ntfy/data:/var/lib/ntfy</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">traefik.enable</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">traefik.http.routers.ntfy.rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Host(`ntfy.home.example.com`)</span>
+</code></pre></div>
+<p>Install the Beszel agent on the Proxmox host and the Pi too (binary + systemd), and point Uptime Kuma on the <strong>Pi</strong> at everything on the main node — monitoring that lives on the thing it monitors cannot tell you it is down. Wire Uptime Kuma, Beszel, PBS, smartd and the ZFS event daemon (<code>zed</code>) to ntfy. Full stack options in <a href="../12-monitoring/">Monitoring</a>.</p>
+<p><strong><code>/srv/stacks/komodo/</code></strong> — Komodo (Core + Periphery) gives you a UI over your Git-stored stacks with deploy-on-push and shows drift; Renovate (self-hosted runner in Forgejo Actions or the hosted GitHub app on a mirror) opens PRs for image bumps. That workflow is described step by step in <a href="../27-automation-iac/">Automation &amp; IaC</a>.</p>
+<h3 id="exposure-model-intermediate">Exposure model (Intermediate)<a class="headerlink" href="#exposure-model-intermediate" title="Permanent link">#</a></h3>
+<p>Three tiers, decided per app:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Mechanism</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LAN + tailnet only</strong></td>
+<td>Traefik <code>lan-only</code> middleware; DNS only resolves internally</td>
+<td>Proxmox UI, Traefik dashboard, Dozzle, Beszel, AdGuard, PBS</td>
+</tr>
+<tr>
+<td><strong>Authenticated anywhere</strong></td>
+<td>Tailscale (with AdGuard as tailnet DNS) — no public DNS record</td>
+<td>Immich, Nextcloud, Paperless, Vaultwarden (Bitwarden clients work fine over Tailscale)</td>
+</tr>
+<tr>
+<td><strong>Public</strong></td>
+<td><strong>Pangolin</strong> on a €4 VPS: Newt tunnel from <code>docker-01</code>, Pangolin's own SSO/2FA in front, CrowdSec bouncer on the VPS</td>
+<td>Jellyfin for relatives, a shared Immich album domain, a static site, Uptime Kuma status page</td>
+</tr>
+</tbody>
+</table>
+<p>Public apps use a <em>different</em> hostname scheme (<code>jellyfin.example.com</code>, not <code>*.home.example.com</code>) so a leaked public name reveals nothing about the internal one. Cloudflare Tunnel is the alternative for the third tier if you accept its ToS limits on video streaming; comparison in <a href="../08-remote-access-vpn/">Remote access &amp; VPN</a>.</p>
+<h3 id="backups-intermediate">Backups (Intermediate)<a class="headerlink" href="#backups-intermediate" title="Permanent link">#</a></h3>
+<pre class="mermaid">flowchart LR
+    VMs[Proxmox VMs/LXCs] -- nightly, dirty-bitmap incremental --&gt; PBS[PBS datastore&lt;br/&gt;on Pi USB SSD or bulk pool]
+    PBS -- weekly sync job --&gt; B2[(Backblaze B2&lt;br/&gt;via rclone or PBS S3 target)]
+    Appdata[/srv/appdata + dumps] -- Restic hourly --&gt; Tank[tank/appdata-backups]
+    Tank -- ZFS snapshots hourly/daily --&gt; Tank
+    Tank -- Restic nightly --&gt; B2
+    Photos[tank/photos] -- ZFS send --&gt; USB[Cold USB disk monthly]
+    Photos -- Restic --&gt; B2</pre>
+<ul>
+<li><strong>PBS</strong> backs up every guest nightly; retention 7 daily / 4 weekly / 6 monthly; verify job weekly; the datastore is <em>not</em> on the same pool as the guests.</li>
+<li><strong>Restic</strong> inside <code>docker-01</code> for appdata and DB dumps (same script as Starter) → <code>tank/appdata-backups</code> via NFS, then B2. Hourly locally, nightly off-site.</li>
+<li><strong>ZFS snapshots</strong> on <code>tank</code> via Sanoid: 48 hourly, 30 daily, 6 monthly — this is your ransomware/oops rollback, not your backup.</li>
+<li><strong>Cold copy</strong> of irreplaceable data (photos, documents) to a USB disk monthly, stored somewhere else.</li>
+<li><strong>Tested</strong>: PBS file-restore into a scratch VM quarterly; Restic restore of one app quarterly; a full "rebuild <code>docker-01</code> from Git + Restic" drill once a year.</li>
+</ul>
+<h3 id="what-intermediate-leaves-out">What Intermediate leaves out<a class="headerlink" href="#what-intermediate-leaves-out" title="Permanent link">#</a></h3>
+<ul>
+<li>Single hypervisor: hardware failure = everything down until you rebuild on spare hardware (the backups make that a day, not a disaster).</li>
+<li>Storage and compute share a box; a Proxmox upgrade gone wrong takes the NAS role with it.</li>
+<li>Grafana/Prometheus are optional here; Beszel covers most of what a home needs.</li>
+<li>No email hosting, no Matrix, no large GPU work.</li>
+</ul>
+<h3 id="upgrade-path-advanced">Upgrade path → Advanced<a class="headerlink" href="#upgrade-path-advanced" title="Permanent link">#</a></h3>
+<ol>
+<li>Separate storage into a NAS (TrueNAS SCALE or a second Proxmox box with ZFS + Samba/NFS) and replicate between the two pools.</li>
+<li>Add a second/third Proxmox node; cluster with a QDevice on the Pi for quorum.</li>
+<li>Move routing to dedicated OPNsense hardware; add more VLANs (cameras, management, lab).</li>
+<li>Swap TinyAuth for Authentik or Kanidm when you need LDAP or group-based access.</li>
+<li>Replace Beszel with Prometheus + Grafana + Loki when you want history and dashboards.</li>
+</ol>
+<hr />
+<h2 id="advanced-dedicated-router-nas-proxmox-cluster-gitops">Advanced: dedicated router, NAS, Proxmox cluster, GitOps<a class="headerlink" href="#advanced-dedicated-router-nas-proxmox-cluster-gitops" title="Permanent link">#</a></h2>
+<h3 id="goals_2">Goals<a class="headerlink" href="#goals_2" title="Permanent link">#</a></h3>
+<ul>
+<li>No single box whose failure takes down internet, DNS, storage <em>and</em> services at once.</li>
+<li>Storage as a service: one NAS, ZFS, replicated; compute nodes are disposable.</li>
+<li>Everything reproducible from Git: hosts (Ansible), VMs (OpenTofu), stacks (Komodo/Compose), DNS records (OpenTofu), firewall (OPNsense config exported to Git).</li>
+<li>Observability with history: Prometheus/Grafana/Loki; alerting rules, not just up/down.</li>
+<li>Public services hardened with CrowdSec and an IdP with groups.</li>
+</ul>
+<h3 id="bill-of-materials_2">Bill of materials<a class="headerlink" href="#bill-of-materials_2" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Suggested</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Router</td>
+<td>Fanless 4×2.5 GbE N100/N305 box (Protectli VP2420, Qotom, "Topton" class) running <strong>OPNsense</strong></td>
+<td>8–12 W; handles gigabit + IDS. Or a MikroTik/Ubiquiti gateway if you prefer appliances</td>
+</tr>
+<tr>
+<td>Switch</td>
+<td>8–16 port 2.5 GbE managed with 2–4 × 10 GbE SFP+ uplinks (MikroTik CRS310-8G+2S+, TP-Link TL-SG3210XHP-M2, Ubiquiti Flex 2.5G PoE)</td>
+<td>10 GbE between NAS and compute; 2.5 GbE to nodes and APs</td>
+</tr>
+<tr>
+<td>NAS</td>
+<td>4–8 bay: used Supermicro/HP tower, Jonsbo N3/N5 + ASRock Rack board, or a used Xeon E-2200 board with ECC; <strong>or</strong> a Synology/QNAP if you want an appliance</td>
+<td>TrueNAS SCALE. 32–64 GB ECC. Two pools: NVMe mirror (appdata, VM disks over NFS/iSCSI), HDD RAIDZ2 (bulk)</td>
+</tr>
+<tr>
+<td>Compute</td>
+<td>2–3 × mini PC (MS-01, Lenovo P3 Tiny, used 1L PCs)</td>
+<td>Same model for live-migration sanity. 32–96 GB each</td>
+</tr>
+<tr>
+<td>Quorum</td>
+<td>Pi/thin client as <strong>QDevice</strong> if you run 2 nodes</td>
+<td>Prevents split-brain; also hosts external monitoring</td>
+</tr>
+<tr>
+<td>GPU (optional)</td>
+<td>One node with a low-profile GPU (Intel Arc A310/A380 for transcoding; RTX 3060 12 GB / used 3090 for LLMs)</td>
+<td>Passthrough to a VM; see <a href="../23-ai-llm/">AI/LLM</a></td>
+</tr>
+<tr>
+<td>Power</td>
+<td>1–1.5 kVA UPS with SNMP or USB; NUT master on the NAS</td>
+<td>Whole rack ~100–200 W idle</td>
+</tr>
+<tr>
+<td>Rack</td>
+<td>12–18U wall-mount or a Lack rack</td>
+<td>Cable management is not optional at this size</td>
+</tr>
+</tbody>
+</table>
+<h3 id="network-layout_2">Network layout<a class="headerlink" href="#network-layout_2" title="Permanent link">#</a></h3>
+<pre class="mermaid">flowchart TB
+    Internet((Internet)) --- OPN[OPNsense&lt;br/&gt;WAN + VLAN gateway, DHCP, WireGuard, IDS]
+    OPN === Core[10 GbE / 2.5 GbE switch]
+    Core --- NAS[TrueNAS SCALE&lt;br/&gt;VLAN 10 · 10 GbE&lt;br/&gt;NFS/iSCSI/SMB]
+    Core --- N1[PVE node 1]
+    Core --- N2[PVE node 2]
+    Core --- N3[PVE node 3 / QDevice]
+    Core --- AP[APs · VLAN 20/30/40 SSIDs]
+    Core --- Cams[PoE cameras · VLAN 50]
+    VPS[VPS: Pangolin + CrowdSec] -. Newt tunnel .-&gt; N1
+    Friend[Friend&#x27;s NAS] -. ZFS replication over Tailscale .-&gt; NAS</pre>
+<table>
+<thead>
+<tr>
+<th>VLAN</th>
+<th>Subnet</th>
+<th>Purpose</th>
+<th>Rules</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10</td>
+<td>10.0.10.0/24</td>
+<td>Servers, NAS, Proxmox guests</td>
+<td>Allow from 20; from 30 selectively; from 99 all</td>
+</tr>
+<tr>
+<td>20</td>
+<td>10.0.20.0/24</td>
+<td>Trusted laptops/phones</td>
+<td>Allow anywhere</td>
+</tr>
+<tr>
+<td>30</td>
+<td>10.0.30.0/24</td>
+<td>IoT</td>
+<td>Internet + HA/MQTT only</td>
+</tr>
+<tr>
+<td>40</td>
+<td>10.0.40.0/24</td>
+<td>Guest</td>
+<td>Internet only, rate-limited</td>
+</tr>
+<tr>
+<td>50</td>
+<td>10.0.50.0/24</td>
+<td>Cameras</td>
+<td><strong>No internet</strong>; Frigate only</td>
+</tr>
+<tr>
+<td>99</td>
+<td>10.0.99.0/24</td>
+<td>Management: IPMI/iDRAC, switch, PVE web UI, TrueNAS UI</td>
+<td>Reachable only from a jump host or with VPN + 2FA</td>
+</tr>
+</tbody>
+</table>
+<p>OPNsense also runs: Unbound (recursive, DNSSEC) as upstream for two AdGuard instances (one per compute node), WireGuard for road-warriors, Suricata in IDS mode on WAN, and the CrowdSec plugin. The OPNsense config goes to Git nightly via the built-in Git backup. Rationale for each piece in <a href="../03-networking/">Networking</a> and <a href="../13-security/">Security</a>.</p>
+<h3 id="storage-layout-truenas-scale">Storage layout (TrueNAS SCALE)<a class="headerlink" href="#storage-layout-truenas-scale" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>fast  (2× NVMe mirror)    → fast/vm         NFS 4.2 → Proxmox storage &quot;nas-vm&quot;  (or iSCSI zvols)
+                           → fast/appdata    NFS     → docker VMs (/srv/appdata)
+tank  (6× HDD RAIDZ2)      → tank/media      SMB+NFS
+                           → tank/photos     NFS
+                           → tank/cameras    NFS → Frigate recordings
+                           → tank/backups    → PBS datastore (NFS, or a PBS VM with a passed-through disk)
+                           → tank/replica    → receives ZFS replication from friend; sends ours to them
+</code></pre></div>
+<p>Snapshots: <code>fast/*</code> every 15 min (keep 24), hourly (48), daily (14); <code>tank/*</code> daily (30), weekly (12), monthly (12). Replication task: <code>tank/photos</code>, <code>tank/backups</code>, <code>fast/appdata</code> → friend's NAS nightly over Tailscale (raw send of encrypted datasets, so they never hold the key). Scrubs monthly; SMART long test weekly; alerts → ntfy via TrueNAS' webhook alert service.</p>
+<div class="admonition danger">
+<p class="admonition-title">Databases on NFS</p>
+<p>SQLite over NFS is a known corruption source (locking). Postgres tolerates NFS with <code>hard</code> mounts and <code>sync=always</code> but you pay latency. The Advanced blueprint therefore runs a <strong>dedicated Postgres VM</strong> on a node's local NVMe mirror with backups to the NAS, and keeps SQLite-based apps' data on local VM disks. Bulk assets (media, photo originals) live on NFS happily. See <a href="../26-databases-backing-services/">Databases &amp; backing services</a>.</p>
+</div>
+<h3 id="proxmox-cluster-layout">Proxmox cluster layout<a class="headerlink" href="#proxmox-cluster-layout" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Guests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>pve-01</strong></td>
+<td><code>docker-core</code> (Traefik, IdP, Komodo, ntfy, AdGuard #1), <code>postgres-01</code>, <code>haos</code></td>
+</tr>
+<tr>
+<td><strong>pve-02</strong></td>
+<td><code>docker-apps</code> (Immich, Nextcloud, Paperless, Forgejo, media stack), <code>frigate</code> (Coral/iGPU), AdGuard #2 (LXC)</td>
+</tr>
+<tr>
+<td><strong>pve-03</strong> (or QDevice)</td>
+<td><code>docker-lab</code> (experiments), <code>monitoring</code> (Prometheus/Grafana/Loki), <code>ollama</code> (GPU passthrough)</td>
+</tr>
+</tbody>
+</table>
+<p>HA groups only for <code>docker-core</code> and <code>haos</code> (their disks on <code>nas-vm</code> NFS so they can float); everything else is restored from PBS if a node dies — accept a 30-minute RTO rather than run every VM on shared storage. Cluster/corosync traffic on VLAN 99, ideally on a second NIC. Node provisioning via Ansible (repos, <code>zfs_arc_max</code>, IOMMU kernel args, NUT client, node exporter, unattended security updates). VM creation via <strong>OpenTofu</strong> with the <code>bpg/proxmox</code> provider and cloud-init — a working module is in <a href="../27-automation-iac/">Automation &amp; IaC</a>.</p>
+<h3 id="identity">Identity<a class="headerlink" href="#identity" title="Permanent link">#</a></h3>
+<p><strong>Authentik</strong> (or <strong>Kanidm</strong> if you prefer a lighter, LDAP-first, Rust implementation) on <code>docker-core</code>:</p>
+<ul>
+<li>Groups: <code>admins</code>, <code>family</code>, <code>media-users</code>, <code>guests</code>.</li>
+<li>OIDC clients for every app that supports it; <strong>LDAP outpost</strong> for Jellyfin (LDAP plugin) and other legacy apps.</li>
+<li>Forward-auth outpost as the Traefik middleware, with <strong>policies per application</strong>: admins only for infrastructure UIs, <code>family</code> for Immich/Nextcloud, <code>media-users</code> for the public Jellyfin entry.</li>
+<li>Passkeys + TOTP enforced; recovery codes printed and kept in the safe (<a href="../21-passwords-secrets/">Passwords &amp; secrets</a>).</li>
+<li>Authentik's database on <code>postgres-01</code>; its blueprints (YAML config) in Git so a rebuild is <code>compose up</code> + apply.</li>
+</ul>
+<p>Why Pocket ID is enough for most people, and the full IdP comparison, in <a href="../10-identity-sso/">Identity &amp; SSO</a>.</p>
+<h3 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># monitoring VM, /srv/stacks/observability/compose.yaml (abridged)</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">prometheus</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prom/prometheus:v3.4.1</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;--config.file=/etc/prometheus/prometheus.yml&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;--storage.tsdb.retention.time=90d&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./prometheus:/etc/prometheus&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/srv/appdata/prometheus:/prometheus&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">alertmanager</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prom/alertmanager:v0.28.1</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./alertmanager:/etc/alertmanager&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">grafana</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana/grafana:12.0.2</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">GF_AUTH_GENERIC_OAUTH_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w">      </span><span class="c1"># Authentik OIDC</span>
+<span class="w">      </span><span class="nt">GF_SERVER_ROOT_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://grafana.home.example.com</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/srv/appdata/grafana:/var/lib/grafana&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;./grafana/provisioning:/etc/grafana/provisioning&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">loki</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana/loki:3.5</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./loki:/etc/loki&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/srv/appdata/loki:/loki&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">alloy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana/alloy:v1.9.1</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./alloy:/etc/alloy&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/var/run/docker.sock:/var/run/docker.sock:ro&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/var/log:/var/log:ro&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>Exporters: <code>node_exporter</code> on every host and the NAS, <code>pve-exporter</code> for Proxmox, <code>smartctl_exporter</code>, <code>zfs_exporter</code>, <code>blackbox_exporter</code> for HTTPS/certificate probes, <code>cadvisor</code> per Docker VM, the OPNsense <code>node_exporter</code> plugin, Traefik's <code>/metrics</code>. Alerting rules that matter: disk &gt; 85 %, ZFS pool degraded, SMART failing, backup job age &gt; 26 h, certificate expiry &lt; 14 d, host down 5 min, UPS on battery. Alertmanager → ntfy, with a <strong>separate</strong> ntfy.sh topic as fallback so a dead <code>docker-core</code> still alerts. Uptime Kuma runs <em>outside</em> the cluster (QDevice Pi or the VPS) for the external view. Dashboards and rationale in <a href="../12-monitoring/">Monitoring</a>.</p>
+<h3 id="service-layer-highlights">Service layer highlights<a class="headerlink" href="#service-layer-highlights" title="Permanent link">#</a></h3>
+<p>Beyond the Intermediate set:</p>
+<ul>
+<li><strong>Frigate</strong> on <code>pve-02</code> with a Coral TPU or OpenVINO on the iGPU, recordings on <code>tank/cameras</code>, integrated with Home Assistant; cameras on VLAN 50 with no internet (<a href="../19-home-automation/">Home automation</a>).</li>
+<li><strong>Matrix (Synapse or Conduwuit) + Element</strong> for family chat, behind Pangolin with <code>.well-known</code> delegation (<a href="../20-communication/">Communication</a>).</li>
+<li><strong>Email</strong>: still probably <em>not</em> self-hosted; if you insist, Mailcow or Stalwart on the VPS with the home lab as backup MX at most (<a href="../20-communication/">Communication</a>).</li>
+<li><strong>Ollama + Open WebUI</strong> on the GPU node; SearXNG for private search; Immich ML pointed at the GPU (<a href="../23-ai-llm/">AI/LLM</a>).</li>
+<li><strong>Forgejo + Actions runner</strong> hosting the very repos that define this lab; Renovate as an Action; Komodo deploying on push (<a href="../22-dev-git-automation/">Dev, Git &amp; automation</a>).</li>
+<li><strong>Game servers</strong> via Pelican/Pterodactyl or Crafty in <code>docker-lab</code>, exposed through Pangolin's raw TCP/UDP resources (<a href="../24-gaming/">Gaming</a>).</li>
+</ul>
+<h3 id="exposure-model-advanced">Exposure model (Advanced)<a class="headerlink" href="#exposure-model-advanced" title="Permanent link">#</a></h3>
+<pre class="mermaid">flowchart LR
+    User((Public user)) --&gt; DNS[Public DNS&lt;br/&gt;public names → VPS IP]
+    DNS --&gt; VPS[VPS: Pangolin + Traefik + CrowdSec]
+    VPS -. Newt / WireGuard .-&gt; Core[docker-core Traefik + Authentik]
+    Core --&gt; Apps[Apps]
+    Fam((Family, phones)) -- WireGuard on OPNsense or Tailscale --&gt; Core
+    Admin((You)) -- WireGuard + VLAN 99 jump host + 2FA --&gt; Mgmt[Proxmox / TrueNAS / OPNsense UIs]</pre>
+<ul>
+<li>Public: Pangolin on the VPS; CrowdSec with the Traefik bouncer + community blocklists; Pangolin resource-level auth for anything not meant for anonymous users; rate limiting; geo-blocking where sensible.</li>
+<li>Remote family: WireGuard profiles from OPNsense (QR codes), Tailscale as fallback with an ACL that only permits VLAN 10 ports 443/53.</li>
+<li>Management: never public, never on the app VLAN, always 2FA. SSH keys only; CrowdSec on the jump host anyway.</li>
+<li>Trust boundaries are enforced by the <strong>firewall and VLANs</strong>; Traefik middleware is defence in depth, not the wall (<a href="../13-security/">Security</a>).</li>
+</ul>
+<h3 id="backups-advanced">Backups (Advanced)<a class="headerlink" href="#backups-advanced" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Tool</th>
+<th>Target</th>
+<th>Cadence</th>
+<th>Retention</th>
+<th>Verified by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VMs/LXCs</td>
+<td>PBS (VM on pve-03 or the NAS)</td>
+<td><code>tank/backups</code></td>
+<td>nightly</td>
+<td>7d/4w/6m</td>
+<td>PBS verify weekly; monthly restore into <code>docker-lab</code></td>
+</tr>
+<tr>
+<td>App data &amp; DB dumps</td>
+<td>Restic (or Kopia) from each docker VM</td>
+<td><code>fast/appdata</code> snapshots → <code>tank/backups/restic</code></td>
+<td>hourly</td>
+<td>48h/14d/12m</td>
+<td><code>restic check --read-data-subset=5%</code> weekly</td>
+</tr>
+<tr>
+<td>Postgres</td>
+<td><code>pg_dumpall</code> + WAL archiving with pgBackRest</td>
+<td><code>tank/backups/pg</code></td>
+<td>dumps nightly, WAL continuous</td>
+<td>30 d PITR</td>
+<td>monthly restore test to a scratch DB</td>
+</tr>
+<tr>
+<td>NAS datasets</td>
+<td>ZFS replication</td>
+<td>Friend's NAS (encrypted raw send)</td>
+<td>nightly</td>
+<td>matches source policy</td>
+<td>staleness alert on the far end</td>
+</tr>
+<tr>
+<td>Off-site cold</td>
+<td>rclone crypt → Backblaze B2 (photos, documents, PBS subset)</td>
+<td>B2</td>
+<td>nightly</td>
+<td>90-day object lock</td>
+<td>quarterly random-file restore</td>
+</tr>
+<tr>
+<td>Config</td>
+<td>OPNsense Git backup, TrueNAS config export, Authentik blueprints, Compose repos, OpenTofu state (encrypted)</td>
+<td>Forgejo + mirror to GitHub/Codeberg</td>
+<td>on change</td>
+<td>git history</td>
+<td>yearly rebuild drill</td>
+</tr>
+</tbody>
+</table>
+<p>3-2-1-1-0 satisfied: ≥3 copies, 2 media types, 1 off-site (friend + B2), 1 immutable (B2 object lock), 0 errors (verify jobs). Methodology in <a href="../11-backups/">Backups</a>.</p>
+<h3 id="what-advanced-still-leaves-out-and-why">What Advanced still leaves out (and why)<a class="headerlink" href="#what-advanced-still-leaves-out-and-why" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Kubernetes.</strong> For a home lab, k3s/Talos adds operational surface for benefits you mostly don't need with Proxmox HA underneath. If you want to <em>learn</em> k8s, run it inside VMs on <code>docker-lab</code>.</li>
+<li><strong>Ceph.</strong> Three nodes with 10 GbE is the bare minimum and it wants enterprise SSDs; ZFS on a NAS plus PBS is simpler and faster at this scale.</li>
+<li><strong>Hosted email as primary.</strong> Deliverability is a full-time job; keep it on a provider or a VPS.</li>
+<li><strong>Perfect HA.</strong> OPNsense and the NAS are each single points of failure. CARP with two router boxes and a second NAS are possible; most people should spend that money on better backups.</li>
+</ul>
+<hr />
+<h2 id="cross-cutting-checklists">Cross-cutting checklists<a class="headerlink" href="#cross-cutting-checklists" title="Permanent link">#</a></h2>
+<h3 id="before-you-call-a-blueprint-done">Before you call a blueprint "done"<a class="headerlink" href="#before-you-call-a-blueprint-done" title="Permanent link">#</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Every service reachable by HTTPS with a valid certificate; <code>http://</code> redirects.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> No ports forwarded on the router except those you can name and justify.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> <code>docker ps</code> shows no container publishing a port that the proxy should own.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Every stack in Git; secrets in <code>.env</code>/secret files that are <em>not</em> in Git; a README telling future-you how to bootstrap.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Backups run, alert on failure <strong>and</strong> on silence, and a restore was performed in the last 90 days.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Monitoring lives partly <em>outside</em> the thing it monitors.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Notifications reach your phone for: disk, backup, certificate, host-down, UPS.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A printed/offline "break-glass" sheet: router admin, Proxmox root, IdP recovery codes, Restic/PBS encryption keys, B2 credentials, registrar 2FA backup.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Household knows what happens if you're unavailable (see <a href="../01-planning/">Planning</a> on the "bus factor").</li>
+</ul>
+<h3 id="sizing-rules-of-thumb">Sizing rules of thumb<a class="headerlink" href="#sizing-rules-of-thumb" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Workload</th>
+<th>RAM</th>
+<th>CPU</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Traefik/Caddy</td>
+<td>100–200 MB</td>
+<td>negligible</td>
+<td></td>
+</tr>
+<tr>
+<td>AdGuard/Pi-hole + Unbound</td>
+<td>100–300 MB</td>
+<td>negligible</td>
+<td></td>
+</tr>
+<tr>
+<td>Jellyfin</td>
+<td>0.5–2 GB</td>
+<td>1 core + iGPU per 2–4 transcodes</td>
+<td>4K HDR tone-mapping wants a real GPU</td>
+</tr>
+<tr>
+<td>Immich (server + ML + DB)</td>
+<td>2–4 GB, 6+ during ML jobs</td>
+<td>2–4 cores for initial import</td>
+<td>ML can move to the GPU node</td>
+</tr>
+<tr>
+<td>Nextcloud + Postgres + Redis</td>
+<td>1–2 GB</td>
+<td>2 cores</td>
+<td>PHP tuning matters more than hardware</td>
+</tr>
+<tr>
+<td>Paperless-ngx</td>
+<td>0.5–1.5 GB</td>
+<td>bursts to 2 cores during OCR</td>
+<td></td>
+</tr>
+<tr>
+<td>Home Assistant OS</td>
+<td>2–4 GB</td>
+<td>2 vCPU</td>
+<td>more if Frigate runs inside</td>
+</tr>
+<tr>
+<td>Frigate (4 cams, detect)</td>
+<td>2–4 GB</td>
+<td>2 cores + Coral/iGPU</td>
+<td>recordings are I/O, not CPU</td>
+</tr>
+<tr>
+<td>Prometheus + Grafana + Loki</td>
+<td>2–4 GB</td>
+<td>2 cores</td>
+<td>retention drives disk, not RAM</td>
+</tr>
+<tr>
+<td>Authentik</td>
+<td>1–1.5 GB</td>
+<td>1–2 cores</td>
+<td>Pocket ID: ~50 MB</td>
+</tr>
+<tr>
+<td>Ollama (8B Q4)</td>
+<td>model in VRAM + 2 GB</td>
+<td>GPU</td>
+<td>CPU-only is possible, slow</td>
+</tr>
+<tr>
+<td>Proxmox host overhead + ZFS ARC</td>
+<td>4 GB + ARC (cap it)</td>
+<td>1–2 cores</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Details behind these numbers, per service, in the Part III chapters.</p>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../30-legal-ethical/">← 30. Legal and Ethical Considerations</a><a class="next" href="../32-troubleshooting-faq/">32. Troubleshooting and FAQ →</a></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/31-reference-architectures.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#blueprint-comparison">Blueprint comparison</a></li>
+<li><a href="#starter-one-box-ten-services-a-weekend">Starter: one box, ten services, a weekend</a><ul>
+<li><a href="#goals">Goals</a></li>
+<li><a href="#bill-of-materials">Bill of materials</a></li>
+<li><a href="#network-layout">Network layout</a></li>
+<li><a href="#host-preparation">Host preparation</a></li>
+<li><a href="#compose-stacks">Compose stacks</a></li>
+<li><a href="#backups-starter">Backups (Starter)</a></li>
+<li><a href="#what-starter-deliberately-leaves-out">What Starter deliberately leaves out</a></li>
+<li><a href="#upgrade-path-intermediate">Upgrade path → Intermediate</a></li>
+</ul>
+</li>
+<li><a href="#intermediate-hypervisor-redundant-storage-sso-real-monitoring">Intermediate: hypervisor, redundant storage, SSO, real monitoring</a><ul>
+<li><a href="#goals_1">Goals</a></li>
+<li><a href="#bill-of-materials_1">Bill of materials</a></li>
+<li><a href="#network-layout_1">Network layout</a></li>
+<li><a href="#proxmox-layout">Proxmox layout</a></li>
+<li><a href="#compose-on-docker-01">Compose on docker-01</a></li>
+<li><a href="#exposure-model-intermediate">Exposure model (Intermediate)</a></li>
+<li><a href="#backups-intermediate">Backups (Intermediate)</a></li>
+<li><a href="#what-intermediate-leaves-out">What Intermediate leaves out</a></li>
+<li><a href="#upgrade-path-advanced">Upgrade path → Advanced</a></li>
+</ul>
+</li>
+<li><a href="#advanced-dedicated-router-nas-proxmox-cluster-gitops">Advanced: dedicated router, NAS, Proxmox cluster, GitOps</a><ul>
+<li><a href="#goals_2">Goals</a></li>
+<li><a href="#bill-of-materials_2">Bill of materials</a></li>
+<li><a href="#network-layout_2">Network layout</a></li>
+<li><a href="#storage-layout-truenas-scale">Storage layout (TrueNAS SCALE)</a></li>
+<li><a href="#proxmox-cluster-layout">Proxmox cluster layout</a></li>
+<li><a href="#identity">Identity</a></li>
+<li><a href="#observability">Observability</a></li>
+<li><a href="#service-layer-highlights">Service layer highlights</a></li>
+<li><a href="#exposure-model-advanced">Exposure model (Advanced)</a></li>
+<li><a href="#backups-advanced">Backups (Advanced)</a></li>
+<li><a href="#what-advanced-still-leaves-out-and-why">What Advanced still leaves out (and why)</a></li>
+</ul>
+</li>
+<li><a href="#cross-cutting-checklists">Cross-cutting checklists</a><ul>
+<li><a href="#before-you-call-a-blueprint-done">Before you call a blueprint "done"</a></li>
+<li><a href="#sizing-rules-of-thumb">Sizing rules of thumb</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

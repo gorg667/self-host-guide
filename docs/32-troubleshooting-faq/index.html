@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting and FAQ — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li><li><a href="../25-misc-apps/"><span class="num">25</span> The Long Tail: Household, Finance, Web, and Utility Apps</a></li><li><a href="../26-databases-backing-services/"><span class="num">26</span> Databases and Backing Services</a></li></ul></div><div class="part"><div class="part-title">Part IV — Operations &amp; reference</div><ul><li><a href="../27-automation-iac/"><span class="num">27</span> Infrastructure as Code and Automation</a></li><li><a href="../28-maintenance-operations/"><span class="num">28</span> Maintenance and Operations</a></li><li><a href="../29-power-cost-environment/"><span class="num">29</span> Power, Cost, and the Physical Environment</a></li><li><a href="../30-legal-ethical/"><span class="num">30</span> Legal and Ethical Considerations</a></li><li><a href="../31-reference-architectures/"><span class="num">31</span> Reference Architectures</a></li><li class="active"><a href="../32-troubleshooting-faq/"><span class="num">32</span> Troubleshooting and FAQ</a></li><li><a href="../33-resources-community/"><span class="num">33</span> Resources and Community</a></li><li><a href="../34-appendix/"><span class="num">34</span> Appendix</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 32 · ~5,036 words · 22 min read</div>
+    <article class="prose">
+      <h1 id="troubleshooting-and-faq">Troubleshooting and FAQ<a class="headerlink" href="#troubleshooting-and-faq" title="Permanent link">#</a></h1>
+<p>Most home-lab problems are one of about thirty problems wearing different costumes. This chapter is organised by <em>symptom</em>, because that is what you have at 11 p.m.: "the site says 502", "DNS stopped", "the container restarts forever". Each entry gives the fastest diagnostic, the usual causes ranked by likelihood, and the fix. The second half answers the questions that come up in every forum thread, once, with the reasoning.</p>
+<h2 id="a-method-before-the-list">A method before the list<a class="headerlink" href="#a-method-before-the-list" title="Permanent link">#</a></h2>
+<pre class="mermaid">flowchart TD
+    A[Something is broken] --&gt; B{What changed?&lt;br/&gt;update, reboot, new container, DHCP lease, cert renewal}
+    B --&gt; C{Which layer?}
+    C --&gt; D[Physical/power/host up?&lt;br/&gt;ping, SSH, console]
+    C --&gt; E[Network/DNS?&lt;br/&gt;dig, ip a, ss -tlnp]
+    C --&gt; F[Container/process?&lt;br/&gt;docker ps, logs, inspect]
+    C --&gt; G[Proxy/TLS?&lt;br/&gt;curl -vk, proxy logs]
+    C --&gt; H[App itself?&lt;br/&gt;app logs, healthcheck, DB]
+    D &amp; E &amp; F &amp; G &amp; H --&gt; I[Fix smallest thing, re-test, write it down]</pre>
+<p>Ten commands that solve half of everything:</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>ps<span class="w"> </span>-a<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;table {{.Names}}\t{{.Status}}\t{{.Ports}}&#39;</span><span class="w">   </span><span class="c1"># what&#39;s up, restarting, exited</span>
+docker<span class="w"> </span>logs<span class="w"> </span>--tail<span class="w"> </span><span class="m">200</span><span class="w"> </span>-f<span class="w"> </span>&lt;name&gt;<span class="w">                                  </span><span class="c1"># what it says</span>
+docker<span class="w"> </span>inspect<span class="w"> </span>&lt;name&gt;<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;{{json .State}}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w">              </span><span class="c1"># exit code, OOMKilled, error</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>/srv/stacks/x/compose.yaml<span class="w"> </span>config<span class="w">                </span><span class="c1"># what compose *actually* resolved (env, paths)</span>
+ss<span class="w"> </span>-tlnp<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s1">&#39;:(53|80|443)\b&#39;</span><span class="w">                                </span><span class="c1"># who owns the port</span>
+dig<span class="w"> </span>@127.0.0.1<span class="w"> </span>jellyfin.home.example.com<span class="w"> </span>+short<span class="w">                    </span><span class="c1"># does *my* resolver answer</span>
+curl<span class="w"> </span>-vk<span class="w"> </span>--resolve<span class="w"> </span>jellyfin.home.example.com:443:192.168.1.10<span class="w"> </span>https://jellyfin.home.example.com/<span class="w">   </span><span class="c1"># bypass DNS, test proxy+TLS</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>docker<span class="w"> </span>-b<span class="w"> </span>--no-pager<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-50<span class="w">                      </span><span class="c1"># daemon-level errors</span>
+df<span class="w"> </span>-h<span class="p">;</span><span class="w"> </span>df<span class="w"> </span>-i<span class="w">                                                       </span><span class="c1"># full disk / full inodes</span>
+free<span class="w"> </span>-h<span class="p">;</span><span class="w"> </span>dmesg<span class="w"> </span>-T<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-iE<span class="w"> </span><span class="s1">&#39;oom|killed process&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w">           </span><span class="c1"># memory pressure</span>
+</code></pre></div>
+<p>Always ask <strong>what changed</strong>. <code>docker image ls --format '{{.Repository}}:{{.Tag}} {{.CreatedSince}}'</code>, <code>last reboot</code>, <code>apt</code> history (<code>/var/log/apt/history.log</code>), Proxmox task log, Renovate/Watchtower notifications. Ninety percent of "it stopped working" is "something updated".</p>
+<h2 id="containers">Containers<a class="headerlink" href="#containers" title="Permanent link">#</a></h2>
+<h3 id="container-in-a-restart-loop-restarting-1">Container in a restart loop / <code>Restarting (1)</code><a class="headerlink" href="#container-in-a-restart-loop-restarting-1" title="Permanent link">#</a></h3>
+<ol>
+<li><code>docker logs --tail 100 &lt;name&gt;</code> — the error is almost always in the last 20 lines.</li>
+<li><strong>Permission denied on a volume</strong> → the process runs as a UID that can't write the bind-mount. Fix: <code>chown -R 1000:1000 /srv/appdata/&lt;app&gt;</code> (match <code>PUID/PGID</code> or <code>user:</code>), never <code>chmod 777</code>.</li>
+<li><strong>Bad env / missing required variable</strong> → <code>docker compose config</code> shows the resolved value; empty means your <code>.env</code> isn't where Compose looks (it reads <code>.env</code> from the <em>project directory</em>, not the shell's cwd, unless <code>--env-file</code>).</li>
+<li><strong>Port already allocated</strong> → <code>ss -tlnp</code> to find the squatter (often <code>systemd-resolved</code> on 53, Apache/nginx on 80, another stack).</li>
+<li><strong>DB not ready</strong> → app started before Postgres. Add <code>depends_on</code> with <code>condition: service_healthy</code> and a healthcheck on the DB.</li>
+<li><strong>OOMKilled</strong> → <code>docker inspect</code> shows <code>"OOMKilled": true</code>. Raise <code>mem_limit</code> or fix the leak (Immich ML, Nextcloud previews, Jellyfin transcoding to RAM).</li>
+<li><strong>Exec format error</strong> → wrong architecture image (ARM image on x86 or vice versa). Pin <code>platform: linux/amd64</code> or pick a multi-arch tag.</li>
+</ol>
+<h3 id="docker-compose-up-says-networkvolume-needs-to-be-recreated-or-already-exists"><code>docker compose up</code> says network/volume "needs to be recreated" or "already exists"<a class="headerlink" href="#docker-compose-up-says-networkvolume-needs-to-be-recreated-or-already-exists" title="Permanent link">#</a></h3>
+<p>You changed a network or volume definition; Compose won't destroy something it didn't create with the same labels. For external networks, <code>external: true</code> and create once: <code>docker network create proxy</code>. For a stuck volume, <code>docker compose down -v</code> <strong>deletes data</strong> — only if it's a named volume you're sure about. Prefer bind-mounts for data you care about, exactly so this can't bite.</p>
+<h3 id="container-cant-reach-another-container-by-name">Container can't reach another container by name<a class="headerlink" href="#container-cant-reach-another-container-by-name" title="Permanent link">#</a></h3>
+<ul>
+<li>They must share a <strong>user-defined</strong> network (the default <code>bridge</code> has no DNS). Check <code>docker network inspect proxy | jq '.[0].Containers[].Name'</code>.</li>
+<li>Compose prefixes networks with the project name; use <code>name: proxy</code> or <code>external: true</code> so all stacks refer to the same one.</li>
+<li>The name is the <em>service</em> or <code>container_name</code>; ports are the <strong>container's</strong> internal port, not the published one (<code>jellyfin:8096</code>, never <code>:443</code> or the host's <code>8097:8096</code> mapping).</li>
+<li><code>network_mode: host</code> containers aren't on any Docker network; reach them via the host IP.</li>
+</ul>
+<h3 id="container-can-reach-the-internet-but-not-the-lan-or-vice-versa">Container can reach the internet but not the LAN (or vice versa)<a class="headerlink" href="#container-can-reach-the-internet-but-not-the-lan-or-vice-versa" title="Permanent link">#</a></h3>
+<ul>
+<li>Docker's default bridge subnet (<code>172.17.0.0/16</code>) or a Compose network collides with your LAN/VPN (<code>172.16.x</code>, corporate VPNs love <code>172.x</code>). Set <code>default-address-pools</code> in <code>/etc/docker/daemon.json</code> to e.g. <code>10.200.0.0/16, size 24</code>, then <code>systemctl restart docker</code> and recreate networks.</li>
+<li><code>ufw</code> blocking: Docker punches its own iptables holes for <em>published</em> ports but outbound to LAN can hit <code>ufw</code> forward rules; set <code>DEFAULT_FORWARD_POLICY="ACCEPT"</code> or use the <code>DOCKER-USER</code> chain properly (<a href="../13-security/">Security</a>).</li>
+<li>Container needs to reach the <em>host</em>: use <code>host.docker.internal</code> with <code>extra_hosts: ["host.docker.internal:host-gateway"]</code>, or the bridge gateway IP.</li>
+</ul>
+<h3 id="published-port-unreachable-from-another-machine-but-works-on-the-host">Published port unreachable from another machine but works on the host<a class="headerlink" href="#published-port-unreachable-from-another-machine-but-works-on-the-host" title="Permanent link">#</a></h3>
+<ul>
+<li><code>ufw</code>/firewalld blocking; Docker bypasses <code>ufw</code> for <em>inbound</em> published ports normally — if you installed <code>ufw-docker</code>, rules are now needed.</li>
+<li>Bound to <code>127.0.0.1:8080:80</code> on purpose (good, if it's meant to be proxy-only).</li>
+<li>IPv6: published as <code>[::]:8080</code> but the client resolves the AAAA and your firewall treats v6 differently.</li>
+<li>VLAN/firewall between client and host (the router rules you wrote last week).</li>
+</ul>
+<h3 id="time-is-wrong-inside-the-container">Time is wrong inside the container<a class="headerlink" href="#time-is-wrong-inside-the-container" title="Permanent link">#</a></h3>
+<p>Containers share the host clock; a wrong <em>zone</em> is <code>TZ=Europe/Berlin</code> in env, or mount <code>/etc/localtime:ro</code>. Wrong <em>time</em> is the host: <code>timedatectl</code>, enable <code>systemd-timesyncd</code> or <code>chrony</code>. Wrong time breaks TLS, TOTP and Kerberos first.</p>
+<h3 id="disk-full-but-du-doesnt-show-it">Disk full, but <code>du</code> doesn't show it<a class="headerlink" href="#disk-full-but-du-doesnt-show-it" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>system<span class="w"> </span>df<span class="w"> </span>-v<span class="w">          </span><span class="c1"># images, build cache, volumes, logs</span>
+journalctl<span class="w"> </span>--disk-usage
+du<span class="w"> </span>-sh<span class="w"> </span>/var/lib/docker/containers/*/*-json.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-h<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w">   </span><span class="c1"># unrotated container logs</span>
+</code></pre></div>
+<p>Fixes: set log rotation in <code>daemon.json</code> (<code>"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}</code>), <code>docker image prune -a</code> (careful: it removes images for stopped containers too), <code>journalctl --vacuum-size=500M</code>, find the runaway app (Frigate recordings, Immich thumbnails, Nextcloud trash/versions, download clients). Inode exhaustion (<code>df -i</code>) is typically millions of tiny files in a cache dir.</p>
+<h3 id="gpu-hardware-transcoding-not-working">GPU / hardware transcoding not working<a class="headerlink" href="#gpu-hardware-transcoding-not-working" title="Permanent link">#</a></h3>
+<ul>
+<li><code>ls -l /dev/dri</code> on the host; the container needs <code>devices: [/dev/dri:/dev/dri]</code> <strong>and</strong> group access (<code>group_add: ["render"]</code> or the numeric GID from <code>getent group render</code>).</li>
+<li>Inside a Proxmox <strong>LXC</strong>: map the device with <code>dev0: /dev/dri/renderD128,gid=104</code> (or the legacy <code>lxc.cgroup2.devices.allow</code> + <code>lxc.mount.entry</code>). Inside a <strong>VM</strong>: you need full iGPU passthrough (no sharing) or SR-IOV on 12th-gen+ with the <code>i915-sriov-dkms</code> module.</li>
+<li>Intel: install <code>intel-media-va-driver-non-free</code> on the host for HEVC/AV1 on newer chips; check with <code>vainfo</code>.</li>
+<li>NVIDIA: <code>nvidia-container-toolkit</code> on the host, <code>runtime: nvidia</code> or <code>deploy.resources.reservations.devices</code>, <code>nvidia-smi</code> inside the container. Driver version mismatch after a host update is the number-one breakage.</li>
+<li>Jellyfin: Dashboard → Playback → confirm the codecs you ticked are actually supported (<code>/usr/lib/jellyfin-ffmpeg/vainfo</code>).</li>
+</ul>
+<h2 id="dns">DNS<a class="headerlink" href="#dns" title="Permanent link">#</a></h2>
+<h3 id="nothing-resolves-on-the-whole-network">Nothing resolves on the whole network<a class="headerlink" href="#nothing-resolves-on-the-whole-network" title="Permanent link">#</a></h3>
+<p>The single most user-visible failure. In order:</p>
+<ol>
+<li>Is the DNS box up and is the container running? <code>dig @192.168.1.10 example.com</code>.</li>
+<li>Port 53 stolen by <code>systemd-resolved</code> after a reboot/upgrade (<code>ss -ulnp | grep :53</code>). Disable the stub listener (<a href="../09-dns-adblock/">DNS &amp; ad blocking</a>).</li>
+<li>Upstream unreachable: AdGuard/Pi-hole returns SERVFAIL. Test upstream directly: <code>dig @1.1.1.1 example.com</code>. If Unbound is the upstream, check it (<code>unbound-control status</code>, its own port 5335/5353).</li>
+<li>Router still handing out the old DHCP DNS; clients cached it. <code>ipconfig /flushdns</code>, <code>resolvectl flush-caches</code>.</li>
+<li><strong>Prevention</strong>: two resolvers on two devices (Pi + main box), both in DHCP. A Pi-hole/AdGuard pair costs €50 and buys spousal approval.</li>
+</ol>
+<h3 id="local-names-homeexamplecom-work-on-lan-but-not-on-vpn-vice-versa">Local names (<code>*.home.example.com</code>) work on LAN but not on VPN / vice versa<a class="headerlink" href="#local-names-homeexamplecom-work-on-lan-but-not-on-vpn-vice-versa" title="Permanent link">#</a></h3>
+<ul>
+<li>Tailscale: set the tailnet DNS to your AdGuard IP (MagicDNS "override local DNS"), or add a <strong>split DNS</strong> entry for <code>home.example.com</code> → 192.168.1.10. Subnet routes must be advertised <strong>and approved</strong> in the admin console.</li>
+<li>WireGuard: <code>DNS = 192.168.1.10</code> in the client config and <code>AllowedIPs</code> covering the LAN.</li>
+<li>The resolver rewrite (<code>*.home.example.com → 192.168.1.10</code>) only exists on your resolver; anything not using it gets NXDOMAIN or the public IP. Public DNS having no record for the internal names is <em>correct</em>.</li>
+<li>Android "Private DNS" (DoT) set to a public provider silently bypasses your resolver; set it to off/automatic or point it at your own DoT endpoint.</li>
+</ul>
+<h3 id="ad-blocking-works-but-some-devices-ignore-it">Ad blocking works, but some devices ignore it<a class="headerlink" href="#ad-blocking-works-but-some-devices-ignore-it" title="Permanent link">#</a></h3>
+<p>Hard-coded DNS (Chromecast, Roku, some smart TVs use <code>8.8.8.8</code>), DoH in the browser (Firefox/Chrome "secure DNS"), IPv6 router advertisements handing out the ISP's resolver. Fixes: firewall rule redirecting all LAN port 53 to your resolver (NAT redirect) and blocking outbound 853; disable browser DoH via the canary domain <code>use-application-dns.net</code> (AdGuard/Pi-hole do this automatically); set RDNSS in the router or turn off IPv6 DNS advertisement.</p>
+<h3 id="dig-works-browser-doesnt"><code>dig</code> works, browser doesn't<a class="headerlink" href="#dig-works-browser-doesnt" title="Permanent link">#</a></h3>
+<p>Browser DoH (above), HSTS cache (you once visited the public name over HTTPS with a different cert), or the browser resolves via a different interface (VPN split tunnel). <code>chrome://net-internals/#dns</code> → clear host cache; <code>about:networking#dns</code> in Firefox.</p>
+<h2 id="reverse-proxy-and-tls">Reverse proxy and TLS<a class="headerlink" href="#reverse-proxy-and-tls" title="Permanent link">#</a></h2>
+<h3 id="502-bad-gateway">502 Bad Gateway<a class="headerlink" href="#502-bad-gateway" title="Permanent link">#</a></h3>
+<p>The proxy is fine; it can't reach the backend.</p>
+<ul>
+<li>Backend container down → <code>docker ps</code>.</li>
+<li>Wrong internal port (see above); wrong scheme (backend speaks HTTPS: Proxmox <code>:8006</code>, Unifi <code>:8443</code>, Portainer <code>:9443</code> → <code>reverse_proxy https://…</code> with <code>tls_insecure_skip_verify</code>/<code>serversTransport.insecureSkipVerify</code>).</li>
+<li>Not on the same Docker network as the proxy → Traefik logs <code>no such host</code>; Caddy logs <code>dial tcp: lookup jellyfin</code>.</li>
+<li>Traefik with multiple networks on the container: set <code>traefik.docker.network=proxy</code> (or the global <code>providers.docker.network</code>), otherwise it picks the wrong IP.</li>
+<li>Backend binds to <code>127.0.0.1</code> inside the container (some apps default to localhost; set <code>HOST=0.0.0.0</code> or the app's equivalent).</li>
+</ul>
+<h3 id="404-from-the-proxy-itself">404 from the proxy itself<a class="headerlink" href="#404-from-the-proxy-itself" title="Permanent link">#</a></h3>
+<p>Traefik: no router matched — label typo, missing <code>traefik.enable=true</code> with <code>exposedByDefault=false</code>, or rule syntax (<code>Host(\</code>x`)<code>needs backticks). Check the dashboard. Caddy: no matching site block;</code>caddy validate` and look for the catch-all handler.</p>
+<h3 id="certificate-errors">Certificate errors<a class="headerlink" href="#certificate-errors" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"TRAEFIK DEFAULT CERT" / self-signed</td>
+<td>ACME failed; proxy fell back</td>
+<td>Read the proxy log for the ACME error; below</td>
+</tr>
+<tr>
+<td>DNS-01 fails: "propagation" or <code>NXDOMAIN _acme-challenge</code></td>
+<td>API token lacks zone-edit permission; wrong zone; provider's DNS is slow</td>
+<td>Traefik: <code>delayBeforeCheck</code> and <code>resolvers=1.1.1.1:53</code>; Caddy: <code>propagation_timeout</code>; verify token scopes</td>
+</tr>
+<tr>
+<td>DNS-01 fails with split-horizon</td>
+<td>Your local resolver answers for <code>example.com</code> and knows nothing about <code>_acme-challenge</code></td>
+<td>Make the ACME client use public resolvers (above) or don't override the whole zone — rewrite only <code>*.home.example.com</code></td>
+</tr>
+<tr>
+<td>HTTP-01 fails</td>
+<td>Port 80 not reachable from the internet (CGNAT, no forward, ISP blocks 80)</td>
+<td>Use DNS-01</td>
+</tr>
+<tr>
+<td>Rate limited</td>
+<td>Recreated the stack too many times; 5 duplicate certs/week per exact name set</td>
+<td>Wait a week, or use the staging CA while debugging; <strong>persist <code>acme.json</code>/Caddy's <code>/data</code></strong></td>
+</tr>
+<tr>
+<td>Works in browser, fails in an app (Bitwarden mobile, Immich app, Home Assistant companion)</td>
+<td>App doesn't like the Let's Encrypt chain? Rare now. Usually the app is hitting the <em>public</em> name from mobile data where the name doesn't resolve</td>
+<td>Check the hostname you configured in the app, and that the name resolves where the phone is</td>
+</tr>
+<tr>
+<td><code>NET::ERR_CERT_COMMON_NAME_INVALID</code> on <code>sub.sub.home.example.com</code></td>
+<td>Wildcard covers only <strong>one</strong> level</td>
+<td>Flatten names or add a second SAN <code>*.sub.home.example.com</code></td>
+</tr>
+<tr>
+<td>Cert renewed but clients still see the old one</td>
+<td>Proxy needs a reload (Traefik/Caddy do it automatically; nginx does not)</td>
+<td><code>nginx -s reload</code>, or NPM restart</td>
+</tr>
+</tbody>
+</table>
+<h3 id="redirect-loop-too-many-redirects">Redirect loop / "too many redirects"<a class="headerlink" href="#redirect-loop-too-many-redirects" title="Permanent link">#</a></h3>
+<p>Backend thinks it's on HTTP and redirects to HTTPS while the proxy terminated TLS already. Tell the app it is behind a proxy: Nextcloud <code>OVERWRITEPROTOCOL=https</code> + <code>trusted_proxies</code>; WordPress <code>$_SERVER['HTTPS']='on'</code>; Django <code>SECURE_PROXY_SSL_HEADER</code>; Grafana <code>GF_SERVER_ROOT_URL</code>. Make sure the proxy passes <code>X-Forwarded-Proto</code> (Traefik/Caddy do by default).</p>
+<h3 id="websockets-dont-work-live-logs-home-assistant-jellyfin-dashboard-vaultwarden-notifications">WebSockets don't work (live logs, Home Assistant, Jellyfin dashboard, Vaultwarden notifications)<a class="headerlink" href="#websockets-dont-work-live-logs-home-assistant-jellyfin-dashboard-vaultwarden-notifications" title="Permanent link">#</a></h3>
+<p>Caddy and Traefik pass WebSockets automatically. nginx/NPM need <code>proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";</code> (NPM: the "Websockets Support" toggle). Cloudflare proxied: fine; Cloudflare Tunnel: fine; some corporate proxies: not fine.</p>
+<h3 id="uploads-fail-at-exactly-100-mb-1-mb">Uploads fail at exactly 100 MB / 1 MB<a class="headerlink" href="#uploads-fail-at-exactly-100-mb-1-mb" title="Permanent link">#</a></h3>
+<p>Body size limits: Cloudflare free (100 MB), NPM/nginx <code>client_max_body_size</code> (default 1 MB!), Traefik has none by default, Caddy <code>request_body max_size</code>. Then the app's own limit (Nextcloud <code>PHP_UPLOAD_LIMIT</code>, Immich none, Paperless none).</p>
+<h3 id="real-client-ips-show-as-the-proxys-ip">Real client IPs show as the proxy's IP<a class="headerlink" href="#real-client-ips-show-as-the-proxys-ip" title="Permanent link">#</a></h3>
+<p>Pass <code>X-Forwarded-For</code>/<code>X-Real-IP</code> and tell the app to trust the proxy's subnet (Nextcloud <code>TRUSTED_PROXIES</code>, Vaultwarden <code>IP_HEADER</code>, Immich reads <code>X-Forwarded-For</code> automatically, Authelia/Authentik need it for geo rules). Behind Cloudflare, trust Cloudflare's IP ranges and use <code>CF-Connecting-IP</code>. CrowdSec decisions on the wrong IP = you banned your own proxy; check this first when <em>everything</em> is suddenly 403.</p>
+<h2 id="remote-access-and-vpn">Remote access and VPN<a class="headerlink" href="#remote-access-and-vpn" title="Permanent link">#</a></h2>
+<h3 id="tailscale-connects-but-cant-reach-lan-devices">Tailscale connects but can't reach LAN devices<a class="headerlink" href="#tailscale-connects-but-cant-reach-lan-devices" title="Permanent link">#</a></h3>
+<p>Subnet router: <code>tailscale up --advertise-routes=192.168.1.0/24</code> <strong>and</strong> approve the route in the admin console (or use autoApprovers in the ACL). On Linux routers, enable forwarding (<code>net.ipv4.ip_forward=1</code>, <code>net.ipv6.conf.all.forwarding=1</code>). Clients on Linux need <code>--accept-routes</code>. If it's a Docker container acting as subnet router, it needs <code>network_mode: host</code> or <code>cap_add: NET_ADMIN</code> + <code>/dev/net/tun</code>.</p>
+<h3 id="tailscale-is-slow-shows-relayed-derp">Tailscale is slow / shows "relayed" (DERP)<a class="headerlink" href="#tailscale-is-slow-shows-relayed-derp" title="Permanent link">#</a></h3>
+<p>Direct connection failed; both sides behind hard NAT (CGNAT, symmetric NAT, some 5G). Fix one end: forward UDP 41641 to the home node, or enable UPnP/NAT-PMP on the router, or run your own DERP. <code>tailscale netcheck</code> and <code>tailscale ping &lt;peer&gt;</code> show what's happening. IPv6 on both ends usually fixes it.</p>
+<h3 id="wireguard-handshake-never-completes">WireGuard handshake never completes<a class="headerlink" href="#wireguard-handshake-never-completes" title="Permanent link">#</a></h3>
+<p>99 % one of: wrong public key pasted (each side needs the <em>other's</em> public key), <code>Endpoint</code> unreachable (CGNAT, port not forwarded, DDNS stale), clock skew &gt; a few minutes, <code>AllowedIPs</code> on the server missing the client's tunnel IP. <code>wg show</code> on the server: if <code>latest handshake</code> never appears, packets aren't arriving — <code>tcpdump -ni any udp port 51820</code>. MTU issues (<code>MTU = 1280</code> fixes many mobile-network problems) show as "handshake fine, traffic dies".</p>
+<h3 id="im-behind-cgnat">I'm behind CGNAT<a class="headerlink" href="#im-behind-cgnat" title="Permanent link">#</a></h3>
+<p>Check: the router's WAN IP is in <code>100.64.0.0/10</code> or differs from <code>curl ifconfig.me</code>. Options: ask the ISP for a public IPv4 (often free or a couple of euros), use IPv6 if you have it, Tailscale/NetBird (no inbound needed), Pangolin/Cloudflare Tunnel on a VPS for public services. Port forwarding will <em>never</em> work; stop trying.</p>
+<h3 id="cloudflare-tunnel-502error-code-1033origin-unreachable">Cloudflare Tunnel: 502/<code>error code 1033</code>/"origin unreachable"<a class="headerlink" href="#cloudflare-tunnel-502error-code-1033origin-unreachable" title="Permanent link">#</a></h3>
+<p><code>cloudflared</code> can't reach the service URL you configured — it's the same as a proxy 502: use the Docker service name and <em>internal</em> port if <code>cloudflared</code> is in the same network; <code>http://localhost</code> only works with <code>network_mode: host</code>. For HTTPS origins with self-signed certs, enable "No TLS Verify" in the tunnel's TLS settings.</p>
+<h2 id="storage">Storage<a class="headerlink" href="#storage" title="Permanent link">#</a></h2>
+<h3 id="zfs-pool-degraded-a-disk-shows-faulted">ZFS pool DEGRADED / a disk shows FAULTED<a class="headerlink" href="#zfs-pool-degraded-a-disk-shows-faulted" title="Permanent link">#</a></h3>
+<p><code>zpool status -v</code>. If a disk is <code>FAULTED</code> with read/write/cksum errors, check SMART (<code>smartctl -a /dev/sdX</code>), cables first (SATA cables cause more "disk failures" than disks). Replace: <code>zpool replace tank &lt;old&gt; &lt;new&gt;</code>; watch <code>zpool status</code> for resilver. Checksum errors with a healthy disk → RAM (run memtest), controller, or cable. <strong>Do not</strong> <code>zpool clear</code> and forget; note the disk. Scrub after resilver.</p>
+<h3 id="zfs-cannot-import-pool-pool-was-previously-in-use-from-another-system">ZFS: "cannot import pool: pool was previously in use from another system"<a class="headerlink" href="#zfs-cannot-import-pool-pool-was-previously-in-use-from-another-system" title="Permanent link">#</a></h3>
+<p><code>zpool import -f tank</code>. After a hostname change or moving disks between machines this is normal.</p>
+<h3 id="zfsproxmox-ram-full">ZFS/Proxmox: RAM "full"<a class="headerlink" href="#zfsproxmox-ram-full" title="Permanent link">#</a></h3>
+<p>ARC. <code>arc_summary</code> or <code>cat /proc/spl/kstat/zfs/arcstats | grep -E '^(size|c_max)'</code>. Cap it in <code>/etc/modprobe.d/zfs.conf</code>: <code>options zfs zfs_arc_max=8589934592</code> (8 GiB) then <code>update-initramfs -u</code> and reboot. Used-by-ARC memory is released under pressure, but VMs' balloon drivers and OOM heuristics don't always wait.</p>
+<h3 id="smb-share-slow-nfs-hangs">SMB share slow / NFS hangs<a class="headerlink" href="#smb-share-slow-nfs-hangs" title="Permanent link">#</a></h3>
+<ul>
+<li>SMB: check <code>smb.conf</code> for <code>server multi channel support = yes</code> on 2.5/10 GbE; disable <code>strict sync</code> for media; macOS needs <code>vfs objects = fruit streams_xattr</code>; Windows Explorer thumbnails hammer the share (<code>veto files</code> for <code>Thumbs.db</code>).</li>
+<li>NFS "hang": server went away with <code>hard</code> mounts (correct behaviour — it waits). <code>umount -f -l</code>; use <code>soft,timeo=…</code> only for non-critical mounts, or systemd automount so a dead NAS doesn't wedge boot (<code>x-systemd.automount,_netdev,nofail</code>).</li>
+<li>Permissions: NFSv4 with <code>all_squash,anonuid=1000,anongid=1000</code> for a home lab, or map UIDs consistently across hosts.</li>
+</ul>
+<h3 id="docker-on-zfs-many-datasets-slow-docker-pull">Docker on ZFS: many datasets / slow <code>docker pull</code><a class="headerlink" href="#docker-on-zfs-many-datasets-slow-docker-pull" title="Permanent link">#</a></h3>
+<p>Docker's <code>zfs</code> storage driver creates a dataset per layer. Use <code>overlay2</code> on a plain dataset instead: put <code>/var/lib/docker</code> on a ZFS dataset and set <code>"storage-driver": "overlay2"</code> in <code>daemon.json</code> (works on ZFS 2.2+ with overlayfs support). In an LXC on Proxmox the same applies; keyctl/nesting features must be enabled.</p>
+<h3 id="btrfs-no-space-left-on-device-with-free-space-showing">Btrfs: "No space left on device" with free space showing<a class="headerlink" href="#btrfs-no-space-left-on-device-with-free-space-showing" title="Permanent link">#</a></h3>
+<p>Metadata exhausted or unbalanced chunks. <code>btrfs filesystem usage /</code>; <code>btrfs balance start -dusage=50 /</code>. Enable the periodic balance via <code>btrfsmaintenance</code>.</p>
+<h3 id="disk-is-cmr-or-smr">Disk is CMR or SMR?<a class="headerlink" href="#disk-is-cmr-or-smr" title="Permanent link">#</a></h3>
+<p><code>smartctl -a /dev/sdX | grep -i 'rotation\|TRIM'</code> — SMR drives often report <code>TRIM Command: Available</code>. Better: check the manufacturer's model list (WD Red <em>non-Plus</em> 2–6 TB and many 2.5" drives are SMR). SMR in a ZFS resilver = days, or a failed resilver.</p>
+<h2 id="proxmox">Proxmox<a class="headerlink" href="#proxmox" title="Permanent link">#</a></h2>
+<h3 id="vm-wont-start-task-error-kvm-device-vfio-pci-passthrough">VM won't start: "TASK ERROR: ... kvm: -device vfio-pci ... " (passthrough)<a class="headerlink" href="#vm-wont-start-task-error-kvm-device-vfio-pci-passthrough" title="Permanent link">#</a></h3>
+<p>IOMMU not enabled (<code>intel_iommu=on iommu=pt</code> / <code>amd_iommu=on</code> in GRUB or systemd-boot cmdline, then <code>update-grub</code>/<code>proxmox-boot-tool refresh</code>), device still bound to the host driver (blacklist <code>i915</code>/<code>nouveau</code>/<code>amdgpu</code>, or <code>vfio-pci.ids=</code>), or the device isn't in its own IOMMU group (<code>pvesh get /nodes/&lt;node&gt;/hardware/pci --pci-class-blacklist ""</code> shows groups; ACS override is a last resort).</p>
+<h3 id="lxc-cant-run-docker-permission-errors-on-bind-mounts">LXC: can't run Docker / permission errors on bind mounts<a class="headerlink" href="#lxc-cant-run-docker-permission-errors-on-bind-mounts" title="Permanent link">#</a></h3>
+<p>Unprivileged LXC needs <code>features: nesting=1,keyctl=1</code>. Bind-mount ownership: UIDs are shifted by 100000 in unprivileged containers — either <code>chown 101000:101000</code> on the host or add an idmap in the CT config. Running Docker in LXC is unsupported by Proxmox (works, but a Docker VM is the recommendation).</p>
+<h3 id="cluster-node-shows-with-a-red-x-no-quorum">Cluster: node shows with a red X / "no quorum"<a class="headerlink" href="#cluster-node-shows-with-a-red-x-no-quorum" title="Permanent link">#</a></h3>
+<p>Two-node cluster with one down = no quorum by design. Add a <strong>QDevice</strong> (<code>pvecm qdevice setup &lt;ip&gt;</code> with <code>corosync-qnetd</code> on a Pi) or temporarily <code>pvecm expected 1</code> to operate. Corosync wants low latency; don't run it over Wi-Fi or a saturated link — a busy backup on the same NIC as corosync is a classic cause of flapping nodes.</p>
+<h3 id="backups-slow-pbs-chunk-verification-failed">Backups slow / PBS "chunk verification failed"<a class="headerlink" href="#backups-slow-pbs-chunk-verification-failed" title="Permanent link">#</a></h3>
+<p>Slow: PBS datastore on HDD without a special device — add a small SSD mirror as ZFS <code>special</code> vdev, or enable <code>dirty-bitmap</code> (default for running VMs; a shutdown resets it). Verification failures: bad disk or RAM on the PBS host; re-run verify, check SMART, scrub the pool.</p>
+<h3 id="web-ui-unreachable-after-network-change">Web UI unreachable after network change<a class="headerlink" href="#web-ui-unreachable-after-network-change" title="Permanent link">#</a></h3>
+<p><code>/etc/network/interfaces</code> typo — you still have the console. <code>ifreload -a</code> after fixing. Also <code>/etc/hosts</code> must resolve the node name to the <em>cluster</em> IP or pve services misbehave.</p>
+<h2 id="applications">Applications<a class="headerlink" href="#applications" title="Permanent link">#</a></h2>
+<h3 id="nextcloud-slow-maintenance-mode-or-untrusted-domain">Nextcloud: slow, "maintenance mode", or "untrusted domain"<a class="headerlink" href="#nextcloud-slow-maintenance-mode-or-untrusted-domain" title="Permanent link">#</a></h3>
+<ul>
+<li>Untrusted domain: <code>occ config:system:set trusted_domains 1 --value=cloud.home.example.com</code>.</li>
+<li>Maintenance mode stuck: <code>occ maintenance:mode --off</code>; after upgrades run <code>occ upgrade</code>, <code>occ db:add-missing-indices</code>, <code>occ maintenance:repair --include-expensive</code>.</li>
+<li>Slow: no Redis (<code>memcache.local</code> = APCu, <code>memcache.locking</code> = Redis), cron via <code>nextcloud-cron</code> container instead of AJAX, PHP <code>memory_limit</code> ≥ 512 M, <code>opcache.interned_strings_buffer=16</code>, HTTP/2 on the proxy, and previews pre-generated (<code>preview:pre-generate</code>). Nextcloud AIO handles most of this for you.</li>
+<li>Desktop client "connection closed": body size limit on the proxy, or Cloudflare's 100 MB.</li>
+</ul>
+<h3 id="immich-app-cant-upload-server-offline-ml-never-finishes">Immich: app can't upload / "server offline" / ML never finishes<a class="headerlink" href="#immich-app-cant-upload-server-offline-ml-never-finishes" title="Permanent link">#</a></h3>
+<ul>
+<li>Mobile: the server URL must be reachable from <em>mobile data</em> (so Tailscale on the phone, or public exposure). Background upload on iOS is limited by the OS; keep the app open for the first big import.</li>
+<li>After an update, migration errors: check release notes; pin <code>IMMICH_VERSION</code>; <strong>never</strong> run <code>:latest</code> for the DB image; the Postgres image must match the pgvecto.rs/VectorChord version Immich expects.</li>
+<li>ML jobs at 0 %: the <code>immich-machine-learning</code> container is OOM-killed or can't download models (no internet, or set <code>MACHINE_LEARNING_*</code> cache mount). Smart search re-indexing after changing the CLIP model takes hours — normal.</li>
+</ul>
+<h3 id="jellyfin-buffering-playback-error-or-transcoding-when-it-shouldnt">Jellyfin: buffering, "playback error", or transcoding when it shouldn't<a class="headerlink" href="#jellyfin-buffering-playback-error-or-transcoding-when-it-shouldnt" title="Permanent link">#</a></h3>
+<ul>
+<li>Direct play requires the client to support the codec <strong>and</strong> container <strong>and</strong> subtitle format; burnt-in PGS/ASS subtitles force transcoding. Use SRT subs or a client that supports the format (Jellyfin Media Player, Infuse, Kodi).</li>
+<li>Bitrate limit in the client set low (defaults to 20 Mbps on some).</li>
+<li>Transcode dir on a slow/full disk; move to <code>tmpfs</code> or SSD.</li>
+<li>HW transcoding not actually active → Dashboard → Active devices shows "(hw)" only if it worked; see the GPU section.</li>
+</ul>
+<h3 id="vaultwarden-clients-wont-log-in-failed-to-fetch">Vaultwarden: clients won't log in / "Failed to fetch"<a class="headerlink" href="#vaultwarden-clients-wont-log-in-failed-to-fetch" title="Permanent link">#</a></h3>
+<p>The <code>DOMAIN</code> env must match exactly the URL the client uses (including https). WebSocket notifications need the proxy to pass <code>/notifications/hub</code>. If the browser extension works and the mobile app doesn't, the certificate chain or name resolution from mobile data is the issue. Backups: <code>db.sqlite3</code> <strong>plus</strong> <code>attachments/</code>, <code>sends/</code>, <code>rsa_key*</code>.</p>
+<h3 id="home-assistant-400-bad-request-behind-a-proxy">Home Assistant: "400 Bad Request" behind a proxy<a class="headerlink" href="#home-assistant-400-bad-request-behind-a-proxy" title="Permanent link">#</a></h3>
+<p>Add to <code>configuration.yaml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">http</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">use_x_forwarded_for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">trusted_proxies</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.16.0.0/12</span><span class="w">     </span><span class="c1"># or your proxy&#39;s subnet / Docker network</span>
+</code></pre></div>
+<p>Companion app "unable to connect": internal URL vs external URL; set both in the app, and make sure the internal SSID list is right.</p>
+<h3 id="paperless-ngx-consumption-folder-ignores-files">Paperless-ngx: consumption folder ignores files<a class="headerlink" href="#paperless-ngx-consumption-folder-ignores-files" title="Permanent link">#</a></h3>
+<p><code>PAPERLESS_CONSUMER_POLLING=30</code> when the folder is a network mount (inotify doesn't work over NFS/SMB). Permission: the consumer runs as <code>USERMAP_UID</code>. Duplicate detection silently skips identical files (check "Duplicates" in logs).</p>
+<h3 id="autheliaauthentikpocket-id-redirect-loop-or-invalid-redirect-uri">Authelia/Authentik/Pocket ID: redirect loop or "invalid redirect_uri"<a class="headerlink" href="#autheliaauthentikpocket-id-redirect-loop-or-invalid-redirect-uri" title="Permanent link">#</a></h3>
+<p>Redirect URI in the IdP must match <strong>exactly</strong> what the app sends (scheme, host, path, trailing slash). Clock skew between IdP and app (&gt; 30 s) breaks token validation. Cookie domain: forward-auth needs the IdP and the apps under the same parent domain (<code>home.example.com</code>) or a session domain setting. <code>TRUST_PROXY</code> / <code>X-Forwarded-*</code> headers must reach the IdP or it generates <code>http://</code> URLs.</p>
+<h2 id="hardware-and-host">Hardware and host<a class="headerlink" href="#hardware-and-host" title="Permanent link">#</a></h2>
+<h3 id="random-reboots-freezes">Random reboots / freezes<a class="headerlink" href="#random-reboots-freezes" title="Permanent link">#</a></h3>
+<p>RAM (memtest86+ overnight), PSU (undersized after adding disks/GPU), C-states on some Intel boards (add <code>intel_idle.max_cstate=1</code> or disable C6 in BIOS — common on N100 boxes and older Atoms), thermal (check <code>sensors</code>, dust), a USB device (external HDD enclosures with flaky power), or kernel + driver issue (Realtek 2.5 GbE <code>r8169</code>/<code>r8125</code> — install the <code>r8125-dkms</code> driver).</p>
+<h3 id="high-idle-power">High idle power<a class="headerlink" href="#high-idle-power" title="Permanent link">#</a></h3>
+<p>BIOS: enable ASPM, C-states, disable unused controllers; Linux: <code>powertop --auto-tune</code> then make the tunables permanent; avoid HBA/RAID cards and 10 GbE copper NICs that block package C-states (<code>powertop</code> shows the deepest reached state). Spin down idle HDDs (<code>hdparm -S</code> or <code>hd-idle</code>) <em>only</em> on media pools, never on ZFS pools with periodic writes.</p>
+<h3 id="usb-drive-disappears-renames-from-sda-to-sdb">USB drive disappears / renames from <code>sda</code> to <code>sdb</code><a class="headerlink" href="#usb-drive-disappears-renames-from-sda-to-sdb" title="Permanent link">#</a></h3>
+<p>Never mount by <code>/dev/sdX</code>; use <code>/dev/disk/by-uuid/</code> or <code>by-id/</code> in <code>fstab</code> with <code>nofail</code>. Enclosure power management: <code>usbcore.autosuspend=-1</code> on the kernel cmdline; UAS quirks for some chipsets (<code>usb-storage.quirks=VID:PID:u</code>).</p>
+<h3 id="boot-hangs-on-a-missing-network-mount-a-start-job-is-running-for">Boot hangs on a missing network mount / "A start job is running for …"<a class="headerlink" href="#boot-hangs-on-a-missing-network-mount-a-start-job-is-running-for" title="Permanent link">#</a></h3>
+<p>Add <code>nofail,x-systemd.automount,_netdev</code> to network mounts; <code>nofail</code> on any disk that isn't the root.</p>
+<h3 id="smart-says-the-drive-is-fine-but">SMART says the drive is fine, but…<a class="headerlink" href="#smart-says-the-drive-is-fine-but" title="Permanent link">#</a></h3>
+<p>SMART "PASSED" is a low bar. Watch attributes 5 (Reallocated), 187 (Reported Uncorrectable), 188 (Command Timeout), 197 (Pending), 198 (Offline Uncorrectable). Any non-zero <em>and rising</em> 197/198 means replace. Run <code>smartd</code> with email/ntfy notifications and a monthly long test (<a href="../28-maintenance-operations/">Maintenance</a>).</p>
+<hr />
+<h2 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">#</a></h2>
+<p><strong>Do I need a domain name?</strong>
+For local-only with self-signed certs, no. For trusted TLS certificates via Let's Encrypt (which also makes phones and apps happy), yes — around €5–15/year. A domain on a registrar with an API (Cloudflare, Porkbun, deSEC, Hetzner) enables DNS-01 wildcard certificates with zero open ports. <code>.home.arpa</code> and <code>.internal</code> are the correct choices for purely private names <em>without</em> public certificates.</p>
+<p><strong>Should I use <code>.local</code>?</strong>
+No. <code>.local</code> is reserved for mDNS and resolvers treat it specially; you'll chase odd resolution failures. Use <code>home.arpa</code>, <code>internal</code>, or a subdomain of a real domain.</p>
+<p><strong>Is it safe to expose services to the internet?</strong>
+Safe enough if you: keep only a proxy on 443 (or use a tunnel), put an IdP/SSO or at least 2FA in front of anything that isn't designed to be public, run CrowdSec/fail2ban, update promptly, and don't expose management UIs (Proxmox, routers, Portainer, Docker socket) ever. Safer still: don't expose at all and use Tailscale/WireGuard. Only expose what <em>needs</em> to be reachable by people who can't run a VPN (<a href="../08-remote-access-vpn/">Remote access</a>, <a href="../13-security/">Security</a>).</p>
+<p><strong>Is port forwarding "insecure"?</strong>
+Forwarding 443 to a well-maintained reverse proxy is fine — it's what every website does. What's insecure is forwarding <em>many</em> ports to <em>many</em> apps, each with its own auth and patch cadence, or forwarding SSH/RDP/admin ports.</p>
+<p><strong>Cloudflare Tunnel vs Tailscale vs Pangolin vs WireGuard?</strong>
+Tailscale/WireGuard for <em>you and your family</em> (no public exposure); Pangolin or Cloudflare Tunnel for <em>the public</em> (grandma clicks a link). Cloudflare Tunnel: easiest, free, but Cloudflare decrypts your traffic and its ToS discourages video streaming; Pangolin: self-hosted equivalent on a €4 VPS, you hold the keys (<a href="../08-remote-access-vpn/">Remote access</a>).</p>
+<p><strong>Proxmox or bare-metal Docker?</strong>
+One box, want simplicity, comfortable rebuilding from Compose files: bare Debian + Docker. Want snapshots before upgrades, Home Assistant OS, isolation of experiments, or PBS backups of whole systems: Proxmox with a Docker VM. Most people who start with bare metal end up on Proxmox within a year; the reverse migration is rare (<a href="../04-os-and-hypervisors/">OS &amp; hypervisors</a>).</p>
+<p><strong>Docker or Podman or Kubernetes?</strong>
+Docker Compose is the lingua franca — every project ships a compose file. Podman is a fine drop-in if you value rootless and daemonless (Quadlet is genuinely nice). Kubernetes (k3s/Talos) at home is a <em>learning</em> choice, not an operational one (<a href="../05-containers/">Containers</a>).</p>
+<p><strong>ZFS or Btrfs or ext4 or MergerFS+SnapRAID?</strong>
+ZFS for anything you can't lose and want checksummed, snapshotted and replicated; it wants RAM and same-size disks. Btrfs if you want ZFS-like features with mixed disks and don't run RAID5/6. ext4/XFS for scratch and appliances. MergerFS + SnapRAID for large, mostly-static media on mixed-size disks that you'd rather spin down (<a href="../06-storage/">Storage</a>).</p>
+<p><strong>How much RAM do I need?</strong>
+16 GB runs ten typical services comfortably. 32 GB removes thinking about it. 64 GB is for Proxmox with several VMs plus ZFS ARC. RAM is cheap; buy the second stick.</p>
+<p><strong>Do I need ECC?</strong>
+Nice, not necessary. Non-ECC ZFS is still far safer than non-ECC ext4; the "scrub of death" is a myth. If the platform supports ECC cheaply (AMD Pro APUs, used Xeon/EPYC, some Alder Lake boards), take it (<a href="../02-hardware/">Hardware</a>).</p>
+<p><strong>RAID is a backup, right?</strong>
+No. RAID/RAIDZ/mirrors protect against <em>disk failure</em>. They replicate deletions, ransomware and corruption instantly. Snapshots protect against oops. Backups (off-machine, off-site, tested) protect against everything else (<a href="../11-backups/">Backups</a>).</p>
+<p><strong>Should I auto-update containers?</strong>
+For stateless/low-risk images with good semver (proxy, DNS, dashboards), yes, with notifications. For anything with a database or migrations (Immich, Nextcloud, Paperless, Home Assistant), no — pin versions, read release notes, update deliberately after a snapshot/backup. Renovate/Diun/Watchtower-in-monitor-mode tell you what's available (<a href="../28-maintenance-operations/">Maintenance</a>).</p>
+<p><strong><code>latest</code> tag or pinned?</strong>
+Pin major (or exact) versions for anything stateful, use Renovate to bump them via PRs. <code>latest</code> is fine for tools you'd redeploy from scratch anyway.</p>
+<p><strong>How do I share Jellyfin/Immich with family who won't install a VPN?</strong>
+Public exposure of <em>that one app</em> through Pangolin or Cloudflare Tunnel, with the app's native login plus rate limiting/CrowdSec. Jellyfin has no 2FA — put it behind an auth proxy with a "media-users" group, or accept the risk with strong passwords. Jellyfin over Cloudflare Tunnel violates the ToS spirit; Pangolin doesn't.</p>
+<p><strong>Self-host email?</strong>
+Almost certainly not as your primary. Deliverability (IP reputation, DKIM/DMARC/SPF, blocklists, residential IP ranges being blanket-blocked) is a full-time job. A €2–5/month provider (Migadu, Fastmail, mailbox.org, Purelymail) with your own domain gives you the portability benefit. If you must, do it on a clean VPS with Mailcow/Stalwart and keep the home lab as archive/backup MX (<a href="../20-communication/">Communication</a>).</p>
+<p><strong>How much does this cost per month?</strong>
+Starter: €2–4 electricity (10 W ≈ 7 kWh) + ~€1 domain + €1–3 B2. Intermediate: €8–15 electricity + €4 VPS (optional) + €3–5 B2. Advanced: €25–60 electricity + VPS + storage. Compare against the subscriptions you're replacing — and be honest that the <em>time</em> is the real cost (<a href="../29-power-cost-environment/">Power, cost &amp; environment</a>).</p>
+<p><strong>What happens when I'm not around / the "bus factor"?</strong>
+Document the break-glass sheet, keep the household on services that degrade gracefully (Bitwarden clients cache the vault; Immich phones keep originals; Jellyfin is entertainment), and choose a "shutdown plan": how someone exports the photos and passwords if the lab is abandoned. See <a href="../01-planning/">Planning</a>.</p>
+<p><strong>Where do I ask for help?</strong>
+Read the project's docs and GitHub issues first (search the exact error string). Then the communities in <a href="../33-resources-community/">Resources &amp; community</a>. Post: what you expected, what happened, exact error, compose file (secrets redacted), <code>docker logs</code> tail, what you already tried, what changed recently. Half the time, writing that out reveals the answer.</p>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../31-reference-architectures/">← 31. Reference Architectures</a><a class="next" href="../33-resources-community/">33. Resources and Community →</a></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/32-troubleshooting-faq.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#a-method-before-the-list">A method before the list</a></li>
+<li><a href="#containers">Containers</a><ul>
+<li><a href="#container-in-a-restart-loop-restarting-1">Container in a restart loop / Restarting (1)</a></li>
+<li><a href="#docker-compose-up-says-networkvolume-needs-to-be-recreated-or-already-exists">docker compose up says network/volume "needs to be recreated" or "already exists"</a></li>
+<li><a href="#container-cant-reach-another-container-by-name">Container can't reach another container by name</a></li>
+<li><a href="#container-can-reach-the-internet-but-not-the-lan-or-vice-versa">Container can reach the internet but not the LAN (or vice versa)</a></li>
+<li><a href="#published-port-unreachable-from-another-machine-but-works-on-the-host">Published port unreachable from another machine but works on the host</a></li>
+<li><a href="#time-is-wrong-inside-the-container">Time is wrong inside the container</a></li>
+<li><a href="#disk-full-but-du-doesnt-show-it">Disk full, but du doesn't show it</a></li>
+<li><a href="#gpu-hardware-transcoding-not-working">GPU / hardware transcoding not working</a></li>
+</ul>
+</li>
+<li><a href="#dns">DNS</a><ul>
+<li><a href="#nothing-resolves-on-the-whole-network">Nothing resolves on the whole network</a></li>
+<li><a href="#local-names-homeexamplecom-work-on-lan-but-not-on-vpn-vice-versa">Local names (*.home.example.com) work on LAN but not on VPN / vice versa</a></li>
+<li><a href="#ad-blocking-works-but-some-devices-ignore-it">Ad blocking works, but some devices ignore it</a></li>
+<li><a href="#dig-works-browser-doesnt">dig works, browser doesn't</a></li>
+</ul>
+</li>
+<li><a href="#reverse-proxy-and-tls">Reverse proxy and TLS</a><ul>
+<li><a href="#502-bad-gateway">502 Bad Gateway</a></li>
+<li><a href="#404-from-the-proxy-itself">404 from the proxy itself</a></li>
+<li><a href="#certificate-errors">Certificate errors</a></li>
+<li><a href="#redirect-loop-too-many-redirects">Redirect loop / "too many redirects"</a></li>
+<li><a href="#websockets-dont-work-live-logs-home-assistant-jellyfin-dashboard-vaultwarden-notifications">WebSockets don't work (live logs, Home Assistant, Jellyfin dashboard, Vaultwarden notifications)</a></li>
+<li><a href="#uploads-fail-at-exactly-100-mb-1-mb">Uploads fail at exactly 100 MB / 1 MB</a></li>
+<li><a href="#real-client-ips-show-as-the-proxys-ip">Real client IPs show as the proxy's IP</a></li>
+</ul>
+</li>
+<li><a href="#remote-access-and-vpn">Remote access and VPN</a><ul>
+<li><a href="#tailscale-connects-but-cant-reach-lan-devices">Tailscale connects but can't reach LAN devices</a></li>
+<li><a href="#tailscale-is-slow-shows-relayed-derp">Tailscale is slow / shows "relayed" (DERP)</a></li>
+<li><a href="#wireguard-handshake-never-completes">WireGuard handshake never completes</a></li>
+<li><a href="#im-behind-cgnat">I'm behind CGNAT</a></li>
+<li><a href="#cloudflare-tunnel-502error-code-1033origin-unreachable">Cloudflare Tunnel: 502/error code 1033/"origin unreachable"</a></li>
+</ul>
+</li>
+<li><a href="#storage">Storage</a><ul>
+<li><a href="#zfs-pool-degraded-a-disk-shows-faulted">ZFS pool DEGRADED / a disk shows FAULTED</a></li>
+<li><a href="#zfs-cannot-import-pool-pool-was-previously-in-use-from-another-system">ZFS: "cannot import pool: pool was previously in use from another system"</a></li>
+<li><a href="#zfsproxmox-ram-full">ZFS/Proxmox: RAM "full"</a></li>
+<li><a href="#smb-share-slow-nfs-hangs">SMB share slow / NFS hangs</a></li>
+<li><a href="#docker-on-zfs-many-datasets-slow-docker-pull">Docker on ZFS: many datasets / slow docker pull</a></li>
+<li><a href="#btrfs-no-space-left-on-device-with-free-space-showing">Btrfs: "No space left on device" with free space showing</a></li>
+<li><a href="#disk-is-cmr-or-smr">Disk is CMR or SMR?</a></li>
+</ul>
+</li>
+<li><a href="#proxmox">Proxmox</a><ul>
+<li><a href="#vm-wont-start-task-error-kvm-device-vfio-pci-passthrough">VM won't start: "TASK ERROR: ... kvm: -device vfio-pci ... " (passthrough)</a></li>
+<li><a href="#lxc-cant-run-docker-permission-errors-on-bind-mounts">LXC: can't run Docker / permission errors on bind mounts</a></li>
+<li><a href="#cluster-node-shows-with-a-red-x-no-quorum">Cluster: node shows with a red X / "no quorum"</a></li>
+<li><a href="#backups-slow-pbs-chunk-verification-failed">Backups slow / PBS "chunk verification failed"</a></li>
+<li><a href="#web-ui-unreachable-after-network-change">Web UI unreachable after network change</a></li>
+</ul>
+</li>
+<li><a href="#applications">Applications</a><ul>
+<li><a href="#nextcloud-slow-maintenance-mode-or-untrusted-domain">Nextcloud: slow, "maintenance mode", or "untrusted domain"</a></li>
+<li><a href="#immich-app-cant-upload-server-offline-ml-never-finishes">Immich: app can't upload / "server offline" / ML never finishes</a></li>
+<li><a href="#jellyfin-buffering-playback-error-or-transcoding-when-it-shouldnt">Jellyfin: buffering, "playback error", or transcoding when it shouldn't</a></li>
+<li><a href="#vaultwarden-clients-wont-log-in-failed-to-fetch">Vaultwarden: clients won't log in / "Failed to fetch"</a></li>
+<li><a href="#home-assistant-400-bad-request-behind-a-proxy">Home Assistant: "400 Bad Request" behind a proxy</a></li>
+<li><a href="#paperless-ngx-consumption-folder-ignores-files">Paperless-ngx: consumption folder ignores files</a></li>
+<li><a href="#autheliaauthentikpocket-id-redirect-loop-or-invalid-redirect-uri">Authelia/Authentik/Pocket ID: redirect loop or "invalid redirect_uri"</a></li>
+</ul>
+</li>
+<li><a href="#hardware-and-host">Hardware and host</a><ul>
+<li><a href="#random-reboots-freezes">Random reboots / freezes</a></li>
+<li><a href="#high-idle-power">High idle power</a></li>
+<li><a href="#usb-drive-disappears-renames-from-sda-to-sdb">USB drive disappears / renames from sda to sdb</a></li>
+<li><a href="#boot-hangs-on-a-missing-network-mount-a-start-job-is-running-for">Boot hangs on a missing network mount / "A start job is running for …"</a></li>
+<li><a href="#smart-says-the-drive-is-fine-but">SMART says the drive is fine, but…</a></li>
+</ul>
+</li>
+<li><a href="#faq">FAQ</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
