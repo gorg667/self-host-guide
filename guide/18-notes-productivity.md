@@ -93,3 +93,77 @@ The **Notion alternatives**: block-based editors with databases/kanban/calendar 
 ## Collaborative editors
 
 **HedgeDoc** (formerly CodiMD, forked from HackMD) — real-time collaborative Markdown with live preview, slide mode (reveal.js), permissions per note, and optional accounts (or anonymous editing by link). The right tool for "let's write this together right now." **Etherpad** — the original real-time plain-text pad, plugin-rich, ancient and reliable. **CryptPad** ([Chapter 17](17-files-sync-documents.md)) for E2EE. **Excalidraw** and **draw.io/diagrams.net** self-hosted for collaborative diagrams ([Chapter 25](25-misc-apps.md)).
+
+## Tasks and project boards
+
+- **Vikunja** — the most complete self-hosted to-do app: lists/projects, tasks with subtasks, due dates, reminders, repeating tasks, labels, assignees, attachments, and **multiple views per project** (list, Gantt, table, kanban), plus **CalDAV** (so tasks appear in your calendar apps), sharing with users and teams, OIDC, and an API. Single Go binary + SQLite/Postgres. Mobile via the PWA or third-party apps. **The recommendation** for personal and household task management.
+- **Planka** — a Trello clone: boards, lists, cards, labels, due dates, attachments, comments, members, real-time updates. Clean, fast, does one thing. Node + Postgres. **The recommendation for kanban.**
+- **Focalboard** — Mattermost's kanban/table/gallery boards; standalone or inside Mattermost; development has slowed since being folded into Mattermost. Fine.
+- **Kanboard** — the old, lightweight PHP kanban with plugins and a spartan UI; reliable and boring.
+- **WeKan**, **Taiga** (agile PM — scrum/kanban, heavier), **OpenProject** (full enterprise PM — Gantt, budgets, agile; heavy), **Leantime**, **Plane** (a Jira/Linear alternative with cycles, modules, issues; Postgres + Redis + MinIO; polished but heavy for home), **Huly** (an ambitious all-in-one, 2024).
+- **Donetick** (2024) — chores and recurring household tasks with assignment, points, and a nag system; **Grocy** ([Chapter 25](25-misc-apps.md)) also covers chores.
+- **Tasks.md** — a tiny Markdown-file-based kanban.
+- **CalDAV tasks** via Radicale/Baikal/Nextcloud Tasks with **Tasks.org** (Android) or **Reminders** (iOS via CalDAV) — the no-server-app approach.
+
+## Calendars and contacts
+
+CalDAV and CardDAV are the open standards every phone and desktop calendar/contacts app speaks. You need a server:
+
+- **Radicale** — a tiny Python CalDAV/CardDAV server: users in an htpasswd file, collections as plain `.ics`/`.vcf` files on disk (trivially backed up and inspected), no web UI for events (it is a sync server; you use clients), a minimal admin/web page. ~20 MB RAM. The right answer for "I just want my calendar and contacts to sync between my devices." **The recommendation** for households not running Nextcloud.
+- **Baikal** — PHP CalDAV/CardDAV (built on sabre/dav) with a small web admin for users and calendars; SQLite or MySQL. Slightly more UI than Radicale; equally solid.
+- **Nextcloud** Calendar and Contacts — full web UI for viewing and editing events/contacts, sharing calendars between users, public calendar links, appointment booking, and CalDAV/CardDAV to devices. If you run Nextcloud, this is included and excellent.
+- **Xandikos** (Git-backed CalDAV/CardDAV — every change is a commit), **DAViCal** (the old heavyweight), **SOGo** (groupware with web calendar/mail/contacts; heavier), **Stalwart** (the mail server, adds CalDAV/CardDAV since 2025 — [Chapter 20](20-communication.md)), **Cal.com** (appointment scheduling — a different thing; [Chapter 25](25-misc-apps.md)).
+
+Clients: **DAVx⁵** (Android — syncs CalDAV/CardDAV into the system calendar/contacts; essential), iOS/macOS built-in (add a CalDAV/CardDAV account), **Thunderbird**, **GNOME Calendar/Evolution**, **Fossify Calendar** (Android). For a web calendar UI without Nextcloud, **InfCloud**/**AgenDAV** or simply Thunderbird.
+
+## Bookmarks and read-later
+
+- **Linkwarden** — the modern bookmark manager: collections, tags, full-page **archiving** (screenshot, PDF, readable HTML, and Wayback Machine submission), full-text search of archived content, collaboration/sharing, browser extensions, mobile apps (2025), OIDC, and AI tagging (optional, via Ollama or remote). Node + Postgres; archiving is heavier (Chromium). **The recommendation** for people who want links *and* their content preserved.
+- **Linkding** — the minimalist: a fast Django app, tags, bulk editing, a bookmarklet and extensions, optional archived snapshots via SingleFile or Wayback, REST API, ~50 MB RAM. Beloved for doing little, well. **The recommendation** if you want light.
+- **Karakeep** (formerly Hoarder) — "bookmark everything": links, notes, images, PDFs, with **AI-generated tags and summaries** (Ollama/OpenAI), full-page archiving, lists, RSS ingestion, browser extensions, and mobile apps. Node + Meilisearch + Chromium. The AI-first option; heavier; fast-moving.
+- **Wallabag** — the read-later classic (Pocket alternative): saves the readable text of articles, tags, annotations, offline reading via apps (Android/iOS), export to epub/PDF, RSS feeds of saved items, Kobo/Kindle integration. PHP + SQLite/Postgres. Mature, occasionally slow to update.
+- **Readeck** — a newer (2023–) read-later in Go: clean reader view, highlights, labels, collections, export to EPUB (e-reader friendly), browser extension, OPDS. Light and pleasant; the modern Wallabag alternative.
+- **Shiori**, **Shaarli** (the old PHP link blog), **Briefkasten**, **Grimoire**, **LinkAce**, **Hoarder** (old name of Karakeep), **ArchiveBox** (a full web-archiving system — saves pages in every format, ideal for "preserve this forever," heavier and more archival than bookmark-oriented), **Omnivore** (shut down 2024; self-hosting possible but effectively dead).
+
+## RSS and feed readers
+
+RSS is alive and well among self-hosters, and a reader on your own server means one subscription list, read state synced across devices, and no algorithm.
+
+- **FreshRSS** — the full-featured PHP reader: fast, multi-user, categories, filters, sharing, themes, extensions (including YouTube and Reddit feed helpers), a **Google Reader-compatible and Fever API** for mobile apps, WebSub, and a self-hosted **web scraping** option (XPath) to build feeds for sites without one. ~50 MB RAM. **The recommendation** for most.
+- **Miniflux** — the minimalist Go reader: one binary + Postgres, a deliberately spartan UI, keyboard-driven, full-content fetching, Fever/Google Reader APIs, OIDC. Extremely reliable; opinionated (no themes, no plugins). **The recommendation for minimalists.**
+- **Tiny Tiny RSS** — the veteran PHP reader with plugins and a strong opinionated developer; capable; the community is smaller now.
+- **NewsBlur** (self-hostable, heavy), **Nextcloud News** (inside Nextcloud), **CommaFeed** (Java, fast, clean), **Yarr** (a tiny single-binary reader), **Glance** ([Chapter 14](14-dashboards.md)) as a read-only feed dashboard, **RSS-Bridge** and **RSSHub** (generate RSS feeds for sites and services that lack them — Twitter/X, Instagram, YouTube channels, GitHub releases, Amazon prices; essential companions), **Feedbin**/**Inoreader** (hosted, not self-hosted).
+
+Mobile clients speaking the Google Reader or Fever API: **Read You**, **Feeder**, **FeedMe**, **Fluent Reader** (Android/desktop); **Reeder**, **NetNewsWire**, **Unread**, **Fiery Feeds** (iOS/macOS). NetNewsWire and Reeder both support FreshRSS and Miniflux directly.
+
+## Comparison snapshot
+
+| Need | Lightest good option | Fullest good option | Household recommendation |
+|---|---|---|---|
+| Personal notes | Memos / Flatnotes / SilverBullet | Obsidian + LiveSync; Trilium | Obsidian (individual) or Joplin Server (shared) |
+| Wiki / KB | Otter Wiki / DokuWiki | Outline (with IdP) | BookStack |
+| Collaborative editing | HedgeDoc | CryptPad | HedgeDoc |
+| Tasks | Vikunja | Vikunja / Plane | Vikunja |
+| Kanban | Planka | Plane / OpenProject | Planka |
+| Calendar/contacts server | Radicale | Nextcloud | Radicale (or Nextcloud if already running) |
+| Bookmarks | Linkding | Linkwarden / Karakeep | Linkding or Linkwarden |
+| Read-later | Readeck | Wallabag | Readeck |
+| RSS | Miniflux / Yarr | FreshRSS | FreshRSS |
+
+## Operational notes for this category
+
+- **These apps are small and numerous.** Each is 20–300 MB of RAM; a dozen of them together are less than one Nextcloud. Do not agonise over resource use here.
+- **Most use SQLite.** Keep their data directories on local disk, not NFS ([Chapter 5](05-containers.md)); back them up with a stop-copy-start or `sqlite3 .backup` hook, not a live file copy.
+- **Export formats matter more here than anywhere.** Notes and bookmarks are decades-long data. Prefer tools that store or export plain Markdown, `.ics`/`.vcf`, HTML bookmark files, OPML. Test the export before committing years of content.
+- **OIDC support** is now common across this category (Vikunja, Linkwarden, Miniflux, Outline, BookStack, Karakeep, Memos, Trilium, Joplin Server via plugin); use it ([Chapter 10](10-identity-sso.md)).
+- **Mobile is often the deciding factor.** Check the app situation for *your* platform before choosing — iOS support lags Android for several of these (Syncthing, Memos, Linkding rely on third-party or PWA on iOS).
+
+## Checklist
+
+- [ ] A notes system chosen with plain-text or standard export verified; sync method (LiveSync/Syncthing/Server) working across all devices.
+- [ ] A household wiki (BookStack or similar) holding the home-lab runbook and family documentation ([Chapter 28](28-maintenance-operations.md)).
+- [ ] CalDAV/CardDAV server running; every phone and desktop syncing calendar and contacts through it; a cloud calendar migrated or mirrored.
+- [ ] Tasks (Vikunja) exposed via CalDAV so they appear in calendars.
+- [ ] Bookmarks and read-later imported from browser/Pocket exports.
+- [ ] RSS reader with subscriptions imported via OPML; RSS-Bridge/RSSHub for sites without feeds; mobile client configured against its API.
+- [ ] All SQLite-backed apps on local disk with consistent backup hooks; OIDC enabled where supported.

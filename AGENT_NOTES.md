@@ -94,7 +94,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 15-media.md — Jellyfin/Plex/Emby, *arr stack, Jellyseerr, download clients + Gluetun, transcoding (QSV/NVENC/VAAPI), Navidrome, Audiobookshelf, Kavita/Komga, Tdarr
 - [x] 16-photos.md — Immich, PhotoPrism, Nextcloud Memories, Lychee, Ente, LibrePhotos
 - [x] 17-files-sync-documents.md — Nextcloud, Seafile, Syncthing, OpenCloud/oCIS, FileBrowser, Copyparty, Paperless-ngx, Stirling PDF, OnlyOffice/Collabora, file sharing
-- [ ] 18-notes-productivity.md — Obsidian LiveSync, Joplin, Trilium, Outline, BookStack, Wiki.js, Memos, SilverBullet, AFFiNE, Hedgedoc; Vikunja/Planka; Radicale/Baikal; Linkwarden/Linkding/Karakeep/Wallabag; FreshRSS/Miniflux
+- [x] 18-notes-productivity.md — Obsidian LiveSync, Joplin, Trilium, Outline, BookStack, Wiki.js, Memos, SilverBullet, AFFiNE, Hedgedoc; Vikunja/Planka; Radicale/Baikal; Linkwarden/Linkding/Karakeep/Wallabag; FreshRSS/Miniflux
 - [ ] 19-home-automation.md — Home Assistant, Zigbee2MQTT/ZHA, Z-Wave JS, Mosquitto, Node-RED, ESPHome, Frigate, Scrypted, Homebridge, Matter, Music Assistant
 - [ ] 20-communication.md — Matrix (Synapse/Conduit/Tuwunel), Rocket.Chat, Mattermost, XMPP, Jitsi, Mumble; self-hosted email (Mailcow/Mailu/Stalwart/docker-mailserver) with caveats
 - [ ] 21-passwords-secrets.md — Vaultwarden, Bitwarden, Passbolt, KeePassXC+Syncthing, Psono, Infisical, OpenBao, 2FAuth
