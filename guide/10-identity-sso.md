@@ -152,3 +152,73 @@ Not an IdP — a **lightweight LDAP server** (Rust) with a web UI for users and 
 ### Others
 
 **tinyauth** (a minimal forward-auth login page — local users or OIDC upstream — for Traefik/Caddy/Nginx; the smallest thing that gives you a login wall), **oauth2-proxy** (the standard forward-auth adapter for any OIDC IdP — put Keycloak/Zitadel/Pocket ID behind it), **traefik-forward-auth** (older, Google/OIDC), **Casdoor**, **Ory Kratos/Hydra** (API-first identity components for developers), **Hanko** (passkey-focused), **Dex** (a small OIDC federator often used with Kubernetes), **FreeIPA** (the full Red Hat directory — Kerberos, LDAP, DNS, CA; heavy and enterprise), **Samba AD DC** (a real Active Directory domain controller on Linux; only if you have Windows machines to domain-join), **Cloudflare Access** and **Pangolin**'s built-in auth (identity at the tunnel/edge — [Chapter 8](08-remote-access-vpn.md)).
+
+### Comparison
+
+| | Authelia | Authentik | Keycloak | Zitadel | Pocket ID | Kanidm | LLDAP |
+|---|---|---|---|---|---|---|---|
+| Role | Forward-auth + OIDC | Full IdP | Full IdP | Full IdP | OIDC (passkeys) | IdP + Unix auth | LDAP user DB |
+| Admin UI | No (YAML) | Yes (rich) | Yes (dense) | Yes | Yes (minimal) | Web for users; CLI admin | Yes (simple) |
+| Forward-auth | **Native** | Native (outpost) | Via oauth2-proxy | Via oauth2-proxy | Via tinyauth/oauth2-proxy | Via oauth2-proxy | n/a |
+| OIDC provider | Yes | Yes | Yes | Yes | Yes | Yes | No |
+| SAML | No | Yes | Yes | Yes | No | No | No |
+| LDAP server | No (client of LLDAP) | Yes (outpost) | No (federates *to* LDAP) | No | No | Yes (read-only) | **Yes** |
+| Passkeys | 2nd factor | Yes (incl. passwordless) | Yes | **Yes (first-class)** | **Only** | Yes | No |
+| Self-registration / invites | No | Yes | Yes | Yes | No | No | No |
+| RAM | ~30 MB | ~600 MB–1 GB | ~500 MB–1 GB | ~300 MB | ~30 MB | ~50 MB | ~20 MB |
+| Dependencies | SQLite or Postgres; optional Redis | Postgres (Redis pre-2025) | Postgres | Postgres | SQLite | None | SQLite |
+| Config as code | **Yes** | Partial (blueprints) | Partial (realm export, Terraform) | Partial (Terraform) | No | Yes (CLI scripts) | Partial |
+| Licence | Apache 2.0 | MIT (core) | Apache 2.0 | Apache 2.0 | BSD | MPL 2.0 | GPL 3 |
+| Best for | Protecting apps at the proxy; small stable households | Households/communities wanting a UI and everything | Enterprise compatibility | Passkeys + modern API | Minimal OIDC | Unified web + Unix + Wi-Fi identity | User DB under Authelia |
+
+## Deployment patterns
+
+### Pattern A: Authelia + LLDAP behind Traefik or Caddy (lightweight)
+
+Users and groups in LLDAP (UI). Authelia reads LLDAP, provides the login portal, MFA, per-domain policy, and OIDC for apps that support it. The proxy applies the `authelia` middleware to any router that needs protection. Apps that speak LDAP (Jellyfin, Nextcloud) can also use LLDAP directly for the same accounts. Total: ~50 MB RAM, two small containers, everything in YAML and Git. **The recommendation for most Tier 1–2 labs.**
+
+### Pattern B: Authentik does everything (all-in-one)
+
+Authentik as user database, OIDC/SAML provider, LDAP server (for legacy apps), and forward-auth (via its embedded outpost). One UI for all identity. ~1 GB RAM. **The recommendation when you want a UI, invitations, or serve more than a household.**
+
+### Pattern C: Pocket ID for OIDC + tinyauth for the proxy (minimal, passwordless)
+
+Pocket ID issues OIDC to apps that support it; tinyauth (configured to use Pocket ID as its OIDC upstream) gives the proxy a login wall for apps that do not. Two tiny containers. **For small households with modern devices who want passkeys everywhere and nothing to babysit.**
+
+### Pattern D: Keycloak or Zitadel + oauth2-proxy (enterprise-shaped)
+
+A full IdP for OIDC/SAML, oauth2-proxy providing forward-auth for the proxy. **For people who know these tools or need SAML/brokering.**
+
+## Integration notes and gotchas
+
+- **Cookie domain.** Forward-auth session cookies must be scoped to the parent domain (`example.com`) so one login covers `*.example.com`. Services on different domains need separate sessions or OIDC.
+- **Bypass rules for APIs and apps.** Mobile apps (Jellyfin, Sonarr's companions, Immich, Home Assistant) do not follow browser redirects to a login page — they will simply fail. Either integrate the app via OIDC (so the app itself handles login), or add `bypass` rules for its API paths (`/api/*`, and for Jellyfin the whole host, protected instead by its own auth and an IP/VPN restriction), or expose the app only via VPN where forward-auth is unnecessary.
+- **Headers to the app.** Some apps accept identity from headers (`Remote-User`) and auto-login the user — Grafana (`auth.proxy`), Organizr, Gitea (reverse proxy auth), Nextcloud (with a plugin), Paperless-ngx (`PAPERLESS_ENABLE_HTTP_REMOTE_USER`). **Only** enable this when the app is unreachable except through the proxy, or anyone can forge the header.
+- **OIDC redirect URIs** must match exactly, including `https://` and trailing paths. The single most common OIDC setup error.
+- **Group claims.** Map IdP groups to app roles (Immich admin, Grafana Admin/Editor, Gitea admin, Proxmox PVEAdmin) via the `groups` claim where the app supports it, so permissions follow the person.
+- **Local admin fallback.** Keep one local admin account on each important app (and on the proxy/IdP hosts) that does not depend on the IdP — when Authelia is down, you still need to get into Proxmox.
+- **Backup the IdP database and secrets first.** Losing the IdP's signing keys or user database locks everyone out of everything. It is the highest-value small backup in the lab ([Chapter 11](11-backups.md)).
+- **MFA enrolment and recovery.** Register at least two authenticators per user (phone passkey + a hardware key, or TOTP + WebAuthn) and store recovery codes in the password manager ([Chapter 21](21-passwords-secrets.md)).
+- **Trusted networks.** Authelia's `networks` and Authentik's policies can relax to one-factor (or bypass) for the LAN/VPN and require two-factor from anywhere else. Convenient; understand that a compromised LAN device then gets the relaxed policy.
+- **Rate limiting and lockout.** Enable the IdP's brute-force protection (Authelia `regulation`, Authentik's default policies) and put CrowdSec/fail2ban on the login endpoint ([Chapter 13](13-security.md)).
+
+## Recommendations
+
+- **Most households:** Authelia + LLDAP. Small, stable, config-as-code, forward-auth and OIDC covered.
+- **Want a UI and don't mind 1 GB of RAM:** Authentik.
+- **Passwordless purists with a few OIDC apps:** Pocket ID (+ tinyauth for proxy protection).
+- **Know Keycloak, or need SAML:** Keycloak.
+- **One identity for web apps, Linux logins, and Wi-Fi:** Kanidm.
+
+Whatever you choose, prioritise: (1) the IdP host is reachable only from LAN/VPN except its login portal if you expose services; (2) MFA/passkeys for every admin; (3) its database and keys are backed up and the restore is tested; (4) every app that supports OIDC uses it, every app that does not sits behind forward-auth or the VPN.
+
+## Checklist
+
+- [ ] An IdP deployed; one account per household member; admins have MFA or passkeys with backup authenticators.
+- [ ] Every app with OIDC support integrated via OIDC with group-to-role mapping.
+- [ ] Every app without strong native auth protected by forward-auth at the proxy, with bypass rules for API paths that mobile clients need (or reachable only via VPN).
+- [ ] Session cookie scoped to the parent domain; redirect URIs correct.
+- [ ] Local break-glass admin accounts retained on critical apps and hosts.
+- [ ] Brute-force protection on the IdP; login endpoint covered by CrowdSec/fail2ban if exposed.
+- [ ] IdP database, configuration, and secrets/keys backed up; restore tested.
+- [ ] Offboarding procedure: disabling one IdP account revokes access everywhere (verify).

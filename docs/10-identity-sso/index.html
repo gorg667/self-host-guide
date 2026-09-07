@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Identity and Single Sign-On — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li class="active"><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 10 · ~3,298 words · 14 min read</div>
+    <article class="prose">
+      <h1 id="identity-and-single-sign-on">Identity and Single Sign-On<a class="headerlink" href="#identity-and-single-sign-on" title="Permanent link">#</a></h1>
+<p>Once you run more than a handful of services, you have a handful of separate user databases, a handful of separate passwords per family member, and a handful of login pages of varying quality — some of which have no login at all. An <strong>identity provider</strong> (IdP) fixes this: one account per person, one login page, multi-factor authentication and passkeys in one place, and every service either delegates authentication to it via <strong>OIDC</strong> or gets it enforced by the reverse proxy via <strong>forward-auth</strong>. This chapter explains the protocols, compares Authelia, Authentik, Keycloak, Zitadel, Pocket ID, Kanidm, and LLDAP, and shows the deployment patterns that work at home.</p>
+<h2 id="the-problems-an-idp-solves">The problems an IdP solves<a class="headerlink" href="#the-problems-an-idp-solves" title="Permanent link">#</a></h2>
+<ol>
+<li><strong>Services with weak or no authentication.</strong> Dashboards, Sonarr/Radarr (optional auth, no MFA), Dozzle, Uptime Kuma's status pages, most dev tools. The proxy can require a login before the request ever reaches them.</li>
+<li><strong>Too many passwords.</strong> Each family member ends up with a Jellyfin password, a Nextcloud password, an Immich password. With SSO they log into one thing.</li>
+<li><strong>No MFA on things that deserve it.</strong> Many self-hosted apps have TOTP; few have WebAuthn/passkeys; the IdP has both and applies them everywhere.</li>
+<li><strong>Offboarding.</strong> Someone leaves the household or a friend stops using your Jellyfin: disable one account instead of hunting through eight admin panels.</li>
+<li><strong>Audit.</strong> One log of who logged into what, from where.</li>
+</ol>
+<h2 id="the-protocols">The protocols<a class="headerlink" href="#the-protocols" title="Permanent link">#</a></h2>
+<p><strong>OpenID Connect (OIDC)</strong> is the modern standard, built on OAuth 2.0. The application ("client" or "relying party") redirects the user to the IdP; the user authenticates; the IdP redirects back with a token asserting who they are, and optionally group memberships. The application creates or maps a local account. Supported natively by a growing majority of self-hosted apps: Immich, Jellyfin (via plugin), Nextcloud, Gitea/Forgejo, GitLab, Grafana, Portainer, Home Assistant (via community integration), Vaultwarden (SSO support merged in 2025), Paperless-ngx, Mealie, Audiobookshelf, Outline, BookStack, Wiki.js, Proxmox (as an auth realm), TrueNAS, Headscale, NetBird, MinIO, Harbor, Rocket.Chat, Mattermost, Synapse, and many more. <strong>This is the preferred integration</strong>: the app knows who the user is and can do per-user things.</p>
+<p><strong>Forward-auth</strong> (also "auth request," "trusted header SSO") is the proxy-level fallback. The reverse proxy asks the IdP "is this request authenticated?" before proxying. If not, redirect to login; if yes, proxy and pass the identity in headers (<code>Remote-User</code>, <code>Remote-Groups</code>, <code>Remote-Email</code>). Works for <strong>any</strong> web app, including ones with no auth at all. The app itself may still show its own login page behind the proxy's (unless it supports trusted-header auth, which a few do — Grafana, Organizr, some dashboards), so for apps <em>with</em> their own OIDC support, prefer OIDC. Traefik (<code>forwardAuth</code> middleware), Caddy (<code>forward_auth</code>), Nginx (<code>auth_request</code>), and NPM (via snippets) all support it. Authelia and Authentik are built around providing it; Keycloak needs a helper like <code>oauth2-proxy</code>.</p>
+<p><strong>LDAP</strong> is the old directory protocol. Many apps still authenticate against LDAP (Jellyfin's LDAP plugin, Nextcloud, Gitea, Grafana, Proxmox, TrueNAS, Home Assistant via a shim, Radicale, Mailcow, Synapse). It provides users and groups but no SSO (the user types a password into each app; the app checks it against LDAP) and no MFA. Useful as the <em>user database</em> under an IdP, and for legacy apps that speak nothing else.</p>
+<p><strong>SAML</strong> is the enterprise XML predecessor of OIDC. You need it only for a handful of business-oriented apps. Authentik, Keycloak, and Zitadel do SAML; Authelia does not (it is on the roadmap).</p>
+<p><strong>SCIM</strong> provisions users/groups from the IdP into apps automatically. Rare in self-hosted apps; Authentik and Keycloak (via extension) support it.</p>
+<p><strong>Passkeys / WebAuthn</strong> are the phishing-resistant, passwordless standard: authenticate with a hardware key (YubiKey), a phone, or a platform authenticator (Touch ID, Windows Hello). Every IdP below supports WebAuthn at least as a second factor; Pocket ID, Zitadel, Authentik, and Keycloak support passkeys as the <em>only</em> factor.</p>
+<pre class="mermaid">sequenceDiagram
+    participant U as Browser
+    participant P as Reverse proxy
+    participant A as IdP (Authelia/Authentik)
+    participant S as Service
+    U-&gt;&gt;P: GET https://sonarr.example.com
+    P-&gt;&gt;A: forward-auth: is this session valid?
+    A--&gt;&gt;P: 401 (not logged in)
+    P--&gt;&gt;U: redirect to auth.example.com
+    U-&gt;&gt;A: login + MFA / passkey
+    A--&gt;&gt;U: session cookie for *.example.com, redirect back
+    U-&gt;&gt;P: GET https://sonarr.example.com (with cookie)
+    P-&gt;&gt;A: forward-auth
+    A--&gt;&gt;P: 200 + Remote-User, Remote-Groups
+    P-&gt;&gt;S: proxied request (+ identity headers)
+    S--&gt;&gt;U: page</pre>
+<h2 id="the-candidates">The candidates<a class="headerlink" href="#the-candidates" title="Permanent link">#</a></h2>
+<h3 id="authelia">Authelia<a class="headerlink" href="#authelia" title="Permanent link">#</a></h3>
+<p>A single Go binary designed from the outset as <strong>a forward-auth companion for reverse proxies</strong>, with OIDC provider support added and matured over 2022–2025. Configuration is a YAML file: users in a YAML file or LDAP (LLDAP is the usual pairing); access-control rules by domain, path, group, network, and method (<code>one_factor</code>, <code>two_factor</code>, <code>bypass</code>); TOTP, WebAuthn, Duo; session in memory or Redis; storage in SQLite, MySQL, or Postgres; SMTP for password resets. Runs in ~30 MB of RAM. The login portal is clean and fast. Authelia integrates with Traefik, Caddy, Nginx, NPM, HAProxy, SWAG, Envoy, and (via forward-auth) anything else; the documentation includes copy-paste proxy configs for each.</p>
+<p><strong>Strengths:</strong> lightweight, stable, config-as-code, excellent docs, security-focused development with regular audits, granular per-domain/path policies (e.g., <code>bypass</code> for <code>/api/*</code> so the Sonarr mobile app works while the UI is protected), the best fit for "protect twenty apps behind the proxy." Its OIDC provider is now solid for the common apps.</p>
+<p><strong>Weaknesses:</strong> no web admin UI — users and clients live in YAML (fine for a household, tedious past ~20 users; LLDAP adds a UI for users). No SAML. No user self-registration or invitation flows. OIDC client configuration is verbose YAML with hashed secrets. Not a general-purpose IdP with flows and policies — it does one thing extremely well.</p>
+<p><strong>Pick it if:</strong> your main goal is protecting services at the proxy with MFA, you like config files, and you have a small, stable user base.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># authelia/compose.yaml (excerpt)</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">authelia</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">authelia/authelia:4.39</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">authelia</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./config:/config</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">AUTHELIA_JWT_SECRET_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/config/secrets/jwt</span>
+<span class="w">      </span><span class="nt">AUTHELIA_SESSION_SECRET_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/config/secrets/session</span>
+<span class="w">      </span><span class="nt">AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/config/secrets/storage</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.enable=true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.http.routers.authelia.rule=Host(`auth.example.com`)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/authz/forward-auth</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># authelia/config/configuration.yml (excerpt)</span>
+<span class="nt">access_control</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">default_policy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deny</span>
+<span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">domain</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*.example.com&quot;</span>
+<span class="w">      </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;10.0.10.0/24&quot;</span><span class="p p-Indicator">]</span><span class="w">      </span><span class="c1"># trusted LAN</span>
+<span class="w">      </span><span class="nt">policy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">one_factor</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">domain</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;sonarr.example.com&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;radarr.example.com&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;^/api/.*$&quot;</span><span class="p p-Indicator">]</span><span class="w">         </span><span class="c1"># let the apps&#39; own API-key auth handle these</span>
+<span class="w">      </span><span class="nt">policy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bypass</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">domain</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;proxmox.example.com&quot;</span>
+<span class="w">      </span><span class="nt">subject</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;group:admins&quot;</span>
+<span class="w">      </span><span class="nt">policy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">two_factor</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">domain</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*.example.com&quot;</span>
+<span class="w">      </span><span class="nt">policy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">two_factor</span>
+</code></pre></div>
+<h3 id="authentik">Authentik<a class="headerlink" href="#authentik" title="Permanent link">#</a></h3>
+<p>A full-featured <strong>identity platform</strong> (Python/Django + Go outposts) with a polished web admin UI: users, groups, applications, providers (OIDC, SAML, LDAP <em>server</em>, SCIM, RADIUS, proxy/forward-auth via "outposts"), customisable <strong>flows</strong> (login, enrolment, recovery, MFA — each a visual pipeline of stages), policies (expression-based in Python), an application launcher page for users, invitations, self-service enrolment, brute-force protection, and event logging. It can <em>be</em> an LDAP server for legacy apps, <em>be</em> a forward-auth provider for the proxy, and <em>be</em> an OIDC/SAML IdP, all from one UI. Runs with a Postgres database and (until recent versions) Redis; ~600 MB–1 GB RAM total.</p>
+<p><strong>Strengths:</strong> the most complete self-hostable IdP with a UI that non-experts can operate; flows let you build exactly the login experience you want (e.g., passkey-only for family, password+TOTP for admins); the built-in proxy outpost gives forward-auth without a separate tool; frequent releases; a large self-hosting community with per-app integration docs for ~100 apps.</p>
+<p><strong>Weaknesses:</strong> heavy relative to Authelia; the flow/stage/policy model is powerful and initially bewildering; the UI has many screens; occasional breaking changes on upgrade (read the release notes); the company behind it (Authentik Security Inc.) sells an enterprise tier — the open-source core is MIT and has stayed complete for home use.</p>
+<p><strong>Pick it if:</strong> you want a UI, OIDC + LDAP + forward-auth from one place, invitations and self-service for a larger household or a community, and you are willing to spend an afternoon learning its model.</p>
+<h3 id="keycloak">Keycloak<a class="headerlink" href="#keycloak" title="Permanent link">#</a></h3>
+<p>Red Hat's enterprise IdP (Java/Quarkus), the reference implementation of OIDC and SAML that many corporate systems run on. Realms, clients, roles, groups, identity brokering (log in via Google/GitHub/another IdP), user federation (LDAP, Active Directory, Kerberos), fine-grained authorisation services, themes, extensive extensions, and a battle-tested security record. ~500 MB–1 GB RAM.</p>
+<p><strong>Strengths:</strong> if an app supports OIDC or SAML, it has been tested against Keycloak; the docs and community are enormous; it is a genuine career skill; the account console lets users manage their own MFA and sessions.</p>
+<p><strong>Weaknesses:</strong> no forward-auth built in (pair with <strong>oauth2-proxy</strong> or Traefik's/Caddy's plugins); the admin console is dense and enterprise-flavoured; a Java process that takes 30 seconds to start; configuration is UI-first (exportable to JSON for IaC via the realm export or the <code>keycloak-config-cli</code> / Terraform provider); overkill for "protect my dashboards."</p>
+<p><strong>Pick it if:</strong> you know it from work, need SAML or identity brokering, or want maximum compatibility.</p>
+<h3 id="zitadel">Zitadel<a class="headerlink" href="#zitadel" title="Permanent link">#</a></h3>
+<p>A Go-based, cloud-native IdP with a modern UI, multi-tenant "organisations," OIDC/OAuth2/SAML, passkeys as a first-class login method, actions (JavaScript hooks in the login flow), a well-designed API (gRPC/REST), and event-sourced storage in PostgreSQL. It is the IdP NetBird bundles by default. Apache 2.0.</p>
+<p><strong>Strengths:</strong> genuinely good passwordless/passkey UX out of the box; clean multi-org model if you host for several groups; rapid development; lighter than Keycloak.</p>
+<p><strong>Weaknesses:</strong> no forward-auth (pair with oauth2-proxy); smaller self-hosting community than Authentik/Keycloak; the multi-tenant model adds concepts a household does not need; some rough edges in the self-hosted console.</p>
+<p><strong>Pick it if:</strong> you run NetBird, want a modern API-first IdP, or want passkeys front-and-centre with a UI.</p>
+<h3 id="pocket-id">Pocket ID<a class="headerlink" href="#pocket-id" title="Permanent link">#</a></h3>
+<p>A minimalist <strong>OIDC provider that authenticates exclusively with passkeys</strong> — no passwords at all. A single small Go binary with a clean UI, users and groups, OIDC clients, audit log, optional LDAP sync as a <em>source</em>, and that is essentially it. ~30 MB RAM. Arrived in 2024 and was adopted enthusiastically by self-hosters who wanted "just OIDC with passkeys, nothing else."</p>
+<p><strong>Strengths:</strong> the simplest possible IdP for a household with modern devices; phishing-resistant by design; trivial to run; pairs with Traefik/Caddy forward-auth via <strong>tinyauth</strong> or <strong>oauth2-proxy</strong> if you need proxy-level protection too (Pocket ID itself does not do forward-auth).</p>
+<p><strong>Weaknesses:</strong> passkeys only — every device and browser must support WebAuthn (all modern ones do; some corporate or ancient devices do not); no password fallback means recovery planning matters (register multiple passkeys per user, keep a recovery code); no forward-auth built in; young.</p>
+<p><strong>Pick it if:</strong> you want OIDC for a handful of apps, everyone has a phone or laptop with a platform authenticator, and you want the least infrastructure.</p>
+<h3 id="kanidm">Kanidm<a class="headerlink" href="#kanidm" title="Permanent link">#</a></h3>
+<p>A Rust-based IdP with an opinionated security-first design: OIDC, LDAP (read-only, for legacy apps), RADIUS, SSH key distribution, PAM/NSS integration for Unix login, passkeys and TOTP, strict credential policies, an excellent CLI, a web UI for users (admin is CLI/API-driven). Very low resource use. Unusual in supporting <strong>Unix host login</strong> — your Linux machines can authenticate users against it.</p>
+<p><strong>Strengths:</strong> thoughtfully secure, lightweight, unusual breadth (Unix auth, SSH keys, RADIUS for Wi-Fi 802.1X); active development with strong opinions about doing identity correctly.</p>
+<p><strong>Weaknesses:</strong> CLI-driven admin is a hurdle for some; smaller community; no forward-auth built in; some app integrations need care with claim mapping.</p>
+<p><strong>Pick it if:</strong> you want one identity source for web apps <em>and</em> Linux hosts <em>and</em> Wi-Fi, and you are comfortable at the command line.</p>
+<h3 id="lldap">LLDAP<a class="headerlink" href="#lldap" title="Permanent link">#</a></h3>
+<p>Not an IdP — a <strong>lightweight LDAP server</strong> (Rust) with a web UI for users and groups, ~20 MB RAM, designed for exactly the home-lab use case: a simple user database that Authelia, Jellyfin, Nextcloud, Gitea, Proxmox, Home Assistant (via LDAP auth shim), Radicale, and anything else that speaks LDAP can authenticate against. It implements a deliberately small subset of LDAP — enough for authentication and group lookup, not enough to be a general directory. Pair it with Authelia for the classic lightweight stack.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<p><strong>tinyauth</strong> (a minimal forward-auth login page — local users or OIDC upstream — for Traefik/Caddy/Nginx; the smallest thing that gives you a login wall), <strong>oauth2-proxy</strong> (the standard forward-auth adapter for any OIDC IdP — put Keycloak/Zitadel/Pocket ID behind it), <strong>traefik-forward-auth</strong> (older, Google/OIDC), <strong>Casdoor</strong>, <strong>Ory Kratos/Hydra</strong> (API-first identity components for developers), <strong>Hanko</strong> (passkey-focused), <strong>Dex</strong> (a small OIDC federator often used with Kubernetes), <strong>FreeIPA</strong> (the full Red Hat directory — Kerberos, LDAP, DNS, CA; heavy and enterprise), <strong>Samba AD DC</strong> (a real Active Directory domain controller on Linux; only if you have Windows machines to domain-join), <strong>Cloudflare Access</strong> and <strong>Pangolin</strong>'s built-in auth (identity at the tunnel/edge — <a href="../08-remote-access-vpn/">Chapter 8</a>).</p>
+<h3 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Authelia</th>
+<th>Authentik</th>
+<th>Keycloak</th>
+<th>Zitadel</th>
+<th>Pocket ID</th>
+<th>Kanidm</th>
+<th>LLDAP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Role</td>
+<td>Forward-auth + OIDC</td>
+<td>Full IdP</td>
+<td>Full IdP</td>
+<td>Full IdP</td>
+<td>OIDC (passkeys)</td>
+<td>IdP + Unix auth</td>
+<td>LDAP user DB</td>
+</tr>
+<tr>
+<td>Admin UI</td>
+<td>No (YAML)</td>
+<td>Yes (rich)</td>
+<td>Yes (dense)</td>
+<td>Yes</td>
+<td>Yes (minimal)</td>
+<td>Web for users; CLI admin</td>
+<td>Yes (simple)</td>
+</tr>
+<tr>
+<td>Forward-auth</td>
+<td><strong>Native</strong></td>
+<td>Native (outpost)</td>
+<td>Via oauth2-proxy</td>
+<td>Via oauth2-proxy</td>
+<td>Via tinyauth/oauth2-proxy</td>
+<td>Via oauth2-proxy</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td>OIDC provider</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>SAML</td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>LDAP server</td>
+<td>No (client of LLDAP)</td>
+<td>Yes (outpost)</td>
+<td>No (federates <em>to</em> LDAP)</td>
+<td>No</td>
+<td>No</td>
+<td>Yes (read-only)</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td>Passkeys</td>
+<td>2nd factor</td>
+<td>Yes (incl. passwordless)</td>
+<td>Yes</td>
+<td><strong>Yes (first-class)</strong></td>
+<td><strong>Only</strong></td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Self-registration / invites</td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>~30 MB</td>
+<td>~600 MB–1 GB</td>
+<td>~500 MB–1 GB</td>
+<td>~300 MB</td>
+<td>~30 MB</td>
+<td>~50 MB</td>
+<td>~20 MB</td>
+</tr>
+<tr>
+<td>Dependencies</td>
+<td>SQLite or Postgres; optional Redis</td>
+<td>Postgres (Redis pre-2025)</td>
+<td>Postgres</td>
+<td>Postgres</td>
+<td>SQLite</td>
+<td>None</td>
+<td>SQLite</td>
+</tr>
+<tr>
+<td>Config as code</td>
+<td><strong>Yes</strong></td>
+<td>Partial (blueprints)</td>
+<td>Partial (realm export, Terraform)</td>
+<td>Partial (Terraform)</td>
+<td>No</td>
+<td>Yes (CLI scripts)</td>
+<td>Partial</td>
+</tr>
+<tr>
+<td>Licence</td>
+<td>Apache 2.0</td>
+<td>MIT (core)</td>
+<td>Apache 2.0</td>
+<td>Apache 2.0</td>
+<td>BSD</td>
+<td>MPL 2.0</td>
+<td>GPL 3</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Protecting apps at the proxy; small stable households</td>
+<td>Households/communities wanting a UI and everything</td>
+<td>Enterprise compatibility</td>
+<td>Passkeys + modern API</td>
+<td>Minimal OIDC</td>
+<td>Unified web + Unix + Wi-Fi identity</td>
+<td>User DB under Authelia</td>
+</tr>
+</tbody>
+</table>
+<h2 id="deployment-patterns">Deployment patterns<a class="headerlink" href="#deployment-patterns" title="Permanent link">#</a></h2>
+<h3 id="pattern-a-authelia-lldap-behind-traefik-or-caddy-lightweight">Pattern A: Authelia + LLDAP behind Traefik or Caddy (lightweight)<a class="headerlink" href="#pattern-a-authelia-lldap-behind-traefik-or-caddy-lightweight" title="Permanent link">#</a></h3>
+<p>Users and groups in LLDAP (UI). Authelia reads LLDAP, provides the login portal, MFA, per-domain policy, and OIDC for apps that support it. The proxy applies the <code>authelia</code> middleware to any router that needs protection. Apps that speak LDAP (Jellyfin, Nextcloud) can also use LLDAP directly for the same accounts. Total: ~50 MB RAM, two small containers, everything in YAML and Git. <strong>The recommendation for most Tier 1–2 labs.</strong></p>
+<h3 id="pattern-b-authentik-does-everything-all-in-one">Pattern B: Authentik does everything (all-in-one)<a class="headerlink" href="#pattern-b-authentik-does-everything-all-in-one" title="Permanent link">#</a></h3>
+<p>Authentik as user database, OIDC/SAML provider, LDAP server (for legacy apps), and forward-auth (via its embedded outpost). One UI for all identity. ~1 GB RAM. <strong>The recommendation when you want a UI, invitations, or serve more than a household.</strong></p>
+<h3 id="pattern-c-pocket-id-for-oidc-tinyauth-for-the-proxy-minimal-passwordless">Pattern C: Pocket ID for OIDC + tinyauth for the proxy (minimal, passwordless)<a class="headerlink" href="#pattern-c-pocket-id-for-oidc-tinyauth-for-the-proxy-minimal-passwordless" title="Permanent link">#</a></h3>
+<p>Pocket ID issues OIDC to apps that support it; tinyauth (configured to use Pocket ID as its OIDC upstream) gives the proxy a login wall for apps that do not. Two tiny containers. <strong>For small households with modern devices who want passkeys everywhere and nothing to babysit.</strong></p>
+<h3 id="pattern-d-keycloak-or-zitadel-oauth2-proxy-enterprise-shaped">Pattern D: Keycloak or Zitadel + oauth2-proxy (enterprise-shaped)<a class="headerlink" href="#pattern-d-keycloak-or-zitadel-oauth2-proxy-enterprise-shaped" title="Permanent link">#</a></h3>
+<p>A full IdP for OIDC/SAML, oauth2-proxy providing forward-auth for the proxy. <strong>For people who know these tools or need SAML/brokering.</strong></p>
+<h2 id="integration-notes-and-gotchas">Integration notes and gotchas<a class="headerlink" href="#integration-notes-and-gotchas" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Cookie domain.</strong> Forward-auth session cookies must be scoped to the parent domain (<code>example.com</code>) so one login covers <code>*.example.com</code>. Services on different domains need separate sessions or OIDC.</li>
+<li><strong>Bypass rules for APIs and apps.</strong> Mobile apps (Jellyfin, Sonarr's companions, Immich, Home Assistant) do not follow browser redirects to a login page — they will simply fail. Either integrate the app via OIDC (so the app itself handles login), or add <code>bypass</code> rules for its API paths (<code>/api/*</code>, and for Jellyfin the whole host, protected instead by its own auth and an IP/VPN restriction), or expose the app only via VPN where forward-auth is unnecessary.</li>
+<li><strong>Headers to the app.</strong> Some apps accept identity from headers (<code>Remote-User</code>) and auto-login the user — Grafana (<code>auth.proxy</code>), Organizr, Gitea (reverse proxy auth), Nextcloud (with a plugin), Paperless-ngx (<code>PAPERLESS_ENABLE_HTTP_REMOTE_USER</code>). <strong>Only</strong> enable this when the app is unreachable except through the proxy, or anyone can forge the header.</li>
+<li><strong>OIDC redirect URIs</strong> must match exactly, including <code>https://</code> and trailing paths. The single most common OIDC setup error.</li>
+<li><strong>Group claims.</strong> Map IdP groups to app roles (Immich admin, Grafana Admin/Editor, Gitea admin, Proxmox PVEAdmin) via the <code>groups</code> claim where the app supports it, so permissions follow the person.</li>
+<li><strong>Local admin fallback.</strong> Keep one local admin account on each important app (and on the proxy/IdP hosts) that does not depend on the IdP — when Authelia is down, you still need to get into Proxmox.</li>
+<li><strong>Backup the IdP database and secrets first.</strong> Losing the IdP's signing keys or user database locks everyone out of everything. It is the highest-value small backup in the lab (<a href="../11-backups/">Chapter 11</a>).</li>
+<li><strong>MFA enrolment and recovery.</strong> Register at least two authenticators per user (phone passkey + a hardware key, or TOTP + WebAuthn) and store recovery codes in the password manager (<a href="../21-passwords-secrets/">Chapter 21</a>).</li>
+<li><strong>Trusted networks.</strong> Authelia's <code>networks</code> and Authentik's policies can relax to one-factor (or bypass) for the LAN/VPN and require two-factor from anywhere else. Convenient; understand that a compromised LAN device then gets the relaxed policy.</li>
+<li><strong>Rate limiting and lockout.</strong> Enable the IdP's brute-force protection (Authelia <code>regulation</code>, Authentik's default policies) and put CrowdSec/fail2ban on the login endpoint (<a href="../13-security/">Chapter 13</a>).</li>
+</ul>
+<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Most households:</strong> Authelia + LLDAP. Small, stable, config-as-code, forward-auth and OIDC covered.</li>
+<li><strong>Want a UI and don't mind 1 GB of RAM:</strong> Authentik.</li>
+<li><strong>Passwordless purists with a few OIDC apps:</strong> Pocket ID (+ tinyauth for proxy protection).</li>
+<li><strong>Know Keycloak, or need SAML:</strong> Keycloak.</li>
+<li><strong>One identity for web apps, Linux logins, and Wi-Fi:</strong> Kanidm.</li>
+</ul>
+<p>Whatever you choose, prioritise: (1) the IdP host is reachable only from LAN/VPN except its login portal if you expose services; (2) MFA/passkeys for every admin; (3) its database and keys are backed up and the restore is tested; (4) every app that supports OIDC uses it, every app that does not sits behind forward-auth or the VPN.</p>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> An IdP deployed; one account per household member; admins have MFA or passkeys with backup authenticators.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Every app with OIDC support integrated via OIDC with group-to-role mapping.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Every app without strong native auth protected by forward-auth at the proxy, with bypass rules for API paths that mobile clients need (or reachable only via VPN).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Session cookie scoped to the parent domain; redirect URIs correct.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Local break-glass admin accounts retained on critical apps and hosts.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Brute-force protection on the IdP; login endpoint covered by CrowdSec/fail2ban if exposed.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> IdP database, configuration, and secrets/keys backed up; restore tested.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Offboarding procedure: disabling one IdP account revokes access everywhere (verify).</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../09-dns-adblock/">← 09. DNS and Network-Wide Ad Blocking</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/10-identity-sso.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#the-problems-an-idp-solves">The problems an IdP solves</a></li>
+<li><a href="#the-protocols">The protocols</a></li>
+<li><a href="#the-candidates">The candidates</a><ul>
+<li><a href="#authelia">Authelia</a></li>
+<li><a href="#authentik">Authentik</a></li>
+<li><a href="#keycloak">Keycloak</a></li>
+<li><a href="#zitadel">Zitadel</a></li>
+<li><a href="#pocket-id">Pocket ID</a></li>
+<li><a href="#kanidm">Kanidm</a></li>
+<li><a href="#lldap">LLDAP</a></li>
+<li><a href="#others">Others</a></li>
+<li><a href="#comparison">Comparison</a></li>
+</ul>
+</li>
+<li><a href="#deployment-patterns">Deployment patterns</a><ul>
+<li><a href="#pattern-a-authelia-lldap-behind-traefik-or-caddy-lightweight">Pattern A: Authelia + LLDAP behind Traefik or Caddy (lightweight)</a></li>
+<li><a href="#pattern-b-authentik-does-everything-all-in-one">Pattern B: Authentik does everything (all-in-one)</a></li>
+<li><a href="#pattern-c-pocket-id-for-oidc-tinyauth-for-the-proxy-minimal-passwordless">Pattern C: Pocket ID for OIDC + tinyauth for the proxy (minimal, passwordless)</a></li>
+<li><a href="#pattern-d-keycloak-or-zitadel-oauth2-proxy-enterprise-shaped">Pattern D: Keycloak or Zitadel + oauth2-proxy (enterprise-shaped)</a></li>
+</ul>
+</li>
+<li><a href="#integration-notes-and-gotchas">Integration notes and gotchas</a></li>
+<li><a href="#recommendations">Recommendations</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
