@@ -69,7 +69,7 @@
   });
 
   /* ---- TOC scroll spy ---- */
-  const tocLinks = $$('.toc a[href^="#"]');
+  const tocLinks = $$('.toc-aside a[href^="#"]');
   if (tocLinks.length) {
     const map = new Map();
     tocLinks.forEach((a) => {
@@ -89,7 +89,7 @@
         if (best) {
           const a = map.get(best);
           a.classList.add('active');
-          const tocBox = $('.toc');
+          const tocBox = $('.toc-aside');
           if (tocBox) {
             const ar = a.getBoundingClientRect(), tr = tocBox.getBoundingClientRect();
             if (ar.top < tr.top + 40 || ar.bottom > tr.bottom - 40) a.scrollIntoView({ block: 'center' });
