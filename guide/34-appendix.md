@@ -135,3 +135,549 @@ Container-internal ports; publish or proxy as needed. Where two are listed, the 
 | LibreSpeed | 80 | |
 | UniFi Controller | 8443 (UI), 8080 (inform), 3478 UDP (STUN), 10001 UDP (discovery) | |
 | Omada Controller | 8043 (UI), 8088, 29810–29814 | |
+
+### Identity, security, monitoring
+
+| Service | Port(s) | Notes |
+|---|---|---|
+| Authelia | 9091 | |
+| Authentik | 9000 / 9443 | Outposts: 9000 |
+| Pocket ID | 1411 | |
+| TinyAuth | 3000 | |
+| Kanidm | 8443 (HTTPS), 636 (LDAPS) | |
+| LLDAP | 17170 (UI), 3890 (LDAP), 6360 (LDAPS) | |
+| Keycloak | 8080 / 8443 | |
+| Zitadel | 8080 | |
+| Vaultwarden | 80 (3012 legacy WS) | |
+| Bitwarden (official) | 80/443 | |
+| Psono | 80 | |
+| HashiCorp Vault / OpenBao | 8200 | |
+| Infisical | 8080 | |
+| CrowdSec LAPI | 8080 | Metrics 6060 |
+| Uptime Kuma | 3001 | |
+| Gatus | 8080 | |
+| Beszel hub / agent | 8090 / 45876 | |
+| Prometheus | 9090 | |
+| Alertmanager | 9093 | |
+| Grafana | 3000 | |
+| Loki | 3100 | |
+| Alloy / Promtail | 12345 / 9080 | |
+| node_exporter | 9100 | |
+| cAdvisor | 8080 | |
+| Netdata | 19999 | |
+| Zabbix | 10051 (server), 10050 (agent), 8080 (web) | |
+| InfluxDB | 8086 | |
+| VictoriaMetrics | 8428 | |
+| Dozzle | 8080 | |
+| Glances | 61208 | |
+| ntfy | 80 | |
+| Gotify | 80 | |
+| Apprise API | 8000 | |
+| Scrutiny | 8080 | Collector talks to 8080 |
+| Diun | — | No UI |
+| Watchtower | 8080 (metrics, optional) | |
+| Healthchecks.io | 8000 | |
+| Changedetection.io | 5000 | |
+
+### Media & downloads
+
+| Service | Port(s) | Notes |
+|---|---|---|
+| Jellyfin | 8096 (HTTP), 8920 (HTTPS), 1900 UDP (DLNA), 7359 UDP (discovery) | |
+| Plex | 32400, 32410–32414 UDP (GDM), 1900 UDP, 32469 (DLNA) | |
+| Emby | 8096 / 8920 | |
+| Jellyseerr / Overseerr | 5055 | |
+| Radarr / Sonarr / Lidarr / Readarr / Whisparr | 7878 / 8989 / 8686 / 8787 / 6969 | |
+| Prowlarr | 9696 | |
+| Bazarr | 6767 | |
+| Tdarr | 8265 (UI), 8266 (server) | |
+| qBittorrent | 8080 (UI), 6881 TCP+UDP (peers) | |
+| Transmission | 9091 (UI), 51413 | |
+| Deluge | 8112 (UI), 58846 (daemon), 6881 | |
+| SABnzbd | 8080 | |
+| NZBGet | 6789 | |
+| Gluetun | 8888 (HTTP proxy), 8388 (Shadowsocks), 8000 (control) | Route download clients through it |
+| Audiobookshelf | 80 (image) / 13378 | |
+| Navidrome | 4533 | |
+| Kavita | 5000 | |
+| Komga | 25600 | |
+| Calibre-Web | 8083 | |
+| Tautulli | 8181 | |
+| Stash | 9999 | |
+| Tube Archivist | 8000 | |
+| MeTube | 8081 | |
+| Pinchflat | 8945 | |
+| Lidarr | 8686 | |
+| ErsatzTV | 8409 | |
+| Threadfin / xTeVe | 34400 | |
+
+### Photos, documents, productivity, communication
+
+| Service | Port(s) | Notes |
+|---|---|---|
+| Immich | 2283 | ML 3003 internal |
+| PhotoPrism | 2342 | |
+| Ente (Museum API) | 8080 | |
+| Paperless-ngx | 8000 | |
+| Docspell | 7880 | |
+| Stirling-PDF | 8080 | |
+| Homepage | 3000 | |
+| Homarr | 7575 | |
+| Dashy | 8080 | |
+| Heimdall | 80/443 | |
+| Glance | 8080 | |
+| Miniflux | 8080 | |
+| FreshRSS | 80 | |
+| Wallabag | 80 | |
+| Linkding | 9090 | |
+| Karakeep (Hoarder) | 3000 | |
+| Joplin Server | 22300 | |
+| Trilium | 8080 | |
+| Outline | 3000 | |
+| Docmost | 3000 | |
+| BookStack | 80 | |
+| Wiki.js | 3000 | |
+| SilverBullet | 3000 | |
+| Memos | 5230 | |
+| Vikunja | 3456 | |
+| Planka | 1337 | |
+| Actual Budget | 5006 | |
+| Firefly III | 8080 | |
+| Grocy | 80 (LSIO: 9283) | |
+| Mealie | 9000 | |
+| Tandoor | 8080 | |
+| Radicale | 5232 | |
+| Baïkal | 80 | |
+| Matrix Synapse | 8008 (client), 8448 (federation) | |
+| Conduwuit / Conduit | 6167 | |
+| Element Web | 80 | |
+| Mattermost | 8065 | |
+| Rocket.Chat | 3000 | |
+| Jitsi | 443, 10000 UDP (JVB) | |
+| Mumble | 64738 TCP+UDP | |
+| TeamSpeak | 9987 UDP, 10011, 30033 | |
+| Mailcow | 25, 465, 587, 143, 993, 110, 995, 4190, 80/443 | |
+| Stalwart | 25, 465, 587, 143, 993, 4190, 8080 | |
+| Postfix / Dovecot | 25/587/465 / 143/993 | |
+| Roundcube | 80 | |
+| ntfy | 80 | (listed above) |
+| Home Assistant | 8123 | |
+| Mosquitto (MQTT) | 1883, 8883 (TLS), 9001 (WS) | |
+| Zigbee2MQTT | 8080 | |
+| Z-Wave JS UI | 8091 (UI), 3000 (WS) | |
+| Node-RED | 1880 | |
+| ESPHome | 6052 | |
+| Frigate | 5000 (UI), 8971 (auth UI), 8554 (RTSP), 8555 (WebRTC) | |
+| Scrypted | 10443 | |
+| go2rtc | 1984 (API), 8554 (RTSP), 8555 (WebRTC) | |
+
+### Dev, AI, gaming, databases
+
+| Service | Port(s) | Notes |
+|---|---|---|
+| Forgejo / Gitea | 3000 (HTTP), 22 or 2222 (SSH) | |
+| GitLab | 80/443, 22 | |
+| Woodpecker CI | 8000 (UI), 9000 (gRPC) | |
+| Drone | 80 | |
+| Jenkins | 8080, 50000 (agents) | |
+| code-server / OpenVSCode | 8080 / 3000 | |
+| Coder | 7080 | |
+| Harbor | 80/443 | |
+| Docker Registry | 5000 | |
+| Verdaccio | 4873 | |
+| n8n | 5678 | |
+| Activepieces | 80 | |
+| Windmill | 8000 | |
+| Huginn | 3000 | |
+| Ollama | 11434 | |
+| Open WebUI | 8080 | |
+| LocalAI | 8080 | |
+| llama.cpp server | 8080 | |
+| vLLM | 8000 | |
+| text-generation-webui | 7860, 5000 (API) | |
+| ComfyUI | 8188 | |
+| AUTOMATIC1111 | 7860 | |
+| SearXNG | 8080 | |
+| Whisper ASR / Speaches | 9000 / 8000 | |
+| Piper / Wyoming | 10200 | Whisper-Wyoming 10300 |
+| Minecraft Java / Bedrock | 25565 TCP / 19132 UDP | |
+| Valheim | 2456–2458 UDP | |
+| Palworld | 8211 UDP | |
+| Satisfactory | 7777 UDP+TCP | |
+| Terraria | 7777 | |
+| Factorio | 34197 UDP | |
+| Pterodactyl / Pelican | 80/443 (panel), 8080 (Wings), 2022 (SFTP) | |
+| Crafty | 8443 | |
+| Steam cache (LanCache) | 80, 443, 53 | |
+| RomM | 8080 | |
+| Sunshine | 47984–47990 TCP, 47998–48000 UDP, 48010 | |
+| PostgreSQL | 5432 | |
+| MariaDB / MySQL | 3306 | |
+| Redis / Valkey | 6379 | |
+| MongoDB | 27017 | |
+| InfluxDB | 8086 | |
+| ClickHouse | 8123 (HTTP), 9000 (native) | |
+| Elasticsearch / OpenSearch | 9200, 9300 | |
+| Meilisearch | 7700 | |
+| Typesense | 8108 | |
+| RabbitMQ | 5672, 15672 (UI) | |
+| NATS | 4222, 8222 (monitoring) | |
+| pgAdmin | 80 | |
+| Adminer | 8080 | |
+| CloudBeaver | 8978 | |
+
+---
+
+## Consolidated checklists
+
+### New host bootstrap
+
+- [ ] Static IP or DHCP reservation; hostname set; `/etc/hosts` correct
+- [ ] Non-root user with sudo; SSH keys; `PasswordAuthentication no`; `PermitRootLogin no`
+- [ ] `unattended-upgrades` (security only) enabled; reboot policy decided
+- [ ] Time sync verified (`timedatectl`)
+- [ ] Firewall default-deny inbound; allow SSH from LAN/VPN only, 80/443, 53 if DNS
+- [ ] Docker installed from the official repo; user in `docker` group (or rootless); `daemon.json` with log rotation and `default-address-pools`
+- [ ] Directory layout created (`/srv/stacks`, `/srv/appdata`, data mounts) with correct ownership
+- [ ] Network mounts in `fstab` with `nofail,_netdev,x-systemd.automount`
+- [ ] Tailscale/WireGuard installed on the host (not in a container)
+- [ ] Monitoring agent (Beszel/node_exporter) + `smartd` + ntfy notifications
+- [ ] Host added to the backup plan **before** the first service goes live
+- [ ] Documented in your notes/Git: what, why, IP, purpose
+
+### New service deployment
+
+- [ ] Evaluated (activity, licence, backup docs — see [Resources](33-resources-community.md))
+- [ ] Compose file in Git; secrets in `.env`/secret files, gitignored
+- [ ] Image tag pinned for stateful apps; `restart: unless-stopped`
+- [ ] Bind mounts under `/srv/appdata/<app>`; ownership matches `PUID/PGID`/`user:`
+- [ ] No published ports unless required; joined the `proxy` network; proxy labels/route added
+- [ ] `security_opt: no-new-privileges`, `read_only` where possible, `cap_drop: [ALL]` + `cap_add` as needed, `mem_limit`
+- [ ] Healthcheck defined; `depends_on` with conditions for DB/cache
+- [ ] Behind SSO/forward-auth if it lacks solid native auth; `lan-only` if it should never be public
+- [ ] DNS name added (rewrite or record); certificate verified
+- [ ] Added to Uptime Kuma/Gatus and dashboard
+- [ ] Data paths added to backup script; DB dump added if applicable
+- [ ] **Restore tested once**
+- [ ] Release-notes feed subscribed (`releases.atom`) / Renovate tracking it
+
+### Before an upgrade
+
+- [ ] Read the release notes / migration guide
+- [ ] Snapshot (ZFS/Proxmox) or fresh backup taken **and** verified
+- [ ] Know the rollback: previous image tag, DB dump, snapshot name
+- [ ] Off-peak time; household warned if it's a shared service
+- [ ] After: check logs, run the app's post-upgrade tasks (`occ upgrade`, migrations), verify from a client, update the pinned tag in Git, commit
+
+### Quarterly maintenance
+
+- [ ] Restore test (different app each quarter); PBS/Restic `check`
+- [ ] Review SMART, ZFS scrub results, disk fill trends
+- [ ] Prune Docker images/volumes; check log sizes
+- [ ] Rotate secrets that were exposed or are > 1 year old (API tokens, ACME DNS token)
+- [ ] Review who has access (IdP users, Tailscale devices, SSH keys, Vaultwarden org)
+- [ ] Test UPS: pull the plug, watch NUT shut things down
+- [ ] Update the break-glass sheet; verify offline copy of recovery codes
+- [ ] Firmware: router, switch, UPS, BIOS (if there's a reason)
+- [ ] Re-read your own docs; fix what's outdated
+
+### Incident / outage
+
+1. Don't reboot yet. Capture: `docker ps -a`, `journalctl -b -p err`, `dmesg -T | tail`, `zpool status`, `df -h`.
+2. What changed? (updates, power, network, cert expiry, disk full)
+3. Restore service first (rollback, restart, failover), root-cause second.
+4. Write three lines in the notes: symptom, cause, fix. Add a monitor that would have caught it.
+
+---
+
+## Docker Compose cheat-sheet
+
+### Skeleton with the good defaults
+
+```yaml
+services:
+  app:
+    image: ghcr.io/org/app:1.2.3            # pin for stateful apps
+    container_name: app
+    restart: unless-stopped
+    user: "1000:1000"                        # or PUID/PGID for LSIO images
+    environment:
+      TZ: Europe/Berlin
+      APP_SECRET: ${APP_SECRET}              # from .env
+    env_file: .env                           # or everything from here
+    volumes:
+      - /srv/appdata/app:/config
+      - /srv/media:/media:ro
+    networks: [proxy, app-internal]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID]         # only what it needs; many images need none
+    read_only: true
+    tmpfs: [/tmp, /run]
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.app.rule: Host(`app.home.example.com`)
+      traefik.http.services.app.loadbalancer.server.port: 8080
+
+  db:
+    image: postgres:16-alpine
+    container_name: app-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - /srv/appdata/app/postgres:/var/lib/postgresql/data
+    networks: [app-internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 10s
+      retries: 5
+
+networks:
+  proxy:
+    external: true
+  app-internal:
+    internal: true                           # no internet from the DB
+```
+
+### Snippets
+
+```yaml
+# Hardware
+devices: [/dev/dri:/dev/dri]                       # Intel/AMD GPU
+group_add: ["render", "video"]
+deploy: { resources: { reservations: { devices: [{ driver: nvidia, count: all, capabilities: [gpu] }] } } }
+devices: [/dev/ttyUSB0:/dev/ttyUSB0]              # Zigbee stick; prefer /dev/serial/by-id/...
+
+# Networking
+network_mode: host                                 # mDNS/discovery apps (HA, Plex, Jellyfin DLNA)
+network_mode: service:gluetun                      # route through a VPN container
+ports: ["127.0.0.1:8080:80"]                       # localhost only
+ports: ["53:53/udp", "53:53/tcp"]
+extra_hosts: ["host.docker.internal:host-gateway"]
+dns: [192.168.1.10]
+
+# Storage
+volumes:
+  - type: bind
+    source: /srv/media
+    target: /media
+    read_only: true
+  - type: tmpfs
+    target: /transcode
+    tmpfs: { size: 4g }
+shm_size: 256m                                     # Postgres, Chromium-based apps
+
+# Secrets (Compose file-based secrets)
+secrets:
+  db_password:
+    file: ./secrets/db_password
+services:
+  db:
+    secrets: [db_password]
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+
+# Reuse
+x-common: &common
+  restart: unless-stopped
+  logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }
+services:
+  a:
+    <<: *common
+    image: ...
+
+# Profiles (optional services)
+services:
+  debug-tool:
+    profiles: [debug]        # docker compose --profile debug up
+```
+
+### Commands
+
+```bash
+docker compose up -d                       # start/update (recreates changed services)
+docker compose pull && docker compose up -d # update images
+docker compose down                        # stop and remove containers (keeps volumes)
+docker compose down -v                     # ALSO deletes named volumes — data loss
+docker compose logs -f --tail 100 app
+docker compose ps; docker compose top
+docker compose config                      # resolved file with env substituted
+docker compose exec app sh                 # shell in running container
+docker compose run --rm app <cmd>          # one-off
+docker compose restart app
+docker compose up -d --force-recreate app  # recreate without changes
+docker compose --profile debug up -d
+docker compose -f a.yaml -f override.yaml up -d
+docker system df; docker system prune      # space; remove stopped/unused (asks)
+docker image prune -a                      # remove ALL unused images
+docker network create proxy
+docker inspect app | jq '.[0].Mounts, .[0].NetworkSettings.Networks'
+docker stats --no-stream
+docker events --since 1h
+```
+
+---
+
+## Command references
+
+### ZFS
+
+```bash
+zpool create -o ashift=12 -O compression=zstd -O atime=off -O xattr=sa -O acltype=posixacl \
+    tank mirror /dev/disk/by-id/ata-A /dev/disk/by-id/ata-B
+zpool create ... tank raidz1 A B C D
+zpool status -v; zpool list -v; zpool iostat -v 5
+zpool scrub tank; zpool replace tank OLD NEW; zpool clear tank
+zpool import; zpool import -f tank; zpool export tank
+zfs create tank/media; zfs create -o recordsize=1M tank/media   # large files
+zfs set compression=zstd tank; zfs get all tank/media | grep -v default
+zfs list -o name,used,avail,refer,mountpoint
+zfs snapshot tank/appdata@pre-upgrade; zfs list -t snapshot -r tank/appdata
+zfs rollback tank/appdata@pre-upgrade; zfs destroy tank/appdata@pre-upgrade
+zfs send -R tank/photos@snap | zfs recv -F backup/photos           # local
+zfs send -w tank/photos@snap | ssh nas zfs recv backup/photos      # raw/encrypted
+zfs send -i @old tank/photos@new | ssh nas zfs recv backup/photos  # incremental
+zfs diff tank/appdata@a tank/appdata@b
+arc_summary | head -40
+# Sanoid/Syncoid: /etc/sanoid/sanoid.conf templates; syncoid tank/photos nas:backup/photos
+```
+
+### Systemd
+
+```bash
+systemctl status docker; systemctl restart docker
+systemctl enable --now foo.timer; systemctl list-timers
+journalctl -u docker -f; journalctl -b -p err; journalctl --since "1 hour ago"
+journalctl --disk-usage; journalctl --vacuum-size=500M
+systemctl daemon-reload
+systemd-analyze blame                     # slow boot
+# minimal service + timer
+# /etc/systemd/system/backup.service   [Service] Type=oneshot ExecStart=/srv/stacks/backup/backup.sh EnvironmentFile=/srv/stacks/backup/.env
+# /etc/systemd/system/backup.timer     [Timer] OnCalendar=*-*-* 03:00:00 Persistent=true  [Install] WantedBy=timers.target
+```
+
+### Networking
+
+```bash
+ip -br a; ip r; ip -6 r                    # addresses, routes
+ss -tlnpu                                  # listening sockets
+dig @1.1.1.1 example.com; dig +trace example.com; dig -x 192.168.1.10
+resolvectl status; resolvectl flush-caches
+curl -vkI https://x.home.example.com; curl --resolve host:443:IP https://host/
+openssl s_client -connect host:443 -servername host </dev/null | openssl x509 -noout -dates -subject
+nmap -sT -p- 192.168.1.10                  # what's actually open
+tcpdump -ni eth0 port 53                   # watch DNS
+mtr 1.1.1.1; tracepath
+iperf3 -s   /   iperf3 -c server -R        # throughput between two hosts
+wg show; wg-quick up wg0
+tailscale status; tailscale netcheck; tailscale ping peer
+nft list ruleset; iptables -L DOCKER-USER -n -v
+```
+
+### Disks & SMART
+
+```bash
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT,MODEL,SERIAL
+ls -l /dev/disk/by-id/
+smartctl -a /dev/sda; smartctl -t long /dev/sda; smartctl -l selftest /dev/sda
+nvme smart-log /dev/nvme0
+hdparm -S 241 /dev/sdb                     # spin down after 30 min (media disks only)
+fio --name=t --rw=randrw --bs=4k --size=1G --numjobs=4 --iodepth=32 --direct=1 --runtime=30 --time_based
+badblocks -wsv /dev/sdX                    # destructive burn-in for new disks
+```
+
+### Restic
+
+```bash
+export RESTIC_REPOSITORY=b2:bucket:path RESTIC_PASSWORD_FILE=~/.restic
+restic init
+restic backup /srv/appdata --exclude-file=excludes.txt --tag daily
+restic snapshots; restic ls latest; restic find 'db.sqlite3'
+restic restore latest --target /tmp/restore --include /srv/appdata/vaultwarden
+restic mount /mnt/restic                   # browse snapshots
+restic forget --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --prune
+restic check; restic check --read-data-subset=5%
+restic stats; restic unlock
+```
+
+## Sample `.env.example`
+
+Commit *this*, never `.env`:
+
+```dotenv
+# Domain & proxy
+DOMAIN=home.example.com
+ACME_EMAIL=you@example.com
+CF_DNS_API_TOKEN=            # Cloudflare token: Zone.DNS edit on example.com
+
+# Identity
+TINYAUTH_SECRET=             # openssl rand -hex 32
+TINYAUTH_OIDC_CLIENT_ID=
+TINYAUTH_OIDC_CLIENT_SECRET=
+
+# Databases
+IMMICH_DB_PASSWORD=          # openssl rand -base64 32
+NC_DB_PASSWORD=
+PL_DB_PASSWORD=
+
+# Apps
+IMMICH_VERSION=v1.135.3
+VW_ADMIN_TOKEN=              # vaultwarden hash (argon2)
+PL_SECRET_KEY=
+
+# Notifications
+NTFY_TOPIC_URL=https://ntfy.home.example.com/alerts
+SHOUTRRR_URL=ntfy://ntfy.home.example.com/alerts
+
+# Backups
+RESTIC_PASSWORD=
+B2_ACCOUNT_ID=
+B2_ACCOUNT_KEY=
+```
+
+## Break-glass sheet template
+
+Print it. Put it in the safe with the recovery codes. Update it quarterly.
+
+```
+HOME LAB — EMERGENCY SHEET                          updated: YYYY-MM-DD
+
+Router admin ...........  https://10.0.10.1     user/pass: ________  (2FA backup codes attached)
+Proxmox ................  https://10.0.10.2:8006  root@pam: ________
+NAS ....................  https://10.0.10.5      admin: ________
+IdP admin recovery .....  https://id.home.example.com  codes attached
+Vaultwarden admin token   ________   (emergency access set up for: ________)
+Domain registrar .......  ________   2FA backup codes attached
+Backups
+  PBS: datastore ______  password ______  encryption key: on USB key #1
+  Restic repo(s): ______ password: on USB key #1 / in sealed envelope
+  B2: account ______ key: sealed envelope
+Where the data is
+  Photos: NAS tank/photos + B2 bucket "______" + cold disk in ______
+  Documents: Paperless export in tank/backups + B2
+  Passwords: Vaultwarden (Bitwarden clients keep an offline copy)
+If I'm gone
+  1. Photos & documents: restore from B2 with rclone (instructions: ______)
+  2. Passwords: emergency access in Bitwarden app → ______
+  3. Everything else can be switched off.
+```
+
+---
+
+*End of the guide. Start with [Introduction](00-introduction.md), or jump to the [Reference Architectures](31-reference-architectures.md) and build something.*

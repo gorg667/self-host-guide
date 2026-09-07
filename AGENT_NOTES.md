@@ -112,7 +112,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 31-reference-architectures.md — Starter / Intermediate / Advanced blueprints with Mermaid diagrams + full compose stacks
 - [x] 32-troubleshooting-faq.md — Common failures & fixes, FAQ
 - [x] 33-resources-community.md — Communities, creators, wikis, newsletters
-- [ ] 34-appendix.md — Glossary, port reference, checklists, compose cheat-sheet
+- [x] 34-appendix.md — Glossary, port reference, checklists, compose cheat-sheet
 
 ### Build system / web adaptation
 - [x] build.py (concat + static site) — implemented and tested
