@@ -105,7 +105,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 26-databases-backing-services.md — PostgreSQL, MariaDB, Redis/Valkey, MongoDB, SQLite; pgAdmin/Adminer; object storage (Garage/SeaweedFS/MinIO); message queues
 
 ### Part IV — Operations
-- [ ] 27-automation-iac.md — Ansible, Terraform/OpenTofu + Proxmox, cloud-init, NixOS, Renovate, GitOps (Komodo, Flux/ArgoCD)
+- [x] 27-automation-iac.md — Ansible, Terraform/OpenTofu + Proxmox, cloud-init, NixOS, Renovate, GitOps (Komodo, Flux/ArgoCD)
 - [ ] 28-maintenance-operations.md — Update cadence, pinning, runbooks, documentation, disaster drills, bus factor
 - [ ] 29-power-cost-environment.md — Measuring watts, cost calc, idle tuning (powertop/C-states/ASPM), spin-down, heat/noise, UPS + NUT
 - [ ] 30-legal-ethical.md — Licensing (OSS vs source-available), hosting for family, copyright, ISP ToS, GDPR-lite
