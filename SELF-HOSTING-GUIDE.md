@@ -2,7 +2,7 @@
 
 > A comprehensive, opinionated, in-depth guide to services worth self-hosting — and everything around them.
 
-*Generated 2026-09-07 from the chapter sources in `guide/`. 27 chapters, ~94,498 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
+*Generated 2026-09-07 from the chapter sources in `guide/`. 30 chapters, ~103,557 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
 
 
 ## Table of contents
@@ -43,6 +43,12 @@
 - [24. Gaming: Game Servers, Retro Libraries, and Streaming](#gaming-game-servers-retro-libraries-and-streaming)
 - [25. The Long Tail: Household, Finance, Web, and Utility Apps](#the-long-tail-household-finance-web-and-utility-apps)
 - [26. Databases and Backing Services](#databases-and-backing-services)
+
+**Part IV — Operations & reference**
+
+- [27. Infrastructure as Code and Automation](#infrastructure-as-code-and-automation)
+- [28. Maintenance and Operations](#maintenance-and-operations)
+- [29. Power, Cost, and the Physical Environment](#power-cost-and-the-physical-environment)
 
 ---
 
@@ -128,7 +134,7 @@ Every service you run is a thing that needs updating, monitoring, backing up, an
 
 ### Write it down
 
-Your future self, six months from now, will not remember why port 8096 is forwarded or which container owns that Postgres database. Document your setup as you build it. Keep your configuration in Git. [Chapter 28](28-maintenance-operations.md) covers documentation and runbooks; [Chapter 27](27-automation-iac.md) covers keeping configuration as code so that the documentation *is* the deployment.
+Your future self, six months from now, will not remember why port 8096 is forwarded or which container owns that Postgres database. Document your setup as you build it. Keep your configuration in Git. [Chapter 28](#maintenance-and-operations) covers documentation and runbooks; [Chapter 27](#infrastructure-as-code-and-automation) covers keeping configuration as code so that the documentation *is* the deployment.
 
 ### Security is a process, not a product
 
@@ -291,12 +297,12 @@ Hardware is the visible cost and usually not the largest one over a five-year ho
 - **Storage.** As of 2026, roughly USD 15–25 per TB for NAS-grade hard drives (cheaper per TB at larger capacities, 16–24 TB drives being the sweet spot), USD 50–80 per TB for consumer NVMe SSDs. Plan for the number of drives your redundancy scheme needs, not the number you would like to have (see [Chapter 6](#storage-filesystems-redundancy-and-sharing)).
 - **NAS enclosure or case.** USD 0 (use the mini PC's bays) to USD 300–800 (4–8 bay commercial NAS or a DIY case with hot-swap bays).
 - **Networking.** USD 0 if you use the ISP router, USD 100–250 for a decent managed switch and a small firewall box. More for Wi-Fi access points, 10 GbE, or PoE.
-- **UPS.** USD 100–250 for a 600–1,000 VA line-interactive unit adequate for a Tier 1–2 lab. Essential once you have a ZFS pool or anything else that dislikes unclean shutdowns. See [Chapter 29](29-power-cost-environment.md).
+- **UPS.** USD 100–250 for a 600–1,000 VA line-interactive unit adequate for a Tier 1–2 lab. Essential once you have a ZFS pool or anything else that dislikes unclean shutdowns. See [Chapter 29](#power-cost-and-the-physical-environment).
 - **Miscellaneous.** Cables, a USB-to-serial adapter, a spare SSD, a label maker. Budget USD 50–100 and you will spend it.
 
 ### Recurring costs
 
-- **Electricity.** The dominant recurring cost. Compute the annual cost as `watts × 8.76 × price_per_kWh`. A 15 W mini PC at USD 0.15/kWh is USD 20/year. A 150 W tower is USD 197/year. At European prices (USD 0.30–0.40/kWh) double those figures. [Chapter 29](29-power-cost-environment.md) covers measurement and reduction.
+- **Electricity.** The dominant recurring cost. Compute the annual cost as `watts × 8.76 × price_per_kWh`. A 15 W mini PC at USD 0.15/kWh is USD 20/year. A 150 W tower is USD 197/year. At European prices (USD 0.30–0.40/kWh) double those figures. [Chapter 29](#power-cost-and-the-physical-environment) covers measurement and reduction.
 - **Off-site backup storage.** USD 5–7 per TB per month for Backblaze B2 or similar; a Hetzner Storage Box is cheaper at volume (roughly USD 4/month for 1 TB, USD 13/month for 5 TB as of 2026). A second machine at a friend's house costs electricity there and a favour.
 - **Domain name.** USD 10–15/year. You want one; it makes TLS certificates trivial (see [Chapter 7](#reverse-proxies-and-tls-certificates)).
 - **VPS** (optional). USD 4–6/month for a small instance that acts as a public ingress point if you are behind CGNAT, or as a Headscale/Netbird coordinator, or as an Uptime Kuma instance watching your home from outside.
@@ -322,7 +328,7 @@ For comparison, 2 TB of mainstream cloud storage plus a streaming service plus a
 
 These four are related and usually underestimated.
 
-**Power** determines the electricity bill and the size of UPS you need. Modern mini PCs idle at 6–15 W. A used enterprise 1U or 2U server idles at 80–200 W *before* you add drives, and its fans are designed for a data centre. The single most impactful hardware decision for your running costs is choosing low-idle-power components. [Chapter 2](#hardware-choosing-what-to-run-it-on) and [Chapter 29](29-power-cost-environment.md) go into detail.
+**Power** determines the electricity bill and the size of UPS you need. Modern mini PCs idle at 6–15 W. A used enterprise 1U or 2U server idles at 80–200 W *before* you add drives, and its fans are designed for a data centre. The single most impactful hardware decision for your running costs is choosing low-idle-power components. [Chapter 2](#hardware-choosing-what-to-run-it-on) and [Chapter 29](#power-cost-and-the-physical-environment) go into detail.
 
 **Heat** follows power: every watt becomes heat. 20 W is nothing. 300 W in a closet with no airflow will cook drives (which want to stay under about 40 °C for longevity) and eventually the room. If you are going beyond Tier 1, think about where the hot air goes.
 
@@ -541,7 +547,7 @@ Building your own gives you complete control over power, noise, expansion, and d
 
 A Micro-ATX or ITX board with an efficient CPU (Intel Core i3-12100/13100/14100 or i5 non-K, or the Intel N-series on an ITX board), 16–64 GB RAM, a case with 6–12 drive bays (Fractal Design Node 304/804, Jonsbo N2/N3/N4/N5, Sagittarius, the venerable Fractal Define R5/7 with extra drive cages), a Gold or Platinum PSU sized *small* (a 450–550 W unit runs more efficiently at low load than an 850 W unit), and an LSI HBA if you need more SATA ports than the board provides. Such a build idles at 20–35 W with drives spun down and costs USD 500–900 before drives.
 
-Intel 12th–14th gen with an iGPU is the community favourite here because Quick Sync is excellent, the C-state power management is good (C8–C10 idle achievable with care), and the platform is well-understood. See [Chapter 29](29-power-cost-environment.md) for tuning.
+Intel 12th–14th gen with an iGPU is the community favourite here because Quick Sync is excellent, the C-state power management is good (C8–C10 idle achievable with care), and the platform is well-understood. See [Chapter 29](#power-cost-and-the-physical-environment) for tuning.
 
 ### The compute/virtualisation build
 
@@ -644,7 +650,7 @@ A UPS gives you two things: continuity through brief outages and flicker (very c
 
 **Type**: line-interactive (APC Back-UPS Pro, CyberPower CP-series, Eaton 5E/5S) is right for home labs. Pure sine wave output is preferable for active-PFC power supplies (which is every modern PSU). Standby/offline units are cheaper and adequate for a mini PC. Online/double-conversion is overkill and inefficient for a home.
 
-**Communication**: the UPS must talk to your servers so they shut down before the battery dies. USB is standard; the **NUT** (Network UPS Tools) daemon runs on one machine as master and notifies others over the network. [Chapter 29](29-power-cost-environment.md) has a NUT walkthrough. Some UPS units have a network management card slot; the cards are useful but cost more than the UPS.
+**Communication**: the UPS must talk to your servers so they shut down before the battery dies. USB is standard; the **NUT** (Network UPS Tools) daemon runs on one machine as master and notifies others over the network. [Chapter 29](#power-cost-and-the-physical-environment) has a NUT walkthrough. Some UPS units have a network management card slot; the cards are useful but cost more than the UPS.
 
 **Batteries** last 3–5 years and are user-replaceable (USD 30–80). Lithium-ion UPS units (Eaton, CyberPower) are appearing with longer battery life and lower weight at a price premium.
 
@@ -1181,7 +1187,7 @@ NixOS is a Linux distribution where the entire system — packages, services, us
 
 For a home lab this is compelling: no configuration drift, no "what did I change six months ago," trivially reproducible hosts, and native declarative support for hundreds of services (`services.jellyfin.enable = true;`) as well as declarative Docker/Podman containers (`virtualisation.oci-containers`). Many experienced self-hosters have converged on NixOS as their host OS with a mix of native services and containers.
 
-The cost is a steep learning curve: the Nix language is unusual, error messages are opaque, documentation is fragmented across the manual, the wiki, and blog posts, and doing anything the "Nix way" takes longer the first time. Flakes (the modern project structure) are still technically experimental after years. It is the best choice for someone who enjoys that kind of rigour and the worst for someone who wants to follow a random tutorial. [Chapter 27](27-automation-iac.md) covers it as an infrastructure-as-code approach.
+The cost is a steep learning curve: the Nix language is unusual, error messages are opaque, documentation is fragmented across the manual, the wiki, and blog posts, and doing anything the "Nix way" takes longer the first time. Flakes (the modern project structure) are still technically experimental after years. It is the best choice for someone who enjoys that kind of rigour and the worst for someone who wants to follow a random tutorial. [Chapter 27](#infrastructure-as-code-and-automation) covers it as an infrastructure-as-code approach.
 
 ## LXC versus VM versus Docker: a decision guide
 
@@ -1227,7 +1233,7 @@ Rules of thumb:
 
 **Tier 2, compute + storage:** Proxmox on the compute box (Debian VM as Docker host, LXCs for light services, PBS for backups). TrueNAS on the storage box, or TrueNAS as a Proxmox VM with an HBA passed through if you consolidate.
 
-**Tier 3:** Proxmox cluster (three nodes or two plus a qdevice) with ZFS replication or Ceph; PBS on separate hardware; TrueNAS or a bare-Debian ZFS box for bulk storage; NixOS or Ansible-managed Debian for the VMs if you want reproducibility ([Chapter 27](27-automation-iac.md)).
+**Tier 3:** Proxmox cluster (three nodes or two plus a qdevice) with ZFS replication or Ceph; PBS on separate hardware; TrueNAS or a bare-Debian ZFS box for bulk storage; NixOS or Ansible-managed Debian for the VMs if you want reproducibility ([Chapter 27](#infrastructure-as-code-and-automation)).
 
 Whatever you choose: install it, then immediately set up backups of its configuration, and *write down* how you installed it. The OS is the one layer you cannot restore from a backup of itself.
 
@@ -1412,7 +1418,7 @@ Every container is a bundle of software with its own CVEs and its own breaking c
 
 **Pin major versions, notify, update manually.** `image: postgres:16`, `image: ghcr.io/immich-app/immich-server:v1` (where the project offers a major tag). Run **Diun** (Docker Image Update Notifier) or Watchtower in monitor-only mode to get a notification (ntfy, Gotify, email, Discord…) when a new image is available. Read the release notes. Update when convenient. This is the guide's recommendation for anything with a database.
 
-**Pin exact versions, manage with Renovate.** `image: vaultwarden/server:1.33.2`. Keep the Compose files in a Git repository (Gitea/Forgejo/GitHub). Run **Renovate** (self-hosted or via its GitHub app) against the repo; it opens a pull request for each image bump with the changelog linked. Merge the PR; a webhook or a cron `git pull && docker compose up -d` (or Komodo, or a small script) applies it. This is GitOps for Compose, gives you a complete audit trail, and is how many advanced self-hosters run. It is more setup than the other two; [Chapter 27](27-automation-iac.md) walks through it.
+**Pin exact versions, manage with Renovate.** `image: vaultwarden/server:1.33.2`. Keep the Compose files in a Git repository (Gitea/Forgejo/GitHub). Run **Renovate** (self-hosted or via its GitHub app) against the repo; it opens a pull request for each image bump with the changelog linked. Merge the PR; a webhook or a cron `git pull && docker compose up -d` (or Komodo, or a small script) applies it. This is GitOps for Compose, gives you a complete audit trail, and is how many advanced self-hosters run. It is more setup than the other two; [Chapter 27](#infrastructure-as-code-and-automation) walks through it.
 
 **Whatever you do:**
 
@@ -1520,7 +1526,7 @@ Distributions suited to home use:
 - **kind** / **minikube** — single-node clusters for local development and learning; not for running services.
 - **Kubeadm on Debian VMs** — the "learn it properly" route, closest to the certification exams.
 
-The home-lab Kubernetes stack that has emerged as standard: **Talos or k3s** nodes on Proxmox VMs; **Flux** or **Argo CD** for GitOps (the cluster state lives in Git, the controller applies it); **Longhorn** or **democratic-csi** (against a TrueNAS box) or **Rook-Ceph** for persistent storage; **MetalLB** or **kube-vip** for LoadBalancer IPs on a LAN; **Traefik**, **ingress-nginx**, or **Cilium**'s Gateway API for ingress; **cert-manager** for TLS; **External Secrets** or **Sealed Secrets**; **Renovate** to bump chart and image versions via PRs. The "home-operations" community (a GitHub org and Discord) maintains a widely-copied template repository for exactly this. Budget several weekends to get there and expect to learn a great deal. [Chapter 27](27-automation-iac.md) touches on the GitOps side.
+The home-lab Kubernetes stack that has emerged as standard: **Talos or k3s** nodes on Proxmox VMs; **Flux** or **Argo CD** for GitOps (the cluster state lives in Git, the controller applies it); **Longhorn** or **democratic-csi** (against a TrueNAS box) or **Rook-Ceph** for persistent storage; **MetalLB** or **kube-vip** for LoadBalancer IPs on a LAN; **Traefik**, **ingress-nginx**, or **Cilium**'s Gateway API for ingress; **cert-manager** for TLS; **External Secrets** or **Sealed Secrets**; **Renovate** to bump chart and image versions via PRs. The "home-operations" community (a GitHub org and Discord) maintains a widely-copied template repository for exactly this. Budget several weekends to get there and expect to learn a great deal. [Chapter 27](#infrastructure-as-code-and-automation) touches on the GitOps side.
 
 **Docker Swarm** — Docker's own orchestrator — deserves a mention as the middle path: Compose-file syntax, multi-node scheduling, overlay networks, secrets, rolling updates, a fraction of Kubernetes' complexity. It is in maintenance mode (Docker Inc. has not invested in it for years) but works, and some people happily run three-node Swarms. It is a reasonable choice if you want multi-node without the k8s learning curve, with the caveat that its future is uncertain and the ecosystem around it is thin.
 
@@ -1793,7 +1799,7 @@ Configure `smartd` (part of smartmontools) to run short self-tests weekly and lo
 - [ ] Automated snapshots (sanoid/zrepl/btrbk/TrueNAS tasks) with a retention policy; replication to a second machine if possible.
 - [ ] Monthly scrub scheduled; SMART monitored by smartd or Scrutiny; alerts go somewhere you will see them.
 - [ ] Sharing protocol matched to client (NFS for Linux, SMB for Windows/Mac); no guest SMB shares; network mounts use automount so a down NAS does not hang clients.
-- [ ] UPS communicating with the storage host so it shuts down cleanly ([Chapter 29](29-power-cost-environment.md)).
+- [ ] UPS communicating with the storage host so it shuts down cleanly ([Chapter 29](#power-cost-and-the-physical-environment)).
 - [ ] You have read [Chapter 11](#backups-the-chapter-that-matters-most) and understand that none of the above is a backup.
 
 ---
@@ -2855,7 +2861,7 @@ Two philosophies. **Back up the whole VM** (Proxmox Backup Server, `vzdump`, Vee
 
 - **The OS/hypervisor config**: Proxmox `/etc/pve`, OPNsense's XML backup (it has a built-in scheduled export — to Git, Nextcloud, or Google Drive), switch configs, UniFi controller backups, Home Assistant snapshots, the router's DDNS credentials.
 - **Secrets that unlock the backups**: the Restic/Borg repository password, the ZFS encryption key, the Bitwarden master password. If these live *only* inside the thing being backed up, you cannot restore. Print them. Put them in a safe, a bank box, or a sealed envelope with a trusted person. Store a copy in a *different* password manager or an encrypted USB stick kept off-site.
-- **Documentation**: the notes on how everything is set up ([Chapter 28](28-maintenance-operations.md)).
+- **Documentation**: the notes on how everything is set up ([Chapter 28](#maintenance-and-operations)).
 - **Phone photos not yet uploaded**: Immich/Nextcloud/Syncthing auto-upload closes this gap.
 - **Email**, if you self-host it ([Chapter 20](#communication-chat-video-calls-and-email)) — Mailcow has a backup script; back up the mail store *and* the config.
 - **Data in SaaS you still use**: exports from Google Takeout, GitHub repos (Gitea mirrors), Spotify playlists. A home lab is a good place to keep copies of your cloud data too.
@@ -3260,7 +3266,7 @@ A concrete starting set, ordered by value:
 7. **Container down/restarting** — Uptime Kuma Docker monitor or Beszel status; `restart: unless-stopped` will restart-loop a broken container silently otherwise.
 8. **Certificate expiring within 14 days** — Uptime Kuma/Gatus built in; catches a broken ACME renewal before it becomes an outage.
 9. **Host unreachable** — from the *external* monitor (a Pi, a VPS, or a hosted check): ping and one HTTPS check.
-10. **UPS on battery / low battery** — NUT `upsmon` notifications ([Chapter 29](29-power-cost-environment.md)).
+10. **UPS on battery / low battery** — NUT `upsmon` notifications ([Chapter 29](#power-cost-and-the-physical-environment)).
 11. **Unusual login** — SSH login notifications (a PAM hook posting to ntfy), IdP admin logins, CrowdSec decisions ([Chapter 13](#security-for-the-home-lab)).
 12. **Temperature** — CPU over 85 °C sustained, drives over 45 °C.
 13. **Available updates** — Diun/Watchtower notifications for images; `apt` unattended-upgrades mail; Proxmox update notifications. Low priority topic.
@@ -3450,7 +3456,7 @@ Containers are not a security boundary by default; they can be made a reasonable
 - **Resource limits** (`mem_limit`, `cpus`, `pids_limit`) so a compromised or buggy container cannot starve the host.
 - **Isolated networks.** A database should be on a network that only its application can reach; nothing else. The `proxy` network carries only web-facing containers.
 - **Egress control.** Containers can reach the internet by default. For things that should not need to (databases, internal tools), `internal: true` on their network, or firewall rules in `DOCKER-USER`. Cuts off data exfiltration and C2 callbacks from a compromised image.
-- **Image hygiene.** Official/project images; pinned tags; `docker scout` / **Trivy** / **Grype** to scan images for known CVEs (Trivy in a cron job with ntfy output is a fine weekly habit); Renovate for controlled updates ([Chapter 27](27-automation-iac.md)).
+- **Image hygiene.** Official/project images; pinned tags; `docker scout` / **Trivy** / **Grype** to scan images for known CVEs (Trivy in a cron job with ntfy output is a fine weekly habit); Renovate for controlled updates ([Chapter 27](#infrastructure-as-code-and-automation)).
 - **Rootless Docker or Podman** for the strongest default posture, at the cost of some friction ([Chapter 5](#containers-docker-compose-podman-and-kubernetes)).
 - **gVisor (`runsc`)** as an alternative runtime adds a user-space kernel between container and host — real isolation for an untrusted workload (a public-facing app, a code-execution sandbox) with a performance cost. Niche at home; good to know exists.
 
@@ -4401,7 +4407,7 @@ An **end-to-end encrypted** note app (open-source clients and server, formerly c
 
 ## Knowledge bases and wikis
 
-For documentation that several people read and some edit — the household handbook, the home lab runbook ([Chapter 28](28-maintenance-operations.md)), a family recipe collection, a club's wiki.
+For documentation that several people read and some edit — the household handbook, the home lab runbook ([Chapter 28](#maintenance-and-operations)), a family recipe collection, a club's wiki.
 
 ### Outline
 
@@ -4510,7 +4516,7 @@ Mobile clients speaking the Google Reader or Fever API: **Read You**, **Feeder**
 ## Checklist
 
 - [ ] A notes system chosen with plain-text or standard export verified; sync method (LiveSync/Syncthing/Server) working across all devices.
-- [ ] A household wiki (BookStack or similar) holding the home-lab runbook and family documentation ([Chapter 28](28-maintenance-operations.md)).
+- [ ] A household wiki (BookStack or similar) holding the home-lab runbook and family documentation ([Chapter 28](#maintenance-and-operations)).
 - [ ] CalDAV/CardDAV server running; every phone and desktop syncing calendar and contacts through it; a cloud calendar migrated or mirrored.
 - [ ] Tasks (Vikunja) exposed via CalDAV so they appear in calendars.
 - [ ] Bookmarks and read-later imported from browser/Pocket exports.
@@ -4987,7 +4993,7 @@ A home lab accumulates hundreds of non-human secrets: database passwords, API to
 
 ### SOPS + age: secrets in Git
 
-**SOPS** (Mozilla, now CNCF) encrypts *values* in YAML/JSON/`.env` files while leaving keys readable — you see `DB_PASSWORD: ENC[AES256_GCM,...]` and can diff the file meaningfully. Encryption keys: **age** (a small modern tool; one keypair per admin/host), GPG, or cloud KMS. Commit encrypted files; decrypt on deploy (`sops -d .env.enc > .env`, or `sops exec-env`). Integrates with Ansible (community.sops), Kubernetes (via Flux/Argo), NixOS (sops-nix, agenix), Komodo. **This is how you get a fully reproducible lab in Git *including* its secrets**, and the recommendation for anyone doing infrastructure-as-code ([Chapter 27](27-automation-iac.md)). `git-crypt` is the older whole-file alternative.
+**SOPS** (Mozilla, now CNCF) encrypts *values* in YAML/JSON/`.env` files while leaving keys readable — you see `DB_PASSWORD: ENC[AES256_GCM,...]` and can diff the file meaningfully. Encryption keys: **age** (a small modern tool; one keypair per admin/host), GPG, or cloud KMS. Commit encrypted files; decrypt on deploy (`sops -d .env.enc > .env`, or `sops exec-env`). Integrates with Ansible (community.sops), Kubernetes (via Flux/Argo), NixOS (sops-nix, agenix), Komodo. **This is how you get a fully reproducible lab in Git *including* its secrets**, and the recommendation for anyone doing infrastructure-as-code ([Chapter 27](#infrastructure-as-code-and-automation)). `git-crypt` is the older whole-file alternative.
 
 ### Secrets managers
 
@@ -5133,7 +5139,7 @@ Introduced in [Chapter 5](#containers-docker-compose-podman-and-kubernetes); the
 - **Portainer CE** — the full manager: containers, images, volumes, networks, stacks, users/teams/RBAC, multiple environments (Docker, Swarm, Kubernetes, remote agents), templates, GitOps stack deployment from a repo. Heavier; stores stack YAML in its own DB unless Git-backed; the Business Edition nags. **The recommendation for several hosts** or when RBAC for other people matters.
 - **Komodo** — a Rust platform for managing servers, stacks, builds, and deployments across many hosts, with Git-backed resource definitions (everything is a TOML "resource" that can be synced from a repo), periphery agents per host, alerting, and a fast UI. The GitOps-flavoured successor many people move to from Portainer once they have three or more hosts and want configuration in Git. **Watch this one**; it has matured quickly.
 - **Arcane**, **Dockhand**, **Yacht**, **Dweebui**, **Cosmos** (a whole platform — [Chapter 4](#operating-systems-and-hypervisors)), **Lazydocker** (terminal), **ctop** (terminal `top` for containers), **dive** (inspect image layers), **Watchtower/Diun** (updates — [Chapter 5](#containers-docker-compose-podman-and-kubernetes)), **What's Up Docker (WUD)** (update notifications with a UI and trigger actions).
-- **Ansible**, **Terraform/OpenTofu**, **NixOS** — the code-first alternatives to any UI ([Chapter 27](27-automation-iac.md)).
+- **Ansible**, **Terraform/OpenTofu**, **NixOS** — the code-first alternatives to any UI ([Chapter 27](#infrastructure-as-code-and-automation)).
 
 ## Workflow automation
 
@@ -5339,7 +5345,7 @@ Where a local model earns its keep:
 
 - **Models are large** — 5–40 GB each; a 1 TB NVMe fills quickly. Keep them on fast local storage and prune.
 - **GPU sharing**: NVIDIA lets many containers use one GPU (VRAM permitting); Ollama unloads idle models to make room. Set `OLLAMA_MAX_LOADED_MODELS` and keep-alive deliberately. Intel iGPUs share `/dev/dri` among containers naturally.
-- **Power**: an idle 3090 is 20 W; add a "suspend the GPU box when idle, wake-on-LAN on request" automation if the machine is separate ([Chapter 29](29-power-cost-environment.md)).
+- **Power**: an idle 3090 is 20 W; add a "suspend the GPU box when idle, wake-on-LAN on request" automation if the machine is separate ([Chapter 29](#power-cost-and-the-physical-environment)).
 - **Security**: never expose Ollama's API (no auth by default) or ComfyUI (arbitrary code via custom nodes) beyond LAN/VPN; put Open WebUI behind forward-auth/OIDC; treat prompt injection via RAG'd documents as real if the model has tools.
 - **Model choice changes monthly.** As of 2026 the dependable families for general use are Llama 3.x/4, Qwen 3, Gemma 3, Mistral Small/Medium, DeepSeek (R1/V3 distils), Phi-4, GLM; for vision, Qwen-VL, Gemma 3, Llama 3.2 Vision, Pixtral; for embeddings, bge-m3, nomic-embed, Qwen3-Embedding. Check r/LocalLLaMA and the Open LLM Leaderboard rather than trusting any static list.
 - **Licences**: most open-weight models have permissive or "open with acceptable-use" licences (Llama's has a 700 M-user clause irrelevant to you; Gemma's has usage terms; Qwen and Mistral Small are Apache 2.0). Fine for personal use; read them if you build a product.
@@ -5578,7 +5584,7 @@ Privacy-respecting alternatives to Google Analytics — no cookies, no cross-sit
 - **Dawarich** — a self-hosted Google Timeline replacement: location history from your phone (via OwnTracks, Overland, or Google Takeout import), maps, stats, trips; **Reitti** and **OwnTracks Recorder** are alternatives; **Traccar** is the fleet-grade GPS tracker.
 - **PhotoPrism/Immich** ([Chapter 16](#photos-replacing-google-photos-and-icloud)) aside, **Immich Public Proxy** shares Immich albums publicly without exposing Immich.
 - **Wakapi** (WakaTime-compatible coding-time tracker), **Umami** for your own dashboards, **Beaver Habit Tracker** and **Habitica** (habit tracking), **Monica** (personal CRM — remember birthdays and conversations with friends and family), **Twenty** (open-source CRM for a small business), **Fider** (feature-request voting board), **Zammad**/**FreeScout**/**Helpy**/**UVdesk** (help desks — FreeScout is the light one), **Peppermint** and **Zammad** (ticketing), **Statamic**…
-- **Home lab specifics**: **NetBox** (the network/infrastructure source of truth — IPAM, racks, devices, cables; enterprise-grade, and many home labbers document their lab in it; heavy), **Netbox's** lighter cousins **phpIPAM** and **NIPAP** (IP address management only), **Rack Elevation** tools, **WatchYourLAN** (ARP-based device discovery and new-device alerts on your LAN — light and useful), **Fing** alternatives **NetAlertX** (formerly PiAlert — new-device detection with notifications; the recommendation for "who just joined my Wi-Fi"), **Nmap web UIs**, **Speedtest Tracker** (above), **Smokeping** (latency graphs — ancient and still unmatched), **ntopng** (traffic analysis), **LibreNMS** ([Chapter 12](#monitoring-logging-and-alerting)), **Oxidized** (network device config backup — pairs with LibreNMS), **PhpMyAdmin**-style tools in [Chapter 26](#databases-and-backing-services), **Guacamole** (browser-based RDP/SSH/VNC gateway — a clientless remote desktop to every machine in the lab, behind forward-auth; excellent), **RustDesk** (self-hosted TeamViewer — relay + ID server for remote support of family PCs; genuinely useful), **MeshCentral** (remote management of many machines with an agent — the free RMM), **Tactical RMM**, **Semaphore UI** (a web UI for Ansible/Terraform — [Chapter 27](27-automation-iac.md)), **Cockpit** ([Chapter 12](#monitoring-logging-and-alerting)), **Webmin** (the ancient server admin UI; still works), **Wake-on-LAN** dashboards (**UpSnap** — a clean WoL UI with device discovery and scheduled wakes; useful for the gaming/GPU box).
+- **Home lab specifics**: **NetBox** (the network/infrastructure source of truth — IPAM, racks, devices, cables; enterprise-grade, and many home labbers document their lab in it; heavy), **Netbox's** lighter cousins **phpIPAM** and **NIPAP** (IP address management only), **Rack Elevation** tools, **WatchYourLAN** (ARP-based device discovery and new-device alerts on your LAN — light and useful), **Fing** alternatives **NetAlertX** (formerly PiAlert — new-device detection with notifications; the recommendation for "who just joined my Wi-Fi"), **Nmap web UIs**, **Speedtest Tracker** (above), **Smokeping** (latency graphs — ancient and still unmatched), **ntopng** (traffic analysis), **LibreNMS** ([Chapter 12](#monitoring-logging-and-alerting)), **Oxidized** (network device config backup — pairs with LibreNMS), **PhpMyAdmin**-style tools in [Chapter 26](#databases-and-backing-services), **Guacamole** (browser-based RDP/SSH/VNC gateway — a clientless remote desktop to every machine in the lab, behind forward-auth; excellent), **RustDesk** (self-hosted TeamViewer — relay + ID server for remote support of family PCs; genuinely useful), **MeshCentral** (remote management of many machines with an agent — the free RMM), **Tactical RMM**, **Semaphore UI** (a web UI for Ansible/Terraform — [Chapter 27](#infrastructure-as-code-and-automation)), **Cockpit** ([Chapter 12](#monitoring-logging-and-alerting)), **Webmin** (the ancient server admin UI; still works), **Wake-on-LAN** dashboards (**UpSnap** — a clean WoL UI with device discovery and scheduled wakes; useful for the gaming/GPU box).
 - **Printing and scanning**: **CUPS** in a container for AirPrint/network printing of a USB printer; **scanservjs** or **Scanopy** for a web UI on a USB scanner (pairs with Paperless's consume folder); **OctoPrint**/**Klipper + Mainsail/Fluidd** for 3D printers (with **Spoolman** and **Obico** for AI failure detection).
 - **Weather**: a personal weather station (Ecowitt, Ambient) feeding **WeeWX** or **Home Assistant**; **Windy/Open-Meteo** for data.
 - **Education**: **Moodle** (heavy LMS), **Kolibri** (offline education content), **Anki sync server** (self-hosted AnkiWeb — small and useful for flashcard users), **Kiwix** (above).
@@ -5790,5 +5796,585 @@ Tools that do this for you: **docker-db-backup** (tiredofit), **Borgmatic**'s da
 - [ ] Redis/Valkey instances have persistence configured deliberately (off for caches, on for queues).
 - [ ] Admin UIs (pgAdmin/Adminer/CloudBeaver) not left exposed; started on demand or behind forward-auth on LAN/VPN.
 - [ ] Object storage (if run) has bucket policies, versioning/object-lock on the backup bucket, and its own backup.
+
+---
+
+# Infrastructure as Code and Automation
+
+There is a moment in every home lab's life when you realise you could not rebuild it. The Docker host was configured by hand over two years; the Proxmox VMs were clicked into existence; the firewall rules accreted. If the SSD died tomorrow, restoring the *data* would be the easy part — recreating the *configuration* would take weeks of remembering. Infrastructure as code (IaC) is the discipline that prevents this: the state of every machine is described in files, the files live in Git, and a machine is produced by *applying* them rather than by typing. This chapter covers the tools at each layer — Ansible for configuring hosts, Terraform/OpenTofu for provisioning VMs and cloud resources, cloud-init for first boot, NixOS as the declarative extreme, Renovate for keeping versions current, and GitOps workflows for Compose (Komodo) and Kubernetes (Flux, Argo CD) — and, more importantly, how much of it a home lab actually needs.
+
+## How much IaC does a home lab need?
+
+Be honest about the goal. Full IaC — every host reproducible from an empty disk with one command — is a beautiful thing and a serious investment. For most home labs, the *80/20* is:
+
+1. **Compose files and their configs in Git.** This alone gets you most of the value: every service's definition is versioned, diffable, and restorable. If your `/opt/stacks` is a Git repo, you already have IaC for the application layer.
+2. **A written (or scripted) procedure for the host.** "Install Debian, run this script that installs Docker, creates the user, sets up the firewall, mounts the NAS, clones the stacks repo." Even a shell script in the repo is a huge improvement over memory.
+3. **Backups of the things that are not code** — the hypervisor config, the router's XML export, the switch config ([Chapter 11](#backups-the-chapter-that-matters-most)).
+
+Beyond that, Ansible for the host layer and Terraform for VMs are the natural next steps when you have more than two or three hosts or rebuild often. NixOS and Kubernetes GitOps are for people who enjoy the discipline for its own sake or want the professional skill. There is no shame in stopping at step 3; there is real regret in stopping at step 0.
+
+```mermaid
+flowchart TB
+    Git[(Git repo)] --> TF[Terraform / OpenTofu<br/>creates VMs, DNS, cloud]
+    TF --> CI[cloud-init<br/>first boot: user, SSH key, packages]
+    CI --> AN[Ansible<br/>configures hosts: Docker, firewall, mounts]
+    AN --> CO[Compose stacks<br/>deployed by Ansible / Komodo / git pull]
+    Git --> RN[Renovate<br/>PRs bumping image tags]
+    RN --> Git
+```
+
+## Ansible: configuring hosts
+
+**Ansible** connects to machines over SSH (no agent), and applies **playbooks** — YAML lists of **tasks** using **modules** (`apt`, `user`, `copy`, `template`, `systemd`, `docker_compose_v2`, `ufw`, `mount`, and thousands more) — idempotently: running a playbook twice produces the same state, and only changes what differs. **Inventory** lists your hosts and groups; **roles** package reusable configuration (a `docker` role, a `common` role for users/SSH/updates); **variables** and **templates** (Jinja2) parameterise per host; **Ansible Vault** or **SOPS** encrypts secrets in the repo.
+
+**What it is good for at home:** the host layer. A `common` role that creates your user, installs your SSH key, hardens sshd, enables unattended-upgrades, sets the timezone, installs your preferred tools, configures ufw and the `DOCKER-USER` rules, and joins the host to Tailscale. A `docker` role that installs Docker from the official repo, writes `daemon.json`, and adds the user to the group. A `nas-mounts` role for NFS. A `stacks` role that clones your Compose repo and runs `docker compose up -d` for each stack (or hands off to Komodo). Run `ansible-playbook site.yml` against a fresh Debian install and twenty minutes later it is a fully configured Docker host identical to the last one.
+
+**What it is less good for:** the *application* layer inside containers (that is what Compose is for), and orchestrating complex multi-step state changes (it is a configuration tool, not a workflow engine). It is also slow for large fleets (irrelevant at home).
+
+**Getting started:** `pip install ansible` (or `pipx`), a repo with `inventory.yml`, `site.yml`, and `roles/`; **Ansible Galaxy** for community roles (`geerlingguy.docker`, `geerlingguy.security` — Jeff Geerling's roles are the gold standard and his book *Ansible for DevOps* the best introduction); `ansible-lint` in CI; **Semaphore UI** if you want a web interface to run playbooks and see history (also runs Terraform/OpenTofu and shell scripts — a nice control panel for a lab's automation); **Ansible AWX/AAP** is the enterprise UI and far too heavy for home.
+
+```yaml
+# playbooks/site.yml (sketch)
+- hosts: docker_hosts
+  become: true
+  roles:
+    - common          # users, ssh, updates, ufw, tailscale
+    - geerlingguy.docker
+    - nas_mounts
+    - stacks          # git clone + docker compose up per stack
+```
+
+```yaml
+# roles/stacks/tasks/main.yml (sketch)
+- name: Clone the stacks repo
+  ansible.builtin.git:
+    repo: git@git.example.com:me/stacks.git
+    dest: /opt/stacks
+    version: main
+- name: Decrypt secrets with SOPS
+  ansible.builtin.command: sops -d /opt/stacks/{{ item }}/.env.enc
+  register: envfile
+  loop: "{{ stacks }}"
+  changed_when: false
+- name: Write .env files
+  ansible.builtin.copy:
+    content: "{{ item.stdout }}"
+    dest: "/opt/stacks/{{ item.item }}/.env"
+    mode: "0600"
+  loop: "{{ envfile.results }}"
+- name: Bring stacks up
+  community.docker.docker_compose_v2:
+    project_src: "/opt/stacks/{{ item }}"
+    state: present
+    pull: policy
+  loop: "{{ stacks }}"
+```
+
+Alternatives: **Salt** (agent-based, faster at scale, steeper), **Puppet/Chef** (the enterprise veterans — heavy, declining at home), **pyinfra** (Python-native, fast, minimal — a pleasant Ansible alternative for Pythonistas), **shell scripts in Git** (legitimate for one or two hosts; the point is reproducibility, not tool choice).
+
+## Terraform and OpenTofu: provisioning
+
+**Terraform** (HashiCorp) declares *resources* — a VM, a DNS record, a cloud bucket, a Tailscale ACL — in HCL files; `terraform plan` shows what would change; `terraform apply` makes it so; **state** tracks what exists. After HashiCorp's 2023 switch to the BSL licence, the Linux Foundation forked it as **OpenTofu** (MPL), which is a drop-in replacement and the community's choice for new work. Both use the same **providers**.
+
+**At home it shines for:** creating Proxmox VMs and LXCs from templates (the **bpg/proxmox** provider is the well-maintained one; the older Telmate provider is deprecated), with cloud-init to set hostname/user/SSH key/IP — so `tofu apply` produces a fresh Debian VM ready for Ansible; managing **DNS records** at Cloudflare/Porkbun (the wildcard, the public records); **Tailscale/Headscale** ACLs and DNS; **cloud resources** (the VPS for Pangolin, the B2 bucket for backups, the Hetzner Storage Box); **Authentik/Keycloak** clients and users (providers exist); **Proxmox Backup Server** datastores; **UniFi** networks; **Minio/Garage** buckets; even **Docker** containers (though Compose is better for that).
+
+**The pattern:** Terraform creates the VM (from a cloud-init-enabled template); cloud-init does first boot; Ansible configures it; Compose runs the apps. State stored locally in the repo (encrypted) or in a backend (an S3 bucket on Garage; the Postgres backend; Terraform Cloud/Spacelift free tiers — not self-hosted). **Atlantis** or **Semaphore** for running plans from CI/PRs if you want a UI.
+
+**Watch out for:** state is precious and must be backed up — losing it means Terraform no longer knows what it manages; the Proxmox provider's quirks (cloning, disk resizing, SCSI vs VirtIO, the `agent` setting) take an afternoon to learn; do not manage in Terraform things you also click in the UI (drift).
+
+Alternatives: **Pulumi** (the same model in real languages — Python/TypeScript/Go; excellent, smaller community for home providers), **Crossplane** (Kubernetes-native provisioning), **the Proxmox community scripts** (imperative, one-shot, very popular — not IaC but a fine way to *create* templates that Terraform then clones).
+
+## cloud-init and VM templates
+
+**cloud-init** is the first-boot configuration system every cloud image supports: hostname, users, SSH keys, packages, files, and a `runcmd` script, fed via a NoCloud datasource, a Proxmox cloud-init drive, or a provider's metadata service. Build one **template** per OS on Proxmox — download the Debian/Ubuntu **cloud image** (`.qcow2`), import it as a VM disk, add a cloud-init drive and the QEMU guest agent, convert to a template — and every new VM is a clone with a cloud-init snippet. This is the standard Proxmox workflow and the bridge between Terraform and Ansible. **Packer** builds custom templates with your tools pre-baked (the `proxmox-iso`/`proxmox-clone` builders) — worth it once you rebuild VMs weekly, unnecessary before.
+
+## NixOS: the declarative host
+
+Introduced in [Chapter 4](#operating-systems-and-hypervisors): a Linux distribution where the *whole system* is a declarative configuration. In IaC terms it collapses Ansible, the package manager, and much of Compose into one layer — `services.jellyfin.enable = true;` installs, configures, and runs Jellyfin; `virtualisation.oci-containers.containers.immich = { image = "..."; volumes = [...]; }` runs a container; `networking.firewall.allowedTCPPorts = [ 443 ];` opens a port; `services.restic.backups.nightly = { ... };` schedules a backup — all in one repo, all atomically applied with rollback. With **flakes** for reproducible pins, **sops-nix** or **agenix** for secrets, **nixos-anywhere** or **disko** for installing onto bare disks over SSH, and **deploy-rs**/**colmena**/**nixos-rebuild --target-host** for pushing to many machines, a NixOS lab is *fully* reproducible from Git in a way no other stack matches.
+
+The costs are the language, the error messages, the fragmentation of documentation, the "is this in nixpkgs yet" question, and the time. A meaningful number of experienced self-hosters have converged on NixOS as the host OS for exactly the reasons this chapter exists; an equal number tried and returned to Debian + Ansible. Try it in a VM before committing a lab to it. **Guix System** is the Scheme-based cousin — even more principled, far smaller ecosystem.
+
+## Keeping versions current: Renovate
+
+**Renovate** (Mend) scans a repository for dependencies — Docker image tags in Compose files, Helm chart versions, GitHub Actions, Terraform providers, npm/pip packages — and opens **pull requests** when newer versions exist, with the changelog/release notes linked, grouped and scheduled as you configure (`"schedule": ["after 10pm every weekday"]`, group all minor updates, auto-merge patch releases, pin digests). Run it as the hosted GitHub App (free for public/private GitHub repos) or **self-hosted** against your Forgejo/Gitea (a scheduled CI job or a container running `renovate` with a token; the `renovatebot/renovate` image). Configuration in `renovate.json` at the repo root; presets (`config:recommended`) do the right thing.
+
+This is the mature answer to the update problem from [Chapter 5](#containers-docker-compose-podman-and-kubernetes): every image bump is a reviewed, versioned commit; merging the PR is the update; the deploy step (below) applies it; `git revert` is the rollback. **Dependabot** is GitHub-only and less flexible. **Diun**/**WUD** notify but do not PR. The combination "pinned tags in Compose + Renovate PRs + auto-deploy on merge" is what a well-run 2026 home lab looks like.
+
+## Deploying on merge: GitOps for Compose
+
+Once configs are in Git and Renovate opens PRs, you want merging to *deploy* without SSHing in:
+
+- **Komodo** ([Chapter 22](#developer-tools-git-hosting-and-automation)) — define stacks as resources pointing at your Git repo; Komodo's periphery agent on each host pulls and deploys on a webhook from Forgejo/Gitea when `main` changes. Multi-host, with a UI, alerts, and everything as TOML you can also sync from Git. **The current best fit for Compose GitOps.**
+- **Portainer's Git-backed stacks** with webhook redeploys — works; less elegant.
+- **A webhook receiver + script**: **webhook** (adnanh) or **Forgejo Actions runner on the host** runs `git pull && docker compose up -d --pull always` when a push arrives. Ten lines; entirely sufficient for one host.
+- **Ansible from CI**: a Forgejo Actions workflow runs the playbook on merge (the runner needs SSH access to hosts — a dedicated deploy key). Cleanest when Ansible already owns the hosts.
+- **Watchtower/`docker compose pull` on a timer** — the *non*-GitOps way: it pulls whatever the tag points at, so pin exact versions and let Renovate move them, or accept surprise updates.
+- **Doco-CD**, **compose-updater**, **shepherd** (Swarm) — smaller tools in this space.
+
+## GitOps for Kubernetes
+
+If you run k3s/Talos ([Chapter 5](#containers-docker-compose-podman-and-kubernetes)), GitOps is not optional — it is how you should operate it:
+
+- **Flux CD** — controllers in the cluster watch a Git repo (and Helm repos, OCI registries) and reconcile the cluster to match: Kustomizations, HelmReleases, image automation, SOPS-encrypted secrets natively, notifications. Lightweight, composable, CLI-driven; the choice of the **home-operations** community whose template (`onedr0p/cluster-template`) is the widely-copied starting point.
+- **Argo CD** — the same model with a rich **web UI** showing every application's sync state, diffs, and history; ApplicationSets for multi-cluster patterns; more moving parts. Popular in enterprises; a fine home choice if you want the UI.
+- Supporting cast: **Renovate** for chart/image bumps, **SOPS/age** or **External Secrets Operator** (pulling from Infisical/OpenBao/1Password), **cert-manager**, **external-dns** (writes DNS records to Pi-hole/AdGuard/Cloudflare from Ingress annotations), **Reloader** (restarts pods on ConfigMap changes), **kube-prometheus-stack**.
+
+## Documentation as code
+
+The IaC repo *is* documentation if it is readable: a `README.md` per stack explaining what it does and why decisions were made; comments in Compose files; an `ARCHITECTURE.md` with the Mermaid diagram of hosts, VLANs, and services; ADRs (architecture decision records — short dated notes: "2026-03: switched from NPM to Caddy because…"). Pair it with the runbook wiki from [Chapter 28](#maintenance-and-operations), or make the wiki *be* the repo (Otter Wiki/MkDocs rendering the same Markdown). **NetBox** or a simple `hosts.yml` as the source of truth for IPs and hardware. The test: could a competent stranger rebuild this from the repo alone?
+
+## A reference repository layout
+
+```
+homelab/
+├── README.md                    # what this is, how to bootstrap
+├── ARCHITECTURE.md              # diagram, VLANs, hosts, decisions
+├── .sops.yaml                   # age keys for secret encryption
+├── renovate.json
+├── .forgejo/workflows/          # lint on PR; deploy on merge
+├── terraform/
+│   ├── proxmox/                 # VMs and LXCs from templates
+│   ├── dns/                     # Cloudflare records
+│   └── tailscale/               # ACLs
+├── ansible/
+│   ├── inventory.yml
+│   ├── site.yml
+│   └── roles/{common,docker,nas_mounts,stacks}/
+├── stacks/                      # one directory per Compose stack
+│   ├── traefik/{compose.yaml,.env.enc,config/}
+│   ├── media/{compose.yaml,.env.enc}
+│   ├── immich/{compose.yaml,.env.enc}
+│   └── ...
+├── komodo/                      # Komodo resource TOML (if used)
+└── docs/                        # runbooks, ADRs
+```
+
+## Recommendations by tier
+
+- **Tier 1:** `stacks/` in Git with `.env` gitignored (or SOPS-encrypted); a `bootstrap.sh` that turns fresh Debian into your Docker host; Renovate (hosted GitHub app or self-hosted) opening PRs; `git pull && docker compose up -d` by hand or via a webhook. That is IaC enough.
+- **Tier 2:** add Ansible for the host layer (common + docker + mounts roles; Geerling's roles), OpenTofu for Proxmox VMs from a cloud-init template and for DNS, Komodo for deploy-on-merge, SOPS+age for secrets, Semaphore if you want a UI for runs.
+- **Tier 3:** everything above; consider NixOS for hosts if the model appeals; Kubernetes with Flux/Argo if you run it; Packer for templates; a CI pipeline that lints (ansible-lint, tofu validate, `docker compose config`), plans, and deploys; ADRs for every significant decision.
+
+## Checklist
+
+- [ ] Every Compose file and its configuration is in a Git repository hosted on your own forge (and mirrored elsewhere).
+- [ ] Secrets are out of the repo (`.gitignore`) or encrypted in it (SOPS + age); the age key is in the password manager and printed.
+- [ ] A fresh host can be brought to production state by a documented script or playbook — tested at least once on a scratch VM.
+- [ ] Image tags are pinned; Renovate (or equivalent) proposes updates; merging deploys (or you have a one-command deploy).
+- [ ] VMs are created from templates via Terraform/OpenTofu or at minimum a documented cloud-init procedure; Terraform state is backed up.
+- [ ] Configuration that cannot be code (router, switch, hypervisor UI settings) is exported to the repo or backups on a schedule.
+- [ ] An `ARCHITECTURE.md` with a current diagram; decisions recorded as they are made.
+- [ ] The "competent stranger" test has been considered honestly.
+
+---
+
+# Maintenance and Operations
+
+Building a home lab is a project; running one is a practice. The difference between labs that are still humming after five years and labs that were quietly abandoned after eighteen months is almost never the hardware or the software — it is the operational habits: a sane update cadence, documentation that exists, a runbook for the things that go wrong at 11 pm, a way to know something broke before someone tells you, and a plan for the day you are not there. This chapter is about that practice: update strategy and cadence, the maintenance calendar, documentation and runbooks, change management for a one-person team, incident habits, capacity and lifecycle planning, the "bus factor" and hosting for others, and — importantly — knowing when to simplify or shut something down.
+
+## The maintenance mindset
+
+Three principles that make everything else easier:
+
+**Make changes boring.** Every update, migration, or config change follows the same small ritual: snapshot or backup first, read the release notes, change one thing, verify, note it down. Boring is the goal. Excitement in operations means something went wrong.
+
+**Prefer fewer things.** Every service is a maintenance obligation forever. The most effective operational improvement most labs can make is to *remove* the six services nobody used in the last three months. Complexity is a cost paid monthly.
+
+**Automate the routine, hand-do the risky.** Security updates, snapshots, backups, scrubs, certificate renewals, and update *notifications* should be automatic. Major version upgrades, storage changes, network changes, and anything touching the IdP or the backups should be deliberate, scheduled, and done with attention.
+
+## Update strategy
+
+### Cadence
+
+| Layer | Cadence | Method |
+|---|---|---|
+| Host OS security updates | Automatic, nightly | `unattended-upgrades` / `dnf-automatic`; reboot window weekly or with `needrestart` |
+| Host OS non-security updates | Monthly | `apt full-upgrade` during the maintenance window |
+| Host OS major release (Debian 12→13) | When you have an afternoon; within a year of release | Snapshot, read the release notes, `apt full-upgrade` / `do-release-upgrade`; or rebuild via Ansible |
+| Hypervisor (Proxmox) | Monthly for point releases; majors after community feedback settles (~2 months) | `apt` via the no-subscription repo; PBS backup of every VM first |
+| Firewall (OPNsense) | Point releases within a couple of weeks; majors after a month | Built-in updater; config export first |
+| Container images — stateless / low-risk | Weekly, semi-automatic | Renovate auto-merge patch/minor, or Diun notification + `compose pull` |
+| Container images — stateful (databases, Nextcloud, Immich, Paperless, HA) | On notification, after reading release notes; within a month | Snapshot → `pull` → `up -d` → verify |
+| Database majors (Postgres 17→18) | Yearly, per app | Dump → new image → restore, or pgautoupgrade; backup first |
+| Firmware (BIOS, NIC, drives, switches, APs) | Twice a year, or for a specific fix/CVE | Vendor procedure; not during a storm |
+| Home Assistant | Monthly release; wait ~a week for `.x` bugfixes | Read "Breaking Changes"; snapshot; update |
+
+**Do not** update everything on the same day. Stagger: infrastructure (host, hypervisor, proxy) one week, applications the next. When something breaks you know which change did it.
+
+### The pre-update ritual
+
+1. **Read the release notes.** Every stateful app, every time. Look for "breaking," "migration," "manual step," "deprecated."
+2. **Snapshot.** Proxmox VM snapshot, ZFS/Btrfs snapshot of the data directory, or at minimum a fresh database dump. Thirty seconds that turns a disaster into an inconvenience.
+3. **Update one thing.** `docker compose pull && docker compose up -d` for that stack.
+4. **Verify.** Log in. Check the thing the app is for. Check the logs (`docker compose logs --tail 100`) for errors and migration messages. Check Uptime Kuma went green.
+5. **Note it.** A line in the changelog: date, what, version from → to, anything noticed.
+6. **Delete the snapshot** after a few days if all is well (snapshots on Proxmox slow VMs over time; ZFS snapshots consume space as data changes).
+
+### When an update breaks something
+
+Roll back first, investigate second. The snapshot from step 2 makes this a two-minute decision: revert, restore service, then read the issue tracker at leisure. Pin the previous image tag in the Compose file until the fix lands. Do not debug a broken production service while the family waits.
+
+## The maintenance calendar
+
+Put these in an actual calendar with reminders. Things that are "whenever" never happen.
+
+**Weekly (15 minutes)**
+- Glance at the dashboard/Beszel/Grafana: disk trends, anything red.
+- Review update notifications; apply low-risk ones.
+- Check the backup job ran and the size is sane (Healthchecks green; Backrest/PBS shows last night's snapshot).
+- Skim CrowdSec/fail2ban decisions if anything is exposed.
+
+**Monthly (1–2 hours — the maintenance window)**
+- Host OS updates and reboots (staggered).
+- Stateful app updates with the ritual above.
+- Home Assistant update.
+- Restore test: one random file from the off-site backup ([Chapter 11](#backups-the-chapter-that-matters-most)).
+- Check ZFS scrub results and SMART/Scrutiny for anything trending.
+- Review Uptime Kuma incident history — anything flapping?
+- Review alerts: delete or tune any that fired and were ignored.
+- Prune: `docker image prune`, old snapshots, old backups beyond retention, stale VMs.
+- Update the changelog and any documentation touched.
+
+**Quarterly (an afternoon)**
+- Service-level restore test: restore one whole application from backup to a scratch location and confirm it works.
+- Database major upgrades due.
+- Review the service inventory: what has nobody used? Decommission it (export data, archive config, remove).
+- Review firewall rules and forwarded ports; remove what is no longer needed.
+- Rotate anything that should rotate: API tokens with expiry, the DKIM key if self-hosting mail, admin passwords if shared.
+- Check UPS battery health (self-test); clean dust filters and fans.
+- Review disk capacity trend: at 70% full, plan expansion.
+- Verify the emergency sheet (master passwords, recovery codes, encryption keys) is current and where it should be.
+
+**Yearly (a weekend)**
+- Full disaster-recovery drill from the off-site copy on scratch hardware or a VM ([Chapter 11](#backups-the-chapter-that-matters-most)). Time it. Fix what the documentation got wrong.
+- Firmware updates across hardware.
+- Review the architecture: does the lab still match your needs? Is the tier right? What would you drop or consolidate?
+- Renew the domain (auto-renew on, payment method current). Check the registrar and DNS provider accounts have 2FA and a working recovery email.
+- Replace the UPS battery if 3–4 years old; consider drive age (5+ years for spinning drives is borrowed time even without SMART warnings).
+- Review the bus-factor plan (below) and update the "if I'm not here" document.
+
+## Documentation
+
+You will not remember. Six months is enough for "why is port 8096 forwarded" to become a mystery. Documentation is the load-bearing habit.
+
+### What to document
+
+- **Inventory**: every host (hardware, OS, IP, role, how to reach it, out-of-band access), every VM/LXC, every service (URL, host, stack directory, what it is for, who uses it, data location, backup status), every network (VLANs, subnets, DHCP ranges, reservations), every account (where the admin credentials are — in the password manager, referenced by entry name, never the credentials themselves).
+- **Architecture**: one diagram (Mermaid in Markdown so it lives in Git) showing hosts, networks, and the flow from the internet to a service.
+- **Procedures (runbooks)**: how to do the things you do — add a service, update a stack, restore from backup, rebuild a host, replace a failed drive, rotate a certificate, add a user to the IdP, onboard a family member's phone.
+- **Decisions (ADRs)**: short dated notes of *why*. "2026-02: Chose Caddy over Traefik: fewer services, readable config; revisit if we exceed 40 hosts." Future you will otherwise re-litigate every choice.
+- **Changelog**: a running dated log of changes. The single most useful troubleshooting document: "it broke around the 14th — what changed on the 13th?"
+- **Vendor/account details**: ISP account and support number, domain registrar, DNS provider, backup provider, VPS provider, hardware warranties and purchase dates, UPS model and battery replacement date.
+
+### Where to document
+
+- **In the Git repo** alongside the code (Markdown; `docs/` directory; rendered by MkDocs/Otter Wiki if you want a UI) — the recommendation, because documentation next to configuration stays current and is versioned.
+- **A wiki** (BookStack, Outline, DokuWiki — [Chapter 18](#notes-knowledge-and-personal-productivity)) — friendlier for non-technical household members and for procedures with screenshots.
+- **Comments in the Compose files themselves** — the cheapest documentation; a one-line `# why:` on every non-obvious setting.
+- **Homepage/Homarr dashboard descriptions** — a sentence per service is documentation too.
+- **NetBox** for people who want a real source of truth for IPs, racks, and cables (heavy; Tier 3).
+
+**Not** in the lab alone. If the wiki is on the server that died, it is useless. Mirror the docs repo to GitHub/Codeberg, keep a PDF export in the off-site backup, and keep the *bootstrap* procedure — how to get from nothing to "the docs are readable again" — printed or on a phone.
+
+### The runbook template
+
+For each procedure, a short page:
+
+```
+# Replace a failed drive in the ZFS pool
+
+When: zpool status shows DEGRADED / Scrutiny alert / SMART failure
+Impact while running: none (pool degraded but online); DO NOT reboot unnecessarily
+Time: 20 min hands-on + resilver (12–36 h)
+
+1. Identify: zpool status -v; note the failed device's by-id name
+2. Identify physical slot: ledctl locate /dev/sdX  (or match serial: smartctl -i)
+3. Offline it: zpool offline tank <dev>
+4. Pull, insert replacement (same or larger size, CMR)
+5. Find new by-id: ls -l /dev/disk/by-id | grep <serial>
+6. Replace: zpool replace tank <old-id> /dev/disk/by-id/<new-id>
+7. Watch: zpool status; resilver progress; Scrutiny picks up the new drive
+8. After resilver: zpool clear tank; scrub next week; update inventory (serial, purchase date)
+
+Gotchas: 4Kn vs 512e mismatch; a shucked drive may need the 3.3V pin mod; never replace during a scrub
+Last performed: 2026-04-12 (drive 3, WD160EDGZ, took 19 h)
+```
+
+## Change management for one person
+
+Enterprise change management exists because changes cause outages. A one-person lab needs a lightweight version of the same discipline:
+
+- **Change window**: a regular time (Sunday morning, Tuesday evening) when the household expects things might be down. Announce anything outside it.
+- **One change at a time** where possible; when not, write down the list *before* starting.
+- **Rollback plan before you begin**: the snapshot, the previous image tag, the config backup.
+- **Test in staging** — which at home means a scratch VM or a second Compose project with a `-test` suffix and a copy of the data — for anything scary (Nextcloud majors, IdP changes, storage layout).
+- **Do not change the network and a service at the same time.** When both break, you cannot tell which.
+- **Do not start a risky change when tired, rushed, or when the family needs the service in the next hour.** Most home-lab disasters are timing, not skill.
+
+## Incident habits
+
+When something breaks:
+
+1. **Restore service first.** Roll back, restart, fail over. Understanding can wait; the family cannot.
+2. **Then understand.** Logs (`docker compose logs`, `journalctl -u`, Dozzle, the app's own log), recent changes (the changelog), the upstream issue tracker.
+3. **Write a short post-mortem** — three lines: what happened, why, what will prevent it. Add the prevention to the runbook or the automation. The lab gets more reliable with every incident *only* if this step happens.
+4. **Fix the class, not the instance.** "Disk filled up from container logs" → set `max-size` in `daemon.json` on *every* host and add a disk alert, not just clear this one.
+
+Keep a **break-glass** path: a local admin account on every host that does not depend on the IdP; a way to reach the hypervisor console when the network is broken (IPMI, a KVM, a monitor and keyboard in the cupboard, or **PiKVM/JetKVM/NanoKVM** — cheap IP-KVMs that are among the best home-lab purchases); the router's local admin credentials in the password manager *and* on the emergency sheet.
+
+## Capacity and lifecycle
+
+- **Watch trends, not snapshots.** Disk at 60% is fine; disk at 60% growing 5% a month is a purchase decision in six months. Grafana/Beszel graphs over months tell you this.
+- **Plan hardware lifecycle**: spinning drives 5–7 years, SSDs by TBW and age, UPS batteries 3–5 years, fans and thermal paste 5+ years, mini PCs and SFFs a decade if they still meet needs. Buy replacements before failure when possible; a spare drive on the shelf is cheap insurance.
+- **Grow deliberately** ([Chapter 1](#planning-your-home-lab)): add a service because it is needed, a host because the current one is genuinely full, a VLAN because there is a trust boundary to draw. Not because it is Saturday.
+- **Decommission properly**: export the data in an open format, archive the Compose file and config to a `retired/` directory in the repo with a dated note, remove the DNS record and proxy route and IdP client, remove the backup job (or keep the last backup for a year), update the inventory. A half-removed service is worse than a running one.
+
+## The bus factor
+
+If you were unavailable — travelling, ill, or worse — what happens?
+
+- **Short term (a week):** the lab keeps running if it is boring; the household needs to know *nothing* except "if it is broken, wait" or "turn it off and on again." Write a one-page "if the internet/TV/photos stop working" for the fridge: which box to power-cycle, in what order, and when to give up and call someone.
+- **Medium term (months):** someone technically competent should be able to keep it running or wind it down. The documentation, the repo, the password manager's emergency access ([Chapter 21](#passwords-secrets-and-two-factor-codes)), and a named person who knows they are that person. Walk them through it once.
+- **Long term (permanently):** the household should be able to *get the data out*. Photos, documents, and passwords in open formats, with the location and the keys in the emergency sheet. This is the real test of the anti-lock-in argument for self-hosting — make sure it holds for your family and not only for you.
+
+Concretely: an **"If I'm not here" document** (printed, in the safe, and a copy with the trusted person) containing: what the lab is and where; how to log into the password manager (emergency access or the sealed master password); where the backups are and how to restore the photos and documents *without* the lab (the Restic/Borg command, the repo password, a cloud login); the domain and DNS account details so nothing lapses; who to call; and an explicit permission to shut it all down and put the photos on a USB drive if that is easier. Revisit it yearly.
+
+## Hosting for others
+
+Once family or friends depend on your services, you have made an implicit promise. Make it explicit — to yourself if not to them:
+
+- **Set expectations**: "it is a hobby; it may be down for a day; I will tell you before planned work; do not put your only copy of anything here."
+- **Give them an exit**: they can export their data (Immich albums, Nextcloud files, Vaultwarden vault) at any time; show them how once.
+- **Do not host things you cannot walk away from** for people who cannot walk away from them — someone's business email, a friend's only backup. Point them at a paid provider, or run it *for* them in a way they own (their account, their domain).
+- **Separate their access** (IdP groups, Tailscale ACLs) so a compromise of their device does not reach your admin surfaces.
+- **Consider the legal side** ([Chapter 30](30-legal-ethical.md)) — for family it is trivial; for a club or acquaintances, think about what data you hold and why.
+
+## Knowing when to stop
+
+Some services should be retired. Some whole labs should be scaled back. Signs: you dread the maintenance window; updates pile up for months; the family has quietly gone back to the cloud service; you spend more time fixing than using; a service has had no login in 90 days. Shrinking a lab is not failure — it is operations. The people who run labs for decades are the ones who periodically cut them in half.
+
+## Checklist
+
+- [ ] Automatic security updates on every host; a defined cadence for everything else; staggered by layer.
+- [ ] The pre-update ritual (notes → snapshot → one change → verify → log) is habit; rollback is the first response to breakage.
+- [ ] Weekly/monthly/quarterly/yearly tasks are in a calendar with reminders.
+- [ ] Inventory, architecture diagram, runbooks, ADRs, and changelog exist in Git, mirrored off the lab; a PDF/printout of the bootstrap procedure exists.
+- [ ] Every non-obvious Compose setting has a `# why:` comment.
+- [ ] Break-glass access: local admin accounts, console/IP-KVM access, router credentials on the emergency sheet.
+- [ ] Post-mortem habit: every incident produces a prevention (automation, alert, or runbook update).
+- [ ] Capacity trends visible; hardware lifecycle dates in the inventory; a spare drive on the shelf.
+- [ ] Decommission procedure followed for retired services; a `retired/` archive in the repo.
+- [ ] "If I'm not here" document written, printed, shared with a named person, reviewed yearly; emergency access configured in the password manager.
+- [ ] Expectations set with anyone who depends on your services; their data exportable; their access separated.
+- [ ] The service inventory reviewed quarterly and pruned honestly.
+
+---
+
+# Power, Cost, and the Physical Environment
+
+Electricity is the recurring cost of a home lab, heat is its by-product, noise is what gets it evicted from the living room, and a power cut is its most common unplanned outage. This chapter is the practical physics: how to measure what your lab draws, what it costs, where the watts go and how to cut them (C-states, ASPM, drive spin-down, right-sizing PSUs, GPU idle), how to manage heat and noise, and how to survive power problems with a UPS and Network UPS Tools so that a blackout means a clean shutdown rather than a corrupted pool. It ends with a worked cost model at each tier and the honest observation that a well-chosen lab costs less to run than a games console left on standby.
+
+## Measure first
+
+You cannot optimise what you have not measured, and spec sheets lie. Two tools:
+
+- **A plug-in power meter** (Kill A Watt in the US; a TP-Link Tapo P110 or Shelly Plug S / Plus Plug with energy monitoring anywhere — the smart plugs also log to Home Assistant): USD 10–25. Plug the whole lab (or each device) in and read watts, and kWh over a day. Measure *idle* (nothing happening, drives spun down if applicable), *typical* (normal background activity), and *peak* (a transcode, a scrub, an LLM query).
+- **Software** for what is happening *inside*: `powertop` (Intel/AMD: shows C-state residency — the percentage of time the CPU package spends in deep sleep — and lists tunables), `turbostat` (package power in watts on Intel), `s-tui`, `nvidia-smi` / `rocm-smi` / `intel_gpu_top` for GPUs, `hdparm -C /dev/sdX` (drive spin state), `sensors` (temperatures), and the UPS's own load reading via NUT.
+
+Then the arithmetic:
+
+```
+annual kWh  = average watts × 8.76
+annual cost = annual kWh × price per kWh
+```
+
+At USD 0.15/kWh: every **continuous watt costs USD 1.31/year**. At EUR 0.35/kWh (much of Europe in 2026): **EUR 3.07/year per watt**. A 100 W difference between two designs is USD 130–300 per year, every year. This is why [Chapter 2](#hardware-choosing-what-to-run-it-on) obsesses over idle power.
+
+## Where the watts go
+
+A typical breakdown for a Tier 2 lab, measured at the wall:
+
+| Component | Idle watts | Notes |
+|---|---|---|
+| Mini PC (N100, NVMe, 16 GB) | 6–10 | The reason mini PCs won |
+| Used SFF desktop (i5 8th–12th gen, SSD) | 12–25 | Depends heavily on BIOS/C-state tuning |
+| Custom NAS build (i3-12100, 6 HDD, ITX, Gold PSU) | 30–45 spun down; 60–80 spinning | Drives dominate |
+| Each 3.5" HDD | 4–6 idle spinning; 0.5–1 spun down; 7–9 active | 7200 rpm and enterprise drives are the higher end |
+| Each 2.5" SSD / NVMe | 0.3–2 | Some NVMe drives have poor idle (ASPM matters) |
+| Used enterprise 2U server (dual Xeon, 8 drives) | 100–180 | Before any workload |
+| Discrete GPU (RTX 3060/3090) | 10–25 | Higher if a display is attached or persistence mode is off; 300+ under load |
+| Managed 8-port 2.5 GbE switch | 5–10 | 10GBase-T ports add 2–5 W each |
+| OPNsense box (N100, 4× 2.5 GbE) | 8–15 | |
+| Wi-Fi AP | 5–12 (PoE) | |
+| UPS (line-interactive, self-consumption) | 5–15 | Yes, the UPS itself burns power |
+| Raspberry Pi 5 | 3–5 | |
+
+Two lessons: **drives and old servers** are where most of the power goes, and **the network gear and UPS** are a non-trivial floor that exists regardless of compute choices.
+
+## Reducing idle power
+
+### CPU package states (C-states)
+
+Modern CPUs save most of their power by sleeping between tasks. `powertop` shows the percentage in each package C-state; a well-tuned Intel desktop system idles in **C8–C10** at 3–8 W package power; a poorly tuned one sits in C2–C3 at 20+ W. What prevents deep sleep:
+
+- **BIOS settings**: enable "C-states," "Package C-state limit: Auto/C10," "ASPM: Auto/L1," "Native ASPM," disable "Above 4G Decoding" only if it causes issues (it usually should stay on for GPUs). Set "PCIe link state power management" to L1.
+- **PCIe devices without ASPM**: a NIC, an HBA, an NVMe drive, or a GPU that does not support Active State Power Management pins the whole package at a shallow C-state. `lspci -vv | grep -i aspm` shows per-device status. The **LSI SAS HBAs** (9211/9300) are notorious for this — they cost 8–12 W themselves and block C-states; use motherboard SATA ports or an **ASMedia ASM1166**-based 6-port SATA card (which supports ASPM) instead where possible. Some NVMe drives (older Samsung, some Kioxia) block deep states; Solidigm and WD SN770/SN850X are generally fine. **10GBase-T NICs** are hungry and often block states; SFP+ with DAC is better.
+- **Kernel parameters**: `pcie_aspm=force` (forces ASPM on devices that claim not to support it — try it, check `dmesg` for errors), the **`powertop --auto-tune`** tunables (which enable runtime PM on USB, SATA link power management, audio codec power saving — apply via a systemd service at boot), `ahci.mobile_lpm_policy=3` for SATA link power (can cause issues with some HBAs/backplanes; test), and the Intel `intel_idle` driver (default; do not disable).
+- **Peripherals**: unplug USB devices that keep the bus awake; disable the audio codec; disable unused onboard controllers (a second NIC, Wi-Fi, Bluetooth) in BIOS.
+- **The GPU**: NVIDIA cards need `nvidia-persistenced` and no attached display to idle properly; some models still refuse to go below 15–25 W. Consider whether the GPU should be in the always-on server at all.
+
+A tuned Intel 12th–14th gen system (i3/i5, one NVMe, ITX board, Gold PSU) idles at **10–15 W at the wall with drives spun down** — the community's benchmark for a DIY NAS. The **"unRAID/Proxmox low power" threads** on the German Hardwareluxx forum and r/homelab document specific board/CPU/PSU combinations with measured results; the **Wolfgang's Channel** YouTube series is the best video treatment.
+
+### Drives
+
+- **Spin down idle HDDs**: `hdparm -S 241 /dev/sdX` (30 minutes) or the NAS OS's setting. MergerFS/SnapRAID and Unraid make this natural (only the drive holding the file spins); **ZFS pools spin all drives for any access**, so spin-down works only when nothing touches the pool for the timeout — which, with monitoring and indexing services, is rarer than you think. Check `hdparm -C` over a day to see if they actually stay down. Frequent spin-up/down cycles wear drives; set the timeout at 20–60 minutes, not 5.
+- **Fewer, larger drives** ([Chapter 6](#storage-filesystems-redundancy-and-sharing)): four 20 TB drives draw a third of what twelve 6 TB drives draw.
+- **SSDs for the hot data**: the OS, containers, databases, and frequently accessed files on flash mean the spinning array is touched only for media — and can sleep.
+- **Enterprise vs consumer**: enterprise HDDs idle 1–2 W higher and are louder; the trade is warranty and workload rating.
+
+### Power supplies
+
+A PSU's efficiency curve peaks at 40–60% load and falls off sharply below 10–20%. An 850 W Platinum unit powering a 25 W idle system may be running at 70% efficiency; a 450 W Gold unit at the same load is closer to 85%. **Size the PSU to the peak, not to the marketing** — a NAS with six drives and an i5 peaks under 200 W (drive spin-up is the spike); a 400–550 W unit is right. **PicoPSU** (12 V DC input, 90–160 W) with a laptop-style brick is the most efficient option for a mini-ITX box with few drives. **Corsair RM/SF Gold, Seasonic Focus, be quiet! Pure Power** have good low-load efficiency; check **Cybenetics** low-load ratings (the ETA/LAMBDA certification includes 2% and 10% load efficiency, which 80 PLUS does not).
+
+### Right-sizing and consolidation
+
+The lowest-power lab is the one with the fewest machines. Three mini PCs at 10 W each beat one 2U server at 150 W; but one 25 W SFF running Proxmox with everything beats three mini PCs. Consolidate where the isolation is not needed; separate only for the reasons in [Chapter 1](#planning-your-home-lab) (DNS on its own box; storage separate from compute at Tier 2+). The **GPU box** is the classic candidate for **suspend-on-idle + Wake-on-LAN**: a Home Assistant automation (or **UpSnap**, or a script) wakes it when someone opens the game-streaming or LLM front-end and suspends it after 30 idle minutes — a 25 W idle GPU machine that runs 3 hours a day costs a tenth of one that runs 24.
+
+### Scheduled power
+
+Things that need not run at night can be shut down: a desktop that only does game streaming, a backup target that only needs to be on during the backup window (Wake-on-LAN from the backup script, shut down after), a secondary Proxmox node used only for testing. Smart plugs with HA scheduling handle the dumb devices (a printer, a Raspberry Pi doing something occasional).
+
+## Heat
+
+Every watt becomes heat. 30 W is a warm shelf; 150 W in a cupboard raises the temperature by 5–10 °C with poor airflow; 400 W is a space heater. Consequences: drives above 40–45 °C sustained age faster (Backblaze's data shows modest effects up to ~45 °C and larger above); CPUs throttle; fans spin up (noise); PSUs and capacitors degrade.
+
+- **Airflow over insulation**: a cupboard with the door ajar, or with a vent and a quiet exhaust fan (a USB-powered 120–140 mm Noctua on a smart plug/temperature automation), beats a sealed one. Racks want front-to-back airflow, not enclosed side panels.
+- **Location**: basements and utility rooms are cooler; attics and south-facing rooms are not. Do not put the NAS beside the radiator or in a sunbeam.
+- **Monitor it**: `sensors` for CPU/board, `smartctl -A` for drive temps (Scrutiny graphs them), a Zigbee temperature sensor in the cupboard feeding Home Assistant, with an alert at 30 °C ambient / 45 °C drive.
+- **Fan curves**: set BIOS/IPMI fan curves for quiet at idle and aggressive under load; on used enterprise servers, `ipmitool raw` commands set manual fan speeds (each vendor has a community script — Dell iDRAC, Supermicro).
+- **Summer**: expect 5–10 °C higher; if drives cross 50 °C in July, the location is wrong.
+
+## Noise
+
+Measured in dB(A) at 1 m; every 10 dB is roughly a doubling of perceived loudness. A silent room is ~30 dB; a quiet mini PC 0–20 dB (inaudible to fan-off); a 4-bay NAS with HDDs 25–35 dB (a low hum plus seek clicks — bedroom-hostile, office-tolerable); a tower server with 120 mm fans 30–40 dB; a 2U server 45–60 dB (a hair dryer); a 1U server 55–70 dB (unlivable). Enterprise switches with 40 mm fans are in the 2U class; many can be modded with Noctua fans if the firmware tolerates the lower RPM (some alarm; some do not).
+
+Rules: **HDDs are the noise floor** of any NAS — enterprise drives seek loudly (Exos/Ultrastar), consumer NAS drives (WD Red Plus, IronWolf non-Pro) are quieter; rubber grommets and a case with drive dampening (Fractal Define) help. **Fewer, larger, slower fans** (120–140 mm at 600–900 rpm) over many small fast ones. **Never buy 1U** for a living space. **Put the noisy thing somewhere else** — a garage, basement, or utility room with a wired run back; noise, unlike heat, has no software fix.
+
+## UPS and Network UPS Tools
+
+### Why
+
+Power flickers, brownouts, and short outages are common everywhere; long outages are regional. A UPS covers the flickers entirely (nothing even notices) and turns a long outage into a controlled event: the UPS tells the servers, the servers shut down cleanly, ZFS pools export intact, databases close their transactions, and everything comes back when power returns. Without one, a blackout during a write is a coin toss on corruption — modern filesystems survive it most of the time, which is exactly the problem: *most*.
+
+### Sizing
+
+Measure the lab's peak draw with the meter (or sum the idle figures and add 50%). Add the router, modem/ONT, and switch — they need to stay up for the servers to communicate with each other and for you to receive the alert. Buy a UPS whose **watt** rating (not VA) exceeds that by 30%. Then look at the **runtime chart** for your load: you want 10–15 minutes at least, long enough for the shutdown sequence plus a margin, and more if your outages are typically short (a 30-minute runtime rides through most flickers and brief cuts without shutting anything down).
+
+Typical: a Tier 1 lab (30–50 W) on a 600–900 VA unit (300–500 W) gets 45–90 minutes. A Tier 2 lab (100–150 W) on a 1500 VA (900–1000 W) unit gets 20–40 minutes. Bigger is not better beyond that — a UPS burns 5–15 W itself, more for larger units, and oversizing wastes both money and electricity.
+
+### Type and features
+
+- **Line-interactive** with **pure sine wave** output (CyberPower CP-series PFC models, APC Back-UPS Pro / Smart-UPS, Eaton 5S/5P/Ellipse PRO): the right class for home labs; corrects brownouts without switching to battery; sine wave is preferable for active-PFC power supplies (all modern ones).
+- **Standby/offline** (cheaper APC Back-UPS ES, CyberPower standby): fine for a mini PC and a router; simulated sine wave is usually acceptable for small loads.
+- **Online/double-conversion** (Eaton 9-series, APC Smart-UPS Online): always on inverter, zero transfer time, cleanest power, 10–20% efficiency loss. Overkill for home.
+- **Communication**: **USB** (universal; NUT supports nearly every model via `usbhid-ups`), **serial** (old), **network management card** (SNMP — great, expensive, usually only on Smart-UPS/Eaton 5P class). USB is fine: one server is the NUT master; the others are clients over the network.
+- **Batteries**: sealed lead-acid (SLA/VRLA) lasts 3–5 years and is user-replaceable (USD 30–80; **buy the replacement cartridge, not a new UPS**); **lithium-ion** models (CyberPower's Li-ion line, Eaton 5P Li-ion, APC's newer lithium units) last 8–10 years, weigh half, and cost 50–100% more — increasingly worth it. Enable the UPS's periodic self-test and act when it fails.
+- **Outlets**: enough for everything that must stay up; surge-only outlets for things that must not (a printer draws a huge spike and should never be on battery).
+- **Brands**: APC (Schneider) and Eaton are the safe choices; **CyberPower** is the value pick with excellent Linux/NUT support; avoid no-name units.
+
+### NUT (Network UPS Tools)
+
+The standard Linux daemon set for talking to UPSes and coordinating shutdown across machines:
+
+- **`nut-server` / `upsd`** runs on the machine the UPS is plugged into (USB), with a **driver** (`usbhid-ups` for most; `nutdrv_qx` for many cheap ones; `snmp-ups` for network cards) defined in `/etc/nut/ups.conf`. It publishes battery charge, load, runtime, status (`OL` online, `OB` on battery, `LB` low battery).
+- **`upsmon`** runs on *every* machine (including the server): it polls `upsd` (locally or over the network), and when the UPS reports **on battery + low battery** it triggers a shutdown. The master (the machine with the USB cable) shuts down last and tells the UPS to power off its outlets so everything comes back when mains returns (`upsdrvctl shutdown`).
+- **Configuration**: `/etc/nut/upsd.users` (a user for `upsmon`), `/etc/nut/upsmon.conf` (`MONITOR ups@localhost 1 monuser pass master` on the server; `... secondary` on clients), `/etc/nut/nut.conf` (`MODE=netserver` or `netclient`). `upsc ups@localhost` shows status. **Proxmox** (Debian) runs NUT natively; **TrueNAS**, **Unraid**, **OPNsense**, **Synology**, and **QNAP** all have NUT built in with UIs (and can act as master or slave); **Home Assistant** has a NUT integration to display and alert; **Peanut** is a small web UI for NUT; **Grafana** via the `nut_exporter`.
+- **Shutdown policy**: the default (shut down at "low battery," typically 10–20% charge) is fine for short-runtime setups; for long runtimes, shut down VMs and non-essential hosts *earlier* (`upssched` timers — "if on battery for 5 minutes, shut down the media server and the GPU box; at low battery, shut down everything") to preserve runtime for the router and the NAS.
+- **Test it**: pull the UPS's mains plug with everything running (during the maintenance window, after a backup). Watch `upsc`, watch the shutdown sequence, confirm everything comes back when you plug it in. An untested UPS shutdown is a hypothesis — like an untested backup.
+
+```
+# /etc/nut/ups.conf (server with the USB cable)
+[ups]
+  driver = usbhid-ups
+  port = auto
+  desc = "CyberPower CP1500PFCLCD"
+
+# /etc/nut/upsmon.conf (server)
+MONITOR ups@localhost 1 upsmon <password> master
+SHUTDOWNCMD "/sbin/shutdown -h +0"
+NOTIFYCMD /usr/sbin/upssched          # or a script that posts to ntfy
+NOTIFYFLAG ONBATT SYSLOG+WALL+EXEC
+NOTIFYFLAG ONLINE SYSLOG+WALL+EXEC
+NOTIFYFLAG LOWBATT SYSLOG+WALL+EXEC
+
+# /etc/nut/upsmon.conf (each client)
+MONITOR ups@10.0.20.10 1 upsmon <password> secondary
+```
+
+**Alternatives**: `apcupsd` (APC-specific, older, still fine), CyberPower's `pwrstat` (proprietary), Eaton's IPP; NUT covers all of them and is the recommendation.
+
+### Beyond the UPS
+
+- **Surge protection**: a UPS provides some; a whole-house surge protector at the panel provides more; lightning is not survivable by either — unplug during severe storms if you live somewhere it matters.
+- **Generators and solar/battery**: a Tier 3 lab in an outage-prone area may add an inverter generator or a home battery (Powerwall, Ecoflow/Bluetti units with UPS-mode passthrough — the portable power stations with <20 ms switchover work as a large, slow UPS for small loads). Beyond this guide's scope, but the NUT logic is the same: the lab must know when it is on battery.
+- **Graceful start-up**: BIOS "power on after AC loss," Proxmox VM start order and delays, `docker restart: unless-stopped`, and `fstab` `nofail`/automount options for network mounts so a host boots even if the NAS is not up yet. Test a cold start of the whole lab once: does everything come back without you?
+
+## Cost models
+
+Assume USD 0.20/kWh (adjust for your tariff; Europeans multiply by ~1.5–2), 5-year horizon, hardware bought used/value where sensible.
+
+### Tier 1: mini PC + 2 USB drives, ~25 W average
+
+| | |
+|---|---|
+| Electricity | 25 W × 8.76 × 0.20 = **USD 44/year** |
+| Hardware (mini PC, 2 drives, enclosure, UPS) | USD 700, amortised **USD 140/year** |
+| Off-site backup (300 GB on B2) | **USD 22/year** |
+| Domain | **USD 12/year** |
+| **Total** | **~USD 218/year (USD 18/month)** |
+
+For comparison: Google One 2 TB + a streaming service + a password manager family plan ≈ USD 300–400/year. Tier 1 breaks even and you own the hardware.
+
+### Tier 2: Proxmox node + NAS + firewall + switch + UPS, ~90 W average
+
+| | |
+|---|---|
+| Electricity | 90 W × 8.76 × 0.20 = **USD 158/year** |
+| Hardware | USD 2,500, amortised **USD 500/year** |
+| Off-site backup (2 TB) | **USD 144/year** |
+| Domain + VPS for Pangolin/Headscale | **USD 60/year** |
+| Drive replacements (1/year average) | **USD 150/year** |
+| **Total** | **~USD 1,010/year (USD 84/month)** |
+
+This is a hobby with hobby costs — comparable to a gym membership — that also replaces a household's cloud subscriptions and delivers capabilities (local AI, full-quality media, NVR, home automation) that the cloud does not sell.
+
+### Tier 3: cluster + storage server + GPU + 10 GbE, ~300 W average
+
+| | |
+|---|---|
+| Electricity | 300 W × 8.76 × 0.20 = **USD 526/year** (EUR 900+ in Europe) |
+| Hardware | USD 6,000, amortised **USD 1,200/year** |
+| Everything else | **USD 400/year** |
+| **Total** | **~USD 2,100/year (USD 175/month)** |
+
+At this tier, electricity is a line item you feel every month, and the power-tuning above is worth real money: getting 300 W down to 200 W saves USD 175/year — enough to pay for the off-site backups.
+
+### The comparison nobody makes
+
+A modern games console in standby draws 1–10 W; a smart TV 0.5–3 W in standby and 60–150 W on; a desktop PC left on 50–100 W; a fridge 100–200 kWh/year (~15–25 W average). A tuned Tier 1 lab at 25 W is *less* than many households' idle consumer electronics. A Tier 3 lab at 300 W is a second refrigerator running continuously — real, but not exotic.
+
+## Checklist
+
+- [ ] Idle, typical, and peak watts measured at the wall with a meter; annual cost calculated for your tariff.
+- [ ] `powertop` shows deep package C-states (C6+ at minimum, C8–C10 ideal) on always-on x86 hosts; BIOS C-states and ASPM enabled; `powertop --auto-tune` applied at boot; offending PCIe devices identified.
+- [ ] HDDs spin down when idle (verified with `hdparm -C` over a day) or the decision not to spin down is deliberate.
+- [ ] PSUs sized to actual peak; efficient at low load.
+- [ ] GPU/gaming/backup-target machines suspend or power off when idle, with WoL or scheduled wake.
+- [ ] Ambient and drive temperatures monitored with alerts; airflow adequate; nothing above 45 °C sustained.
+- [ ] Noise appropriate to location; noisy hardware relocated rather than tolerated.
+- [ ] UPS sized to load with 10+ minutes runtime; pure sine wave for active-PFC PSUs; router/modem/switch on it.
+- [ ] NUT (or equivalent) master + clients configured; shutdown tested by pulling the plug; `upssched` early-shutdown policy for non-essential hosts; ntfy notification on battery events.
+- [ ] Cold-start tested: everything returns after a full power loss without intervention (BIOS AC-loss setting, VM start order, `nofail` mounts).
+- [ ] UPS battery age recorded; self-test scheduled; replacement budgeted at year 3–4.
 
 ---

@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Power, Cost, and the Physical Environment — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li><li><a href="../25-misc-apps/"><span class="num">25</span> The Long Tail: Household, Finance, Web, and Utility Apps</a></li><li><a href="../26-databases-backing-services/"><span class="num">26</span> Databases and Backing Services</a></li></ul></div><div class="part"><div class="part-title">Part IV — Operations &amp; reference</div><ul><li><a href="../27-automation-iac/"><span class="num">27</span> Infrastructure as Code and Automation</a></li><li><a href="../28-maintenance-operations/"><span class="num">28</span> Maintenance and Operations</a></li><li class="active"><a href="../29-power-cost-environment/"><span class="num">29</span> Power, Cost, and the Physical Environment</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 29 · ~3,590 words · 16 min read</div>
+    <article class="prose">
+      <h1 id="power-cost-and-the-physical-environment">Power, Cost, and the Physical Environment<a class="headerlink" href="#power-cost-and-the-physical-environment" title="Permanent link">#</a></h1>
+<p>Electricity is the recurring cost of a home lab, heat is its by-product, noise is what gets it evicted from the living room, and a power cut is its most common unplanned outage. This chapter is the practical physics: how to measure what your lab draws, what it costs, where the watts go and how to cut them (C-states, ASPM, drive spin-down, right-sizing PSUs, GPU idle), how to manage heat and noise, and how to survive power problems with a UPS and Network UPS Tools so that a blackout means a clean shutdown rather than a corrupted pool. It ends with a worked cost model at each tier and the honest observation that a well-chosen lab costs less to run than a games console left on standby.</p>
+<h2 id="measure-first">Measure first<a class="headerlink" href="#measure-first" title="Permanent link">#</a></h2>
+<p>You cannot optimise what you have not measured, and spec sheets lie. Two tools:</p>
+<ul>
+<li><strong>A plug-in power meter</strong> (Kill A Watt in the US; a TP-Link Tapo P110 or Shelly Plug S / Plus Plug with energy monitoring anywhere — the smart plugs also log to Home Assistant): USD 10–25. Plug the whole lab (or each device) in and read watts, and kWh over a day. Measure <em>idle</em> (nothing happening, drives spun down if applicable), <em>typical</em> (normal background activity), and <em>peak</em> (a transcode, a scrub, an LLM query).</li>
+<li><strong>Software</strong> for what is happening <em>inside</em>: <code>powertop</code> (Intel/AMD: shows C-state residency — the percentage of time the CPU package spends in deep sleep — and lists tunables), <code>turbostat</code> (package power in watts on Intel), <code>s-tui</code>, <code>nvidia-smi</code> / <code>rocm-smi</code> / <code>intel_gpu_top</code> for GPUs, <code>hdparm -C /dev/sdX</code> (drive spin state), <code>sensors</code> (temperatures), and the UPS's own load reading via NUT.</li>
+</ul>
+<p>Then the arithmetic:</p>
+<div class="highlight"><pre><span></span><code>annual kWh  = average watts × 8.76
+annual cost = annual kWh × price per kWh
+</code></pre></div>
+<p>At USD 0.15/kWh: every <strong>continuous watt costs USD 1.31/year</strong>. At EUR 0.35/kWh (much of Europe in 2026): <strong>EUR 3.07/year per watt</strong>. A 100 W difference between two designs is USD 130–300 per year, every year. This is why <a href="../02-hardware/">Chapter 2</a> obsesses over idle power.</p>
+<h2 id="where-the-watts-go">Where the watts go<a class="headerlink" href="#where-the-watts-go" title="Permanent link">#</a></h2>
+<p>A typical breakdown for a Tier 2 lab, measured at the wall:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Idle watts</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mini PC (N100, NVMe, 16 GB)</td>
+<td>6–10</td>
+<td>The reason mini PCs won</td>
+</tr>
+<tr>
+<td>Used SFF desktop (i5 8th–12th gen, SSD)</td>
+<td>12–25</td>
+<td>Depends heavily on BIOS/C-state tuning</td>
+</tr>
+<tr>
+<td>Custom NAS build (i3-12100, 6 HDD, ITX, Gold PSU)</td>
+<td>30–45 spun down; 60–80 spinning</td>
+<td>Drives dominate</td>
+</tr>
+<tr>
+<td>Each 3.5" HDD</td>
+<td>4–6 idle spinning; 0.5–1 spun down; 7–9 active</td>
+<td>7200 rpm and enterprise drives are the higher end</td>
+</tr>
+<tr>
+<td>Each 2.5" SSD / NVMe</td>
+<td>0.3–2</td>
+<td>Some NVMe drives have poor idle (ASPM matters)</td>
+</tr>
+<tr>
+<td>Used enterprise 2U server (dual Xeon, 8 drives)</td>
+<td>100–180</td>
+<td>Before any workload</td>
+</tr>
+<tr>
+<td>Discrete GPU (RTX 3060/3090)</td>
+<td>10–25</td>
+<td>Higher if a display is attached or persistence mode is off; 300+ under load</td>
+</tr>
+<tr>
+<td>Managed 8-port 2.5 GbE switch</td>
+<td>5–10</td>
+<td>10GBase-T ports add 2–5 W each</td>
+</tr>
+<tr>
+<td>OPNsense box (N100, 4× 2.5 GbE)</td>
+<td>8–15</td>
+<td></td>
+</tr>
+<tr>
+<td>Wi-Fi AP</td>
+<td>5–12 (PoE)</td>
+<td></td>
+</tr>
+<tr>
+<td>UPS (line-interactive, self-consumption)</td>
+<td>5–15</td>
+<td>Yes, the UPS itself burns power</td>
+</tr>
+<tr>
+<td>Raspberry Pi 5</td>
+<td>3–5</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Two lessons: <strong>drives and old servers</strong> are where most of the power goes, and <strong>the network gear and UPS</strong> are a non-trivial floor that exists regardless of compute choices.</p>
+<h2 id="reducing-idle-power">Reducing idle power<a class="headerlink" href="#reducing-idle-power" title="Permanent link">#</a></h2>
+<h3 id="cpu-package-states-c-states">CPU package states (C-states)<a class="headerlink" href="#cpu-package-states-c-states" title="Permanent link">#</a></h3>
+<p>Modern CPUs save most of their power by sleeping between tasks. <code>powertop</code> shows the percentage in each package C-state; a well-tuned Intel desktop system idles in <strong>C8–C10</strong> at 3–8 W package power; a poorly tuned one sits in C2–C3 at 20+ W. What prevents deep sleep:</p>
+<ul>
+<li><strong>BIOS settings</strong>: enable "C-states," "Package C-state limit: Auto/C10," "ASPM: Auto/L1," "Native ASPM," disable "Above 4G Decoding" only if it causes issues (it usually should stay on for GPUs). Set "PCIe link state power management" to L1.</li>
+<li><strong>PCIe devices without ASPM</strong>: a NIC, an HBA, an NVMe drive, or a GPU that does not support Active State Power Management pins the whole package at a shallow C-state. <code>lspci -vv | grep -i aspm</code> shows per-device status. The <strong>LSI SAS HBAs</strong> (9211/9300) are notorious for this — they cost 8–12 W themselves and block C-states; use motherboard SATA ports or an <strong>ASMedia ASM1166</strong>-based 6-port SATA card (which supports ASPM) instead where possible. Some NVMe drives (older Samsung, some Kioxia) block deep states; Solidigm and WD SN770/SN850X are generally fine. <strong>10GBase-T NICs</strong> are hungry and often block states; SFP+ with DAC is better.</li>
+<li><strong>Kernel parameters</strong>: <code>pcie_aspm=force</code> (forces ASPM on devices that claim not to support it — try it, check <code>dmesg</code> for errors), the <strong><code>powertop --auto-tune</code></strong> tunables (which enable runtime PM on USB, SATA link power management, audio codec power saving — apply via a systemd service at boot), <code>ahci.mobile_lpm_policy=3</code> for SATA link power (can cause issues with some HBAs/backplanes; test), and the Intel <code>intel_idle</code> driver (default; do not disable).</li>
+<li><strong>Peripherals</strong>: unplug USB devices that keep the bus awake; disable the audio codec; disable unused onboard controllers (a second NIC, Wi-Fi, Bluetooth) in BIOS.</li>
+<li><strong>The GPU</strong>: NVIDIA cards need <code>nvidia-persistenced</code> and no attached display to idle properly; some models still refuse to go below 15–25 W. Consider whether the GPU should be in the always-on server at all.</li>
+</ul>
+<p>A tuned Intel 12th–14th gen system (i3/i5, one NVMe, ITX board, Gold PSU) idles at <strong>10–15 W at the wall with drives spun down</strong> — the community's benchmark for a DIY NAS. The <strong>"unRAID/Proxmox low power" threads</strong> on the German Hardwareluxx forum and r/homelab document specific board/CPU/PSU combinations with measured results; the <strong>Wolfgang's Channel</strong> YouTube series is the best video treatment.</p>
+<h3 id="drives">Drives<a class="headerlink" href="#drives" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Spin down idle HDDs</strong>: <code>hdparm -S 241 /dev/sdX</code> (30 minutes) or the NAS OS's setting. MergerFS/SnapRAID and Unraid make this natural (only the drive holding the file spins); <strong>ZFS pools spin all drives for any access</strong>, so spin-down works only when nothing touches the pool for the timeout — which, with monitoring and indexing services, is rarer than you think. Check <code>hdparm -C</code> over a day to see if they actually stay down. Frequent spin-up/down cycles wear drives; set the timeout at 20–60 minutes, not 5.</li>
+<li><strong>Fewer, larger drives</strong> (<a href="../06-storage/">Chapter 6</a>): four 20 TB drives draw a third of what twelve 6 TB drives draw.</li>
+<li><strong>SSDs for the hot data</strong>: the OS, containers, databases, and frequently accessed files on flash mean the spinning array is touched only for media — and can sleep.</li>
+<li><strong>Enterprise vs consumer</strong>: enterprise HDDs idle 1–2 W higher and are louder; the trade is warranty and workload rating.</li>
+</ul>
+<h3 id="power-supplies">Power supplies<a class="headerlink" href="#power-supplies" title="Permanent link">#</a></h3>
+<p>A PSU's efficiency curve peaks at 40–60% load and falls off sharply below 10–20%. An 850 W Platinum unit powering a 25 W idle system may be running at 70% efficiency; a 450 W Gold unit at the same load is closer to 85%. <strong>Size the PSU to the peak, not to the marketing</strong> — a NAS with six drives and an i5 peaks under 200 W (drive spin-up is the spike); a 400–550 W unit is right. <strong>PicoPSU</strong> (12 V DC input, 90–160 W) with a laptop-style brick is the most efficient option for a mini-ITX box with few drives. <strong>Corsair RM/SF Gold, Seasonic Focus, be quiet! Pure Power</strong> have good low-load efficiency; check <strong>Cybenetics</strong> low-load ratings (the ETA/LAMBDA certification includes 2% and 10% load efficiency, which 80 PLUS does not).</p>
+<h3 id="right-sizing-and-consolidation">Right-sizing and consolidation<a class="headerlink" href="#right-sizing-and-consolidation" title="Permanent link">#</a></h3>
+<p>The lowest-power lab is the one with the fewest machines. Three mini PCs at 10 W each beat one 2U server at 150 W; but one 25 W SFF running Proxmox with everything beats three mini PCs. Consolidate where the isolation is not needed; separate only for the reasons in <a href="../01-planning/">Chapter 1</a> (DNS on its own box; storage separate from compute at Tier 2+). The <strong>GPU box</strong> is the classic candidate for <strong>suspend-on-idle + Wake-on-LAN</strong>: a Home Assistant automation (or <strong>UpSnap</strong>, or a script) wakes it when someone opens the game-streaming or LLM front-end and suspends it after 30 idle minutes — a 25 W idle GPU machine that runs 3 hours a day costs a tenth of one that runs 24.</p>
+<h3 id="scheduled-power">Scheduled power<a class="headerlink" href="#scheduled-power" title="Permanent link">#</a></h3>
+<p>Things that need not run at night can be shut down: a desktop that only does game streaming, a backup target that only needs to be on during the backup window (Wake-on-LAN from the backup script, shut down after), a secondary Proxmox node used only for testing. Smart plugs with HA scheduling handle the dumb devices (a printer, a Raspberry Pi doing something occasional).</p>
+<h2 id="heat">Heat<a class="headerlink" href="#heat" title="Permanent link">#</a></h2>
+<p>Every watt becomes heat. 30 W is a warm shelf; 150 W in a cupboard raises the temperature by 5–10 °C with poor airflow; 400 W is a space heater. Consequences: drives above 40–45 °C sustained age faster (Backblaze's data shows modest effects up to ~45 °C and larger above); CPUs throttle; fans spin up (noise); PSUs and capacitors degrade.</p>
+<ul>
+<li><strong>Airflow over insulation</strong>: a cupboard with the door ajar, or with a vent and a quiet exhaust fan (a USB-powered 120–140 mm Noctua on a smart plug/temperature automation), beats a sealed one. Racks want front-to-back airflow, not enclosed side panels.</li>
+<li><strong>Location</strong>: basements and utility rooms are cooler; attics and south-facing rooms are not. Do not put the NAS beside the radiator or in a sunbeam.</li>
+<li><strong>Monitor it</strong>: <code>sensors</code> for CPU/board, <code>smartctl -A</code> for drive temps (Scrutiny graphs them), a Zigbee temperature sensor in the cupboard feeding Home Assistant, with an alert at 30 °C ambient / 45 °C drive.</li>
+<li><strong>Fan curves</strong>: set BIOS/IPMI fan curves for quiet at idle and aggressive under load; on used enterprise servers, <code>ipmitool raw</code> commands set manual fan speeds (each vendor has a community script — Dell iDRAC, Supermicro).</li>
+<li><strong>Summer</strong>: expect 5–10 °C higher; if drives cross 50 °C in July, the location is wrong.</li>
+</ul>
+<h2 id="noise">Noise<a class="headerlink" href="#noise" title="Permanent link">#</a></h2>
+<p>Measured in dB(A) at 1 m; every 10 dB is roughly a doubling of perceived loudness. A silent room is ~30 dB; a quiet mini PC 0–20 dB (inaudible to fan-off); a 4-bay NAS with HDDs 25–35 dB (a low hum plus seek clicks — bedroom-hostile, office-tolerable); a tower server with 120 mm fans 30–40 dB; a 2U server 45–60 dB (a hair dryer); a 1U server 55–70 dB (unlivable). Enterprise switches with 40 mm fans are in the 2U class; many can be modded with Noctua fans if the firmware tolerates the lower RPM (some alarm; some do not).</p>
+<p>Rules: <strong>HDDs are the noise floor</strong> of any NAS — enterprise drives seek loudly (Exos/Ultrastar), consumer NAS drives (WD Red Plus, IronWolf non-Pro) are quieter; rubber grommets and a case with drive dampening (Fractal Define) help. <strong>Fewer, larger, slower fans</strong> (120–140 mm at 600–900 rpm) over many small fast ones. <strong>Never buy 1U</strong> for a living space. <strong>Put the noisy thing somewhere else</strong> — a garage, basement, or utility room with a wired run back; noise, unlike heat, has no software fix.</p>
+<h2 id="ups-and-network-ups-tools">UPS and Network UPS Tools<a class="headerlink" href="#ups-and-network-ups-tools" title="Permanent link">#</a></h2>
+<h3 id="why">Why<a class="headerlink" href="#why" title="Permanent link">#</a></h3>
+<p>Power flickers, brownouts, and short outages are common everywhere; long outages are regional. A UPS covers the flickers entirely (nothing even notices) and turns a long outage into a controlled event: the UPS tells the servers, the servers shut down cleanly, ZFS pools export intact, databases close their transactions, and everything comes back when power returns. Without one, a blackout during a write is a coin toss on corruption — modern filesystems survive it most of the time, which is exactly the problem: <em>most</em>.</p>
+<h3 id="sizing">Sizing<a class="headerlink" href="#sizing" title="Permanent link">#</a></h3>
+<p>Measure the lab's peak draw with the meter (or sum the idle figures and add 50%). Add the router, modem/ONT, and switch — they need to stay up for the servers to communicate with each other and for you to receive the alert. Buy a UPS whose <strong>watt</strong> rating (not VA) exceeds that by 30%. Then look at the <strong>runtime chart</strong> for your load: you want 10–15 minutes at least, long enough for the shutdown sequence plus a margin, and more if your outages are typically short (a 30-minute runtime rides through most flickers and brief cuts without shutting anything down).</p>
+<p>Typical: a Tier 1 lab (30–50 W) on a 600–900 VA unit (300–500 W) gets 45–90 minutes. A Tier 2 lab (100–150 W) on a 1500 VA (900–1000 W) unit gets 20–40 minutes. Bigger is not better beyond that — a UPS burns 5–15 W itself, more for larger units, and oversizing wastes both money and electricity.</p>
+<h3 id="type-and-features">Type and features<a class="headerlink" href="#type-and-features" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Line-interactive</strong> with <strong>pure sine wave</strong> output (CyberPower CP-series PFC models, APC Back-UPS Pro / Smart-UPS, Eaton 5S/5P/Ellipse PRO): the right class for home labs; corrects brownouts without switching to battery; sine wave is preferable for active-PFC power supplies (all modern ones).</li>
+<li><strong>Standby/offline</strong> (cheaper APC Back-UPS ES, CyberPower standby): fine for a mini PC and a router; simulated sine wave is usually acceptable for small loads.</li>
+<li><strong>Online/double-conversion</strong> (Eaton 9-series, APC Smart-UPS Online): always on inverter, zero transfer time, cleanest power, 10–20% efficiency loss. Overkill for home.</li>
+<li><strong>Communication</strong>: <strong>USB</strong> (universal; NUT supports nearly every model via <code>usbhid-ups</code>), <strong>serial</strong> (old), <strong>network management card</strong> (SNMP — great, expensive, usually only on Smart-UPS/Eaton 5P class). USB is fine: one server is the NUT master; the others are clients over the network.</li>
+<li><strong>Batteries</strong>: sealed lead-acid (SLA/VRLA) lasts 3–5 years and is user-replaceable (USD 30–80; <strong>buy the replacement cartridge, not a new UPS</strong>); <strong>lithium-ion</strong> models (CyberPower's Li-ion line, Eaton 5P Li-ion, APC's newer lithium units) last 8–10 years, weigh half, and cost 50–100% more — increasingly worth it. Enable the UPS's periodic self-test and act when it fails.</li>
+<li><strong>Outlets</strong>: enough for everything that must stay up; surge-only outlets for things that must not (a printer draws a huge spike and should never be on battery).</li>
+<li><strong>Brands</strong>: APC (Schneider) and Eaton are the safe choices; <strong>CyberPower</strong> is the value pick with excellent Linux/NUT support; avoid no-name units.</li>
+</ul>
+<h3 id="nut-network-ups-tools">NUT (Network UPS Tools)<a class="headerlink" href="#nut-network-ups-tools" title="Permanent link">#</a></h3>
+<p>The standard Linux daemon set for talking to UPSes and coordinating shutdown across machines:</p>
+<ul>
+<li><strong><code>nut-server</code> / <code>upsd</code></strong> runs on the machine the UPS is plugged into (USB), with a <strong>driver</strong> (<code>usbhid-ups</code> for most; <code>nutdrv_qx</code> for many cheap ones; <code>snmp-ups</code> for network cards) defined in <code>/etc/nut/ups.conf</code>. It publishes battery charge, load, runtime, status (<code>OL</code> online, <code>OB</code> on battery, <code>LB</code> low battery).</li>
+<li><strong><code>upsmon</code></strong> runs on <em>every</em> machine (including the server): it polls <code>upsd</code> (locally or over the network), and when the UPS reports <strong>on battery + low battery</strong> it triggers a shutdown. The master (the machine with the USB cable) shuts down last and tells the UPS to power off its outlets so everything comes back when mains returns (<code>upsdrvctl shutdown</code>).</li>
+<li><strong>Configuration</strong>: <code>/etc/nut/upsd.users</code> (a user for <code>upsmon</code>), <code>/etc/nut/upsmon.conf</code> (<code>MONITOR ups@localhost 1 monuser pass master</code> on the server; <code>... secondary</code> on clients), <code>/etc/nut/nut.conf</code> (<code>MODE=netserver</code> or <code>netclient</code>). <code>upsc ups@localhost</code> shows status. <strong>Proxmox</strong> (Debian) runs NUT natively; <strong>TrueNAS</strong>, <strong>Unraid</strong>, <strong>OPNsense</strong>, <strong>Synology</strong>, and <strong>QNAP</strong> all have NUT built in with UIs (and can act as master or slave); <strong>Home Assistant</strong> has a NUT integration to display and alert; <strong>Peanut</strong> is a small web UI for NUT; <strong>Grafana</strong> via the <code>nut_exporter</code>.</li>
+<li><strong>Shutdown policy</strong>: the default (shut down at "low battery," typically 10–20% charge) is fine for short-runtime setups; for long runtimes, shut down VMs and non-essential hosts <em>earlier</em> (<code>upssched</code> timers — "if on battery for 5 minutes, shut down the media server and the GPU box; at low battery, shut down everything") to preserve runtime for the router and the NAS.</li>
+<li><strong>Test it</strong>: pull the UPS's mains plug with everything running (during the maintenance window, after a backup). Watch <code>upsc</code>, watch the shutdown sequence, confirm everything comes back when you plug it in. An untested UPS shutdown is a hypothesis — like an untested backup.</li>
+</ul>
+<div class="highlight"><pre><span></span><code># /etc/nut/ups.conf (server with the USB cable)
+[ups]
+  driver = usbhid-ups
+  port = auto
+  desc = &quot;CyberPower CP1500PFCLCD&quot;
+
+# /etc/nut/upsmon.conf (server)
+MONITOR ups@localhost 1 upsmon &lt;password&gt; master
+SHUTDOWNCMD &quot;/sbin/shutdown -h +0&quot;
+NOTIFYCMD /usr/sbin/upssched          # or a script that posts to ntfy
+NOTIFYFLAG ONBATT SYSLOG+WALL+EXEC
+NOTIFYFLAG ONLINE SYSLOG+WALL+EXEC
+NOTIFYFLAG LOWBATT SYSLOG+WALL+EXEC
+
+# /etc/nut/upsmon.conf (each client)
+MONITOR ups@10.0.20.10 1 upsmon &lt;password&gt; secondary
+</code></pre></div>
+<p><strong>Alternatives</strong>: <code>apcupsd</code> (APC-specific, older, still fine), CyberPower's <code>pwrstat</code> (proprietary), Eaton's IPP; NUT covers all of them and is the recommendation.</p>
+<h3 id="beyond-the-ups">Beyond the UPS<a class="headerlink" href="#beyond-the-ups" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Surge protection</strong>: a UPS provides some; a whole-house surge protector at the panel provides more; lightning is not survivable by either — unplug during severe storms if you live somewhere it matters.</li>
+<li><strong>Generators and solar/battery</strong>: a Tier 3 lab in an outage-prone area may add an inverter generator or a home battery (Powerwall, Ecoflow/Bluetti units with UPS-mode passthrough — the portable power stations with &lt;20 ms switchover work as a large, slow UPS for small loads). Beyond this guide's scope, but the NUT logic is the same: the lab must know when it is on battery.</li>
+<li><strong>Graceful start-up</strong>: BIOS "power on after AC loss," Proxmox VM start order and delays, <code>docker restart: unless-stopped</code>, and <code>fstab</code> <code>nofail</code>/automount options for network mounts so a host boots even if the NAS is not up yet. Test a cold start of the whole lab once: does everything come back without you?</li>
+</ul>
+<h2 id="cost-models">Cost models<a class="headerlink" href="#cost-models" title="Permanent link">#</a></h2>
+<p>Assume USD 0.20/kWh (adjust for your tariff; Europeans multiply by ~1.5–2), 5-year horizon, hardware bought used/value where sensible.</p>
+<h3 id="tier-1-mini-pc-2-usb-drives-25-w-average">Tier 1: mini PC + 2 USB drives, ~25 W average<a class="headerlink" href="#tier-1-mini-pc-2-usb-drives-25-w-average" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Electricity</td>
+<td>25 W × 8.76 × 0.20 = <strong>USD 44/year</strong></td>
+</tr>
+<tr>
+<td>Hardware (mini PC, 2 drives, enclosure, UPS)</td>
+<td>USD 700, amortised <strong>USD 140/year</strong></td>
+</tr>
+<tr>
+<td>Off-site backup (300 GB on B2)</td>
+<td><strong>USD 22/year</strong></td>
+</tr>
+<tr>
+<td>Domain</td>
+<td><strong>USD 12/year</strong></td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>~USD 218/year (USD 18/month)</strong></td>
+</tr>
+</tbody>
+</table>
+<p>For comparison: Google One 2 TB + a streaming service + a password manager family plan ≈ USD 300–400/year. Tier 1 breaks even and you own the hardware.</p>
+<h3 id="tier-2-proxmox-node-nas-firewall-switch-ups-90-w-average">Tier 2: Proxmox node + NAS + firewall + switch + UPS, ~90 W average<a class="headerlink" href="#tier-2-proxmox-node-nas-firewall-switch-ups-90-w-average" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Electricity</td>
+<td>90 W × 8.76 × 0.20 = <strong>USD 158/year</strong></td>
+</tr>
+<tr>
+<td>Hardware</td>
+<td>USD 2,500, amortised <strong>USD 500/year</strong></td>
+</tr>
+<tr>
+<td>Off-site backup (2 TB)</td>
+<td><strong>USD 144/year</strong></td>
+</tr>
+<tr>
+<td>Domain + VPS for Pangolin/Headscale</td>
+<td><strong>USD 60/year</strong></td>
+</tr>
+<tr>
+<td>Drive replacements (1/year average)</td>
+<td><strong>USD 150/year</strong></td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>~USD 1,010/year (USD 84/month)</strong></td>
+</tr>
+</tbody>
+</table>
+<p>This is a hobby with hobby costs — comparable to a gym membership — that also replaces a household's cloud subscriptions and delivers capabilities (local AI, full-quality media, NVR, home automation) that the cloud does not sell.</p>
+<h3 id="tier-3-cluster-storage-server-gpu-10-gbe-300-w-average">Tier 3: cluster + storage server + GPU + 10 GbE, ~300 W average<a class="headerlink" href="#tier-3-cluster-storage-server-gpu-10-gbe-300-w-average" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Electricity</td>
+<td>300 W × 8.76 × 0.20 = <strong>USD 526/year</strong> (EUR 900+ in Europe)</td>
+</tr>
+<tr>
+<td>Hardware</td>
+<td>USD 6,000, amortised <strong>USD 1,200/year</strong></td>
+</tr>
+<tr>
+<td>Everything else</td>
+<td><strong>USD 400/year</strong></td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>~USD 2,100/year (USD 175/month)</strong></td>
+</tr>
+</tbody>
+</table>
+<p>At this tier, electricity is a line item you feel every month, and the power-tuning above is worth real money: getting 300 W down to 200 W saves USD 175/year — enough to pay for the off-site backups.</p>
+<h3 id="the-comparison-nobody-makes">The comparison nobody makes<a class="headerlink" href="#the-comparison-nobody-makes" title="Permanent link">#</a></h3>
+<p>A modern games console in standby draws 1–10 W; a smart TV 0.5–3 W in standby and 60–150 W on; a desktop PC left on 50–100 W; a fridge 100–200 kWh/year (~15–25 W average). A tuned Tier 1 lab at 25 W is <em>less</em> than many households' idle consumer electronics. A Tier 3 lab at 300 W is a second refrigerator running continuously — real, but not exotic.</p>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Idle, typical, and peak watts measured at the wall with a meter; annual cost calculated for your tariff.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> <code>powertop</code> shows deep package C-states (C6+ at minimum, C8–C10 ideal) on always-on x86 hosts; BIOS C-states and ASPM enabled; <code>powertop --auto-tune</code> applied at boot; offending PCIe devices identified.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> HDDs spin down when idle (verified with <code>hdparm -C</code> over a day) or the decision not to spin down is deliberate.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> PSUs sized to actual peak; efficient at low load.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> GPU/gaming/backup-target machines suspend or power off when idle, with WoL or scheduled wake.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Ambient and drive temperatures monitored with alerts; airflow adequate; nothing above 45 °C sustained.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Noise appropriate to location; noisy hardware relocated rather than tolerated.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> UPS sized to load with 10+ minutes runtime; pure sine wave for active-PFC PSUs; router/modem/switch on it.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> NUT (or equivalent) master + clients configured; shutdown tested by pulling the plug; <code>upssched</code> early-shutdown policy for non-essential hosts; ntfy notification on battery events.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Cold-start tested: everything returns after a full power loss without intervention (BIOS AC-loss setting, VM start order, <code>nofail</code> mounts).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> UPS battery age recorded; self-test scheduled; replacement budgeted at year 3–4.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../28-maintenance-operations/">← 28. Maintenance and Operations</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/29-power-cost-environment.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#measure-first">Measure first</a></li>
+<li><a href="#where-the-watts-go">Where the watts go</a></li>
+<li><a href="#reducing-idle-power">Reducing idle power</a><ul>
+<li><a href="#cpu-package-states-c-states">CPU package states (C-states)</a></li>
+<li><a href="#drives">Drives</a></li>
+<li><a href="#power-supplies">Power supplies</a></li>
+<li><a href="#right-sizing-and-consolidation">Right-sizing and consolidation</a></li>
+<li><a href="#scheduled-power">Scheduled power</a></li>
+</ul>
+</li>
+<li><a href="#heat">Heat</a></li>
+<li><a href="#noise">Noise</a></li>
+<li><a href="#ups-and-network-ups-tools">UPS and Network UPS Tools</a><ul>
+<li><a href="#why">Why</a></li>
+<li><a href="#sizing">Sizing</a></li>
+<li><a href="#type-and-features">Type and features</a></li>
+<li><a href="#nut-network-ups-tools">NUT (Network UPS Tools)</a></li>
+<li><a href="#beyond-the-ups">Beyond the UPS</a></li>
+</ul>
+</li>
+<li><a href="#cost-models">Cost models</a><ul>
+<li><a href="#tier-1-mini-pc-2-usb-drives-25-w-average">Tier 1: mini PC + 2 USB drives, ~25 W average</a></li>
+<li><a href="#tier-2-proxmox-node-nas-firewall-switch-ups-90-w-average">Tier 2: Proxmox node + NAS + firewall + switch + UPS, ~90 W average</a></li>
+<li><a href="#tier-3-cluster-storage-server-gpu-10-gbe-300-w-average">Tier 3: cluster + storage server + GPU + 10 GbE, ~300 W average</a></li>
+<li><a href="#the-comparison-nobody-makes">The comparison nobody makes</a></li>
+</ul>
+</li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

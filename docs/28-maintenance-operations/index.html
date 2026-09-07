@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maintenance and Operations — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li><li><a href="../25-misc-apps/"><span class="num">25</span> The Long Tail: Household, Finance, Web, and Utility Apps</a></li><li><a href="../26-databases-backing-services/"><span class="num">26</span> Databases and Backing Services</a></li></ul></div><div class="part"><div class="part-title">Part IV — Operations &amp; reference</div><ul><li><a href="../27-automation-iac/"><span class="num">27</span> Infrastructure as Code and Automation</a></li><li class="active"><a href="../28-maintenance-operations/"><span class="num">28</span> Maintenance and Operations</a></li><li><a href="../29-power-cost-environment/"><span class="num">29</span> Power, Cost, and the Physical Environment</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 28 · ~2,846 words · 12 min read</div>
+    <article class="prose">
+      <h1 id="maintenance-and-operations">Maintenance and Operations<a class="headerlink" href="#maintenance-and-operations" title="Permanent link">#</a></h1>
+<p>Building a home lab is a project; running one is a practice. The difference between labs that are still humming after five years and labs that were quietly abandoned after eighteen months is almost never the hardware or the software — it is the operational habits: a sane update cadence, documentation that exists, a runbook for the things that go wrong at 11 pm, a way to know something broke before someone tells you, and a plan for the day you are not there. This chapter is about that practice: update strategy and cadence, the maintenance calendar, documentation and runbooks, change management for a one-person team, incident habits, capacity and lifecycle planning, the "bus factor" and hosting for others, and — importantly — knowing when to simplify or shut something down.</p>
+<h2 id="the-maintenance-mindset">The maintenance mindset<a class="headerlink" href="#the-maintenance-mindset" title="Permanent link">#</a></h2>
+<p>Three principles that make everything else easier:</p>
+<p><strong>Make changes boring.</strong> Every update, migration, or config change follows the same small ritual: snapshot or backup first, read the release notes, change one thing, verify, note it down. Boring is the goal. Excitement in operations means something went wrong.</p>
+<p><strong>Prefer fewer things.</strong> Every service is a maintenance obligation forever. The most effective operational improvement most labs can make is to <em>remove</em> the six services nobody used in the last three months. Complexity is a cost paid monthly.</p>
+<p><strong>Automate the routine, hand-do the risky.</strong> Security updates, snapshots, backups, scrubs, certificate renewals, and update <em>notifications</em> should be automatic. Major version upgrades, storage changes, network changes, and anything touching the IdP or the backups should be deliberate, scheduled, and done with attention.</p>
+<h2 id="update-strategy">Update strategy<a class="headerlink" href="#update-strategy" title="Permanent link">#</a></h2>
+<h3 id="cadence">Cadence<a class="headerlink" href="#cadence" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Cadence</th>
+<th>Method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Host OS security updates</td>
+<td>Automatic, nightly</td>
+<td><code>unattended-upgrades</code> / <code>dnf-automatic</code>; reboot window weekly or with <code>needrestart</code></td>
+</tr>
+<tr>
+<td>Host OS non-security updates</td>
+<td>Monthly</td>
+<td><code>apt full-upgrade</code> during the maintenance window</td>
+</tr>
+<tr>
+<td>Host OS major release (Debian 12→13)</td>
+<td>When you have an afternoon; within a year of release</td>
+<td>Snapshot, read the release notes, <code>apt full-upgrade</code> / <code>do-release-upgrade</code>; or rebuild via Ansible</td>
+</tr>
+<tr>
+<td>Hypervisor (Proxmox)</td>
+<td>Monthly for point releases; majors after community feedback settles (~2 months)</td>
+<td><code>apt</code> via the no-subscription repo; PBS backup of every VM first</td>
+</tr>
+<tr>
+<td>Firewall (OPNsense)</td>
+<td>Point releases within a couple of weeks; majors after a month</td>
+<td>Built-in updater; config export first</td>
+</tr>
+<tr>
+<td>Container images — stateless / low-risk</td>
+<td>Weekly, semi-automatic</td>
+<td>Renovate auto-merge patch/minor, or Diun notification + <code>compose pull</code></td>
+</tr>
+<tr>
+<td>Container images — stateful (databases, Nextcloud, Immich, Paperless, HA)</td>
+<td>On notification, after reading release notes; within a month</td>
+<td>Snapshot → <code>pull</code> → <code>up -d</code> → verify</td>
+</tr>
+<tr>
+<td>Database majors (Postgres 17→18)</td>
+<td>Yearly, per app</td>
+<td>Dump → new image → restore, or pgautoupgrade; backup first</td>
+</tr>
+<tr>
+<td>Firmware (BIOS, NIC, drives, switches, APs)</td>
+<td>Twice a year, or for a specific fix/CVE</td>
+<td>Vendor procedure; not during a storm</td>
+</tr>
+<tr>
+<td>Home Assistant</td>
+<td>Monthly release; wait ~a week for <code>.x</code> bugfixes</td>
+<td>Read "Breaking Changes"; snapshot; update</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Do not</strong> update everything on the same day. Stagger: infrastructure (host, hypervisor, proxy) one week, applications the next. When something breaks you know which change did it.</p>
+<h3 id="the-pre-update-ritual">The pre-update ritual<a class="headerlink" href="#the-pre-update-ritual" title="Permanent link">#</a></h3>
+<ol>
+<li><strong>Read the release notes.</strong> Every stateful app, every time. Look for "breaking," "migration," "manual step," "deprecated."</li>
+<li><strong>Snapshot.</strong> Proxmox VM snapshot, ZFS/Btrfs snapshot of the data directory, or at minimum a fresh database dump. Thirty seconds that turns a disaster into an inconvenience.</li>
+<li><strong>Update one thing.</strong> <code>docker compose pull &amp;&amp; docker compose up -d</code> for that stack.</li>
+<li><strong>Verify.</strong> Log in. Check the thing the app is for. Check the logs (<code>docker compose logs --tail 100</code>) for errors and migration messages. Check Uptime Kuma went green.</li>
+<li><strong>Note it.</strong> A line in the changelog: date, what, version from → to, anything noticed.</li>
+<li><strong>Delete the snapshot</strong> after a few days if all is well (snapshots on Proxmox slow VMs over time; ZFS snapshots consume space as data changes).</li>
+</ol>
+<h3 id="when-an-update-breaks-something">When an update breaks something<a class="headerlink" href="#when-an-update-breaks-something" title="Permanent link">#</a></h3>
+<p>Roll back first, investigate second. The snapshot from step 2 makes this a two-minute decision: revert, restore service, then read the issue tracker at leisure. Pin the previous image tag in the Compose file until the fix lands. Do not debug a broken production service while the family waits.</p>
+<h2 id="the-maintenance-calendar">The maintenance calendar<a class="headerlink" href="#the-maintenance-calendar" title="Permanent link">#</a></h2>
+<p>Put these in an actual calendar with reminders. Things that are "whenever" never happen.</p>
+<p><strong>Weekly (15 minutes)</strong>
+- Glance at the dashboard/Beszel/Grafana: disk trends, anything red.
+- Review update notifications; apply low-risk ones.
+- Check the backup job ran and the size is sane (Healthchecks green; Backrest/PBS shows last night's snapshot).
+- Skim CrowdSec/fail2ban decisions if anything is exposed.</p>
+<p><strong>Monthly (1–2 hours — the maintenance window)</strong>
+- Host OS updates and reboots (staggered).
+- Stateful app updates with the ritual above.
+- Home Assistant update.
+- Restore test: one random file from the off-site backup (<a href="../11-backups/">Chapter 11</a>).
+- Check ZFS scrub results and SMART/Scrutiny for anything trending.
+- Review Uptime Kuma incident history — anything flapping?
+- Review alerts: delete or tune any that fired and were ignored.
+- Prune: <code>docker image prune</code>, old snapshots, old backups beyond retention, stale VMs.
+- Update the changelog and any documentation touched.</p>
+<p><strong>Quarterly (an afternoon)</strong>
+- Service-level restore test: restore one whole application from backup to a scratch location and confirm it works.
+- Database major upgrades due.
+- Review the service inventory: what has nobody used? Decommission it (export data, archive config, remove).
+- Review firewall rules and forwarded ports; remove what is no longer needed.
+- Rotate anything that should rotate: API tokens with expiry, the DKIM key if self-hosting mail, admin passwords if shared.
+- Check UPS battery health (self-test); clean dust filters and fans.
+- Review disk capacity trend: at 70% full, plan expansion.
+- Verify the emergency sheet (master passwords, recovery codes, encryption keys) is current and where it should be.</p>
+<p><strong>Yearly (a weekend)</strong>
+- Full disaster-recovery drill from the off-site copy on scratch hardware or a VM (<a href="../11-backups/">Chapter 11</a>). Time it. Fix what the documentation got wrong.
+- Firmware updates across hardware.
+- Review the architecture: does the lab still match your needs? Is the tier right? What would you drop or consolidate?
+- Renew the domain (auto-renew on, payment method current). Check the registrar and DNS provider accounts have 2FA and a working recovery email.
+- Replace the UPS battery if 3–4 years old; consider drive age (5+ years for spinning drives is borrowed time even without SMART warnings).
+- Review the bus-factor plan (below) and update the "if I'm not here" document.</p>
+<h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">#</a></h2>
+<p>You will not remember. Six months is enough for "why is port 8096 forwarded" to become a mystery. Documentation is the load-bearing habit.</p>
+<h3 id="what-to-document">What to document<a class="headerlink" href="#what-to-document" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Inventory</strong>: every host (hardware, OS, IP, role, how to reach it, out-of-band access), every VM/LXC, every service (URL, host, stack directory, what it is for, who uses it, data location, backup status), every network (VLANs, subnets, DHCP ranges, reservations), every account (where the admin credentials are — in the password manager, referenced by entry name, never the credentials themselves).</li>
+<li><strong>Architecture</strong>: one diagram (Mermaid in Markdown so it lives in Git) showing hosts, networks, and the flow from the internet to a service.</li>
+<li><strong>Procedures (runbooks)</strong>: how to do the things you do — add a service, update a stack, restore from backup, rebuild a host, replace a failed drive, rotate a certificate, add a user to the IdP, onboard a family member's phone.</li>
+<li><strong>Decisions (ADRs)</strong>: short dated notes of <em>why</em>. "2026-02: Chose Caddy over Traefik: fewer services, readable config; revisit if we exceed 40 hosts." Future you will otherwise re-litigate every choice.</li>
+<li><strong>Changelog</strong>: a running dated log of changes. The single most useful troubleshooting document: "it broke around the 14th — what changed on the 13th?"</li>
+<li><strong>Vendor/account details</strong>: ISP account and support number, domain registrar, DNS provider, backup provider, VPS provider, hardware warranties and purchase dates, UPS model and battery replacement date.</li>
+</ul>
+<h3 id="where-to-document">Where to document<a class="headerlink" href="#where-to-document" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>In the Git repo</strong> alongside the code (Markdown; <code>docs/</code> directory; rendered by MkDocs/Otter Wiki if you want a UI) — the recommendation, because documentation next to configuration stays current and is versioned.</li>
+<li><strong>A wiki</strong> (BookStack, Outline, DokuWiki — <a href="../18-notes-productivity/">Chapter 18</a>) — friendlier for non-technical household members and for procedures with screenshots.</li>
+<li><strong>Comments in the Compose files themselves</strong> — the cheapest documentation; a one-line <code># why:</code> on every non-obvious setting.</li>
+<li><strong>Homepage/Homarr dashboard descriptions</strong> — a sentence per service is documentation too.</li>
+<li><strong>NetBox</strong> for people who want a real source of truth for IPs, racks, and cables (heavy; Tier 3).</li>
+</ul>
+<p><strong>Not</strong> in the lab alone. If the wiki is on the server that died, it is useless. Mirror the docs repo to GitHub/Codeberg, keep a PDF export in the off-site backup, and keep the <em>bootstrap</em> procedure — how to get from nothing to "the docs are readable again" — printed or on a phone.</p>
+<h3 id="the-runbook-template">The runbook template<a class="headerlink" href="#the-runbook-template" title="Permanent link">#</a></h3>
+<p>For each procedure, a short page:</p>
+<div class="highlight"><pre><span></span><code># Replace a failed drive in the ZFS pool
+
+When: zpool status shows DEGRADED / Scrutiny alert / SMART failure
+Impact while running: none (pool degraded but online); DO NOT reboot unnecessarily
+Time: 20 min hands-on + resilver (12–36 h)
+
+1. Identify: zpool status -v; note the failed device&#39;s by-id name
+2. Identify physical slot: ledctl locate /dev/sdX  (or match serial: smartctl -i)
+3. Offline it: zpool offline tank &lt;dev&gt;
+4. Pull, insert replacement (same or larger size, CMR)
+5. Find new by-id: ls -l /dev/disk/by-id | grep &lt;serial&gt;
+6. Replace: zpool replace tank &lt;old-id&gt; /dev/disk/by-id/&lt;new-id&gt;
+7. Watch: zpool status; resilver progress; Scrutiny picks up the new drive
+8. After resilver: zpool clear tank; scrub next week; update inventory (serial, purchase date)
+
+Gotchas: 4Kn vs 512e mismatch; a shucked drive may need the 3.3V pin mod; never replace during a scrub
+Last performed: 2026-04-12 (drive 3, WD160EDGZ, took 19 h)
+</code></pre></div>
+<h2 id="change-management-for-one-person">Change management for one person<a class="headerlink" href="#change-management-for-one-person" title="Permanent link">#</a></h2>
+<p>Enterprise change management exists because changes cause outages. A one-person lab needs a lightweight version of the same discipline:</p>
+<ul>
+<li><strong>Change window</strong>: a regular time (Sunday morning, Tuesday evening) when the household expects things might be down. Announce anything outside it.</li>
+<li><strong>One change at a time</strong> where possible; when not, write down the list <em>before</em> starting.</li>
+<li><strong>Rollback plan before you begin</strong>: the snapshot, the previous image tag, the config backup.</li>
+<li><strong>Test in staging</strong> — which at home means a scratch VM or a second Compose project with a <code>-test</code> suffix and a copy of the data — for anything scary (Nextcloud majors, IdP changes, storage layout).</li>
+<li><strong>Do not change the network and a service at the same time.</strong> When both break, you cannot tell which.</li>
+<li><strong>Do not start a risky change when tired, rushed, or when the family needs the service in the next hour.</strong> Most home-lab disasters are timing, not skill.</li>
+</ul>
+<h2 id="incident-habits">Incident habits<a class="headerlink" href="#incident-habits" title="Permanent link">#</a></h2>
+<p>When something breaks:</p>
+<ol>
+<li><strong>Restore service first.</strong> Roll back, restart, fail over. Understanding can wait; the family cannot.</li>
+<li><strong>Then understand.</strong> Logs (<code>docker compose logs</code>, <code>journalctl -u</code>, Dozzle, the app's own log), recent changes (the changelog), the upstream issue tracker.</li>
+<li><strong>Write a short post-mortem</strong> — three lines: what happened, why, what will prevent it. Add the prevention to the runbook or the automation. The lab gets more reliable with every incident <em>only</em> if this step happens.</li>
+<li><strong>Fix the class, not the instance.</strong> "Disk filled up from container logs" → set <code>max-size</code> in <code>daemon.json</code> on <em>every</em> host and add a disk alert, not just clear this one.</li>
+</ol>
+<p>Keep a <strong>break-glass</strong> path: a local admin account on every host that does not depend on the IdP; a way to reach the hypervisor console when the network is broken (IPMI, a KVM, a monitor and keyboard in the cupboard, or <strong>PiKVM/JetKVM/NanoKVM</strong> — cheap IP-KVMs that are among the best home-lab purchases); the router's local admin credentials in the password manager <em>and</em> on the emergency sheet.</p>
+<h2 id="capacity-and-lifecycle">Capacity and lifecycle<a class="headerlink" href="#capacity-and-lifecycle" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Watch trends, not snapshots.</strong> Disk at 60% is fine; disk at 60% growing 5% a month is a purchase decision in six months. Grafana/Beszel graphs over months tell you this.</li>
+<li><strong>Plan hardware lifecycle</strong>: spinning drives 5–7 years, SSDs by TBW and age, UPS batteries 3–5 years, fans and thermal paste 5+ years, mini PCs and SFFs a decade if they still meet needs. Buy replacements before failure when possible; a spare drive on the shelf is cheap insurance.</li>
+<li><strong>Grow deliberately</strong> (<a href="../01-planning/">Chapter 1</a>): add a service because it is needed, a host because the current one is genuinely full, a VLAN because there is a trust boundary to draw. Not because it is Saturday.</li>
+<li><strong>Decommission properly</strong>: export the data in an open format, archive the Compose file and config to a <code>retired/</code> directory in the repo with a dated note, remove the DNS record and proxy route and IdP client, remove the backup job (or keep the last backup for a year), update the inventory. A half-removed service is worse than a running one.</li>
+</ul>
+<h2 id="the-bus-factor">The bus factor<a class="headerlink" href="#the-bus-factor" title="Permanent link">#</a></h2>
+<p>If you were unavailable — travelling, ill, or worse — what happens?</p>
+<ul>
+<li><strong>Short term (a week):</strong> the lab keeps running if it is boring; the household needs to know <em>nothing</em> except "if it is broken, wait" or "turn it off and on again." Write a one-page "if the internet/TV/photos stop working" for the fridge: which box to power-cycle, in what order, and when to give up and call someone.</li>
+<li><strong>Medium term (months):</strong> someone technically competent should be able to keep it running or wind it down. The documentation, the repo, the password manager's emergency access (<a href="../21-passwords-secrets/">Chapter 21</a>), and a named person who knows they are that person. Walk them through it once.</li>
+<li><strong>Long term (permanently):</strong> the household should be able to <em>get the data out</em>. Photos, documents, and passwords in open formats, with the location and the keys in the emergency sheet. This is the real test of the anti-lock-in argument for self-hosting — make sure it holds for your family and not only for you.</li>
+</ul>
+<p>Concretely: an <strong>"If I'm not here" document</strong> (printed, in the safe, and a copy with the trusted person) containing: what the lab is and where; how to log into the password manager (emergency access or the sealed master password); where the backups are and how to restore the photos and documents <em>without</em> the lab (the Restic/Borg command, the repo password, a cloud login); the domain and DNS account details so nothing lapses; who to call; and an explicit permission to shut it all down and put the photos on a USB drive if that is easier. Revisit it yearly.</p>
+<h2 id="hosting-for-others">Hosting for others<a class="headerlink" href="#hosting-for-others" title="Permanent link">#</a></h2>
+<p>Once family or friends depend on your services, you have made an implicit promise. Make it explicit — to yourself if not to them:</p>
+<ul>
+<li><strong>Set expectations</strong>: "it is a hobby; it may be down for a day; I will tell you before planned work; do not put your only copy of anything here."</li>
+<li><strong>Give them an exit</strong>: they can export their data (Immich albums, Nextcloud files, Vaultwarden vault) at any time; show them how once.</li>
+<li><strong>Do not host things you cannot walk away from</strong> for people who cannot walk away from them — someone's business email, a friend's only backup. Point them at a paid provider, or run it <em>for</em> them in a way they own (their account, their domain).</li>
+<li><strong>Separate their access</strong> (IdP groups, Tailscale ACLs) so a compromise of their device does not reach your admin surfaces.</li>
+<li><strong>Consider the legal side</strong> (<a href="../30-legal-ethical/">Chapter 30</a>) — for family it is trivial; for a club or acquaintances, think about what data you hold and why.</li>
+</ul>
+<h2 id="knowing-when-to-stop">Knowing when to stop<a class="headerlink" href="#knowing-when-to-stop" title="Permanent link">#</a></h2>
+<p>Some services should be retired. Some whole labs should be scaled back. Signs: you dread the maintenance window; updates pile up for months; the family has quietly gone back to the cloud service; you spend more time fixing than using; a service has had no login in 90 days. Shrinking a lab is not failure — it is operations. The people who run labs for decades are the ones who periodically cut them in half.</p>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Automatic security updates on every host; a defined cadence for everything else; staggered by layer.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> The pre-update ritual (notes → snapshot → one change → verify → log) is habit; rollback is the first response to breakage.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Weekly/monthly/quarterly/yearly tasks are in a calendar with reminders.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Inventory, architecture diagram, runbooks, ADRs, and changelog exist in Git, mirrored off the lab; a PDF/printout of the bootstrap procedure exists.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Every non-obvious Compose setting has a <code># why:</code> comment.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Break-glass access: local admin accounts, console/IP-KVM access, router credentials on the emergency sheet.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Post-mortem habit: every incident produces a prevention (automation, alert, or runbook update).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Capacity trends visible; hardware lifecycle dates in the inventory; a spare drive on the shelf.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Decommission procedure followed for retired services; a <code>retired/</code> archive in the repo.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> "If I'm not here" document written, printed, shared with a named person, reviewed yearly; emergency access configured in the password manager.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Expectations set with anyone who depends on your services; their data exportable; their access separated.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> The service inventory reviewed quarterly and pruned honestly.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../27-automation-iac/">← 27. Infrastructure as Code and Automation</a><a class="next" href="../29-power-cost-environment/">29. Power, Cost, and the Physical Environment →</a></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/28-maintenance-operations.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#the-maintenance-mindset">The maintenance mindset</a></li>
+<li><a href="#update-strategy">Update strategy</a><ul>
+<li><a href="#cadence">Cadence</a></li>
+<li><a href="#the-pre-update-ritual">The pre-update ritual</a></li>
+<li><a href="#when-an-update-breaks-something">When an update breaks something</a></li>
+</ul>
+</li>
+<li><a href="#the-maintenance-calendar">The maintenance calendar</a></li>
+<li><a href="#documentation">Documentation</a><ul>
+<li><a href="#what-to-document">What to document</a></li>
+<li><a href="#where-to-document">Where to document</a></li>
+<li><a href="#the-runbook-template">The runbook template</a></li>
+</ul>
+</li>
+<li><a href="#change-management-for-one-person">Change management for one person</a></li>
+<li><a href="#incident-habits">Incident habits</a></li>
+<li><a href="#capacity-and-lifecycle">Capacity and lifecycle</a></li>
+<li><a href="#the-bus-factor">The bus factor</a></li>
+<li><a href="#hosting-for-others">Hosting for others</a></li>
+<li><a href="#knowing-when-to-stop">Knowing when to stop</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

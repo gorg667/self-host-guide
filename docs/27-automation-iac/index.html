@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Infrastructure as Code and Automation — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li><li><a href="../25-misc-apps/"><span class="num">25</span> The Long Tail: Household, Finance, Web, and Utility Apps</a></li><li><a href="../26-databases-backing-services/"><span class="num">26</span> Databases and Backing Services</a></li></ul></div><div class="part"><div class="part-title">Part IV — Operations &amp; reference</div><ul><li class="active"><a href="../27-automation-iac/"><span class="num">27</span> Infrastructure as Code and Automation</a></li><li><a href="../28-maintenance-operations/"><span class="num">28</span> Maintenance and Operations</a></li><li><a href="../29-power-cost-environment/"><span class="num">29</span> Power, Cost, and the Physical Environment</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 27 · ~2,623 words · 11 min read</div>
+    <article class="prose">
+      <h1 id="infrastructure-as-code-and-automation">Infrastructure as Code and Automation<a class="headerlink" href="#infrastructure-as-code-and-automation" title="Permanent link">#</a></h1>
+<p>There is a moment in every home lab's life when you realise you could not rebuild it. The Docker host was configured by hand over two years; the Proxmox VMs were clicked into existence; the firewall rules accreted. If the SSD died tomorrow, restoring the <em>data</em> would be the easy part — recreating the <em>configuration</em> would take weeks of remembering. Infrastructure as code (IaC) is the discipline that prevents this: the state of every machine is described in files, the files live in Git, and a machine is produced by <em>applying</em> them rather than by typing. This chapter covers the tools at each layer — Ansible for configuring hosts, Terraform/OpenTofu for provisioning VMs and cloud resources, cloud-init for first boot, NixOS as the declarative extreme, Renovate for keeping versions current, and GitOps workflows for Compose (Komodo) and Kubernetes (Flux, Argo CD) — and, more importantly, how much of it a home lab actually needs.</p>
+<h2 id="how-much-iac-does-a-home-lab-need">How much IaC does a home lab need?<a class="headerlink" href="#how-much-iac-does-a-home-lab-need" title="Permanent link">#</a></h2>
+<p>Be honest about the goal. Full IaC — every host reproducible from an empty disk with one command — is a beautiful thing and a serious investment. For most home labs, the <em>80/20</em> is:</p>
+<ol>
+<li><strong>Compose files and their configs in Git.</strong> This alone gets you most of the value: every service's definition is versioned, diffable, and restorable. If your <code>/opt/stacks</code> is a Git repo, you already have IaC for the application layer.</li>
+<li><strong>A written (or scripted) procedure for the host.</strong> "Install Debian, run this script that installs Docker, creates the user, sets up the firewall, mounts the NAS, clones the stacks repo." Even a shell script in the repo is a huge improvement over memory.</li>
+<li><strong>Backups of the things that are not code</strong> — the hypervisor config, the router's XML export, the switch config (<a href="../11-backups/">Chapter 11</a>).</li>
+</ol>
+<p>Beyond that, Ansible for the host layer and Terraform for VMs are the natural next steps when you have more than two or three hosts or rebuild often. NixOS and Kubernetes GitOps are for people who enjoy the discipline for its own sake or want the professional skill. There is no shame in stopping at step 3; there is real regret in stopping at step 0.</p>
+<pre class="mermaid">flowchart TB
+    Git[(Git repo)] --&gt; TF[Terraform / OpenTofu&lt;br/&gt;creates VMs, DNS, cloud]
+    TF --&gt; CI[cloud-init&lt;br/&gt;first boot: user, SSH key, packages]
+    CI --&gt; AN[Ansible&lt;br/&gt;configures hosts: Docker, firewall, mounts]
+    AN --&gt; CO[Compose stacks&lt;br/&gt;deployed by Ansible / Komodo / git pull]
+    Git --&gt; RN[Renovate&lt;br/&gt;PRs bumping image tags]
+    RN --&gt; Git</pre>
+<h2 id="ansible-configuring-hosts">Ansible: configuring hosts<a class="headerlink" href="#ansible-configuring-hosts" title="Permanent link">#</a></h2>
+<p><strong>Ansible</strong> connects to machines over SSH (no agent), and applies <strong>playbooks</strong> — YAML lists of <strong>tasks</strong> using <strong>modules</strong> (<code>apt</code>, <code>user</code>, <code>copy</code>, <code>template</code>, <code>systemd</code>, <code>docker_compose_v2</code>, <code>ufw</code>, <code>mount</code>, and thousands more) — idempotently: running a playbook twice produces the same state, and only changes what differs. <strong>Inventory</strong> lists your hosts and groups; <strong>roles</strong> package reusable configuration (a <code>docker</code> role, a <code>common</code> role for users/SSH/updates); <strong>variables</strong> and <strong>templates</strong> (Jinja2) parameterise per host; <strong>Ansible Vault</strong> or <strong>SOPS</strong> encrypts secrets in the repo.</p>
+<p><strong>What it is good for at home:</strong> the host layer. A <code>common</code> role that creates your user, installs your SSH key, hardens sshd, enables unattended-upgrades, sets the timezone, installs your preferred tools, configures ufw and the <code>DOCKER-USER</code> rules, and joins the host to Tailscale. A <code>docker</code> role that installs Docker from the official repo, writes <code>daemon.json</code>, and adds the user to the group. A <code>nas-mounts</code> role for NFS. A <code>stacks</code> role that clones your Compose repo and runs <code>docker compose up -d</code> for each stack (or hands off to Komodo). Run <code>ansible-playbook site.yml</code> against a fresh Debian install and twenty minutes later it is a fully configured Docker host identical to the last one.</p>
+<p><strong>What it is less good for:</strong> the <em>application</em> layer inside containers (that is what Compose is for), and orchestrating complex multi-step state changes (it is a configuration tool, not a workflow engine). It is also slow for large fleets (irrelevant at home).</p>
+<p><strong>Getting started:</strong> <code>pip install ansible</code> (or <code>pipx</code>), a repo with <code>inventory.yml</code>, <code>site.yml</code>, and <code>roles/</code>; <strong>Ansible Galaxy</strong> for community roles (<code>geerlingguy.docker</code>, <code>geerlingguy.security</code> — Jeff Geerling's roles are the gold standard and his book <em>Ansible for DevOps</em> the best introduction); <code>ansible-lint</code> in CI; <strong>Semaphore UI</strong> if you want a web interface to run playbooks and see history (also runs Terraform/OpenTofu and shell scripts — a nice control panel for a lab's automation); <strong>Ansible AWX/AAP</strong> is the enterprise UI and far too heavy for home.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># playbooks/site.yml (sketch)</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">hosts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker_hosts</span>
+<span class="w">  </span><span class="nt">become</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">common</span><span class="w">          </span><span class="c1"># users, ssh, updates, ufw, tailscale</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">geerlingguy.docker</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nas_mounts</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stacks</span><span class="w">          </span><span class="c1"># git clone + docker compose up per stack</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># roles/stacks/tasks/main.yml (sketch)</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Clone the stacks repo</span>
+<span class="w">  </span><span class="nt">ansible.builtin.git</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git@git.example.com:me/stacks.git</span>
+<span class="w">    </span><span class="nt">dest</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/stacks</span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Decrypt secrets with SOPS</span>
+<span class="w">  </span><span class="nt">ansible.builtin.command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sops -d /opt/stacks/{{ item }}/.env.enc</span>
+<span class="w">  </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">envfile</span>
+<span class="w">  </span><span class="nt">loop</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">stacks</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">  </span><span class="nt">changed_when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Write .env files</span>
+<span class="w">  </span><span class="nt">ansible.builtin.copy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">item.stdout</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">dest</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/opt/stacks/{{</span><span class="nv"> </span><span class="s">item.item</span><span class="nv"> </span><span class="s">}}/.env&quot;</span>
+<span class="w">    </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0600&quot;</span>
+<span class="w">  </span><span class="nt">loop</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">envfile.results</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bring stacks up</span>
+<span class="w">  </span><span class="nt">community.docker.docker_compose_v2</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">project_src</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/opt/stacks/{{</span><span class="nv"> </span><span class="s">item</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">present</span>
+<span class="w">    </span><span class="nt">pull</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">policy</span>
+<span class="w">  </span><span class="nt">loop</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">stacks</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</code></pre></div>
+<p>Alternatives: <strong>Salt</strong> (agent-based, faster at scale, steeper), <strong>Puppet/Chef</strong> (the enterprise veterans — heavy, declining at home), <strong>pyinfra</strong> (Python-native, fast, minimal — a pleasant Ansible alternative for Pythonistas), <strong>shell scripts in Git</strong> (legitimate for one or two hosts; the point is reproducibility, not tool choice).</p>
+<h2 id="terraform-and-opentofu-provisioning">Terraform and OpenTofu: provisioning<a class="headerlink" href="#terraform-and-opentofu-provisioning" title="Permanent link">#</a></h2>
+<p><strong>Terraform</strong> (HashiCorp) declares <em>resources</em> — a VM, a DNS record, a cloud bucket, a Tailscale ACL — in HCL files; <code>terraform plan</code> shows what would change; <code>terraform apply</code> makes it so; <strong>state</strong> tracks what exists. After HashiCorp's 2023 switch to the BSL licence, the Linux Foundation forked it as <strong>OpenTofu</strong> (MPL), which is a drop-in replacement and the community's choice for new work. Both use the same <strong>providers</strong>.</p>
+<p><strong>At home it shines for:</strong> creating Proxmox VMs and LXCs from templates (the <strong>bpg/proxmox</strong> provider is the well-maintained one; the older Telmate provider is deprecated), with cloud-init to set hostname/user/SSH key/IP — so <code>tofu apply</code> produces a fresh Debian VM ready for Ansible; managing <strong>DNS records</strong> at Cloudflare/Porkbun (the wildcard, the public records); <strong>Tailscale/Headscale</strong> ACLs and DNS; <strong>cloud resources</strong> (the VPS for Pangolin, the B2 bucket for backups, the Hetzner Storage Box); <strong>Authentik/Keycloak</strong> clients and users (providers exist); <strong>Proxmox Backup Server</strong> datastores; <strong>UniFi</strong> networks; <strong>Minio/Garage</strong> buckets; even <strong>Docker</strong> containers (though Compose is better for that).</p>
+<p><strong>The pattern:</strong> Terraform creates the VM (from a cloud-init-enabled template); cloud-init does first boot; Ansible configures it; Compose runs the apps. State stored locally in the repo (encrypted) or in a backend (an S3 bucket on Garage; the Postgres backend; Terraform Cloud/Spacelift free tiers — not self-hosted). <strong>Atlantis</strong> or <strong>Semaphore</strong> for running plans from CI/PRs if you want a UI.</p>
+<p><strong>Watch out for:</strong> state is precious and must be backed up — losing it means Terraform no longer knows what it manages; the Proxmox provider's quirks (cloning, disk resizing, SCSI vs VirtIO, the <code>agent</code> setting) take an afternoon to learn; do not manage in Terraform things you also click in the UI (drift).</p>
+<p>Alternatives: <strong>Pulumi</strong> (the same model in real languages — Python/TypeScript/Go; excellent, smaller community for home providers), <strong>Crossplane</strong> (Kubernetes-native provisioning), <strong>the Proxmox community scripts</strong> (imperative, one-shot, very popular — not IaC but a fine way to <em>create</em> templates that Terraform then clones).</p>
+<h2 id="cloud-init-and-vm-templates">cloud-init and VM templates<a class="headerlink" href="#cloud-init-and-vm-templates" title="Permanent link">#</a></h2>
+<p><strong>cloud-init</strong> is the first-boot configuration system every cloud image supports: hostname, users, SSH keys, packages, files, and a <code>runcmd</code> script, fed via a NoCloud datasource, a Proxmox cloud-init drive, or a provider's metadata service. Build one <strong>template</strong> per OS on Proxmox — download the Debian/Ubuntu <strong>cloud image</strong> (<code>.qcow2</code>), import it as a VM disk, add a cloud-init drive and the QEMU guest agent, convert to a template — and every new VM is a clone with a cloud-init snippet. This is the standard Proxmox workflow and the bridge between Terraform and Ansible. <strong>Packer</strong> builds custom templates with your tools pre-baked (the <code>proxmox-iso</code>/<code>proxmox-clone</code> builders) — worth it once you rebuild VMs weekly, unnecessary before.</p>
+<h2 id="nixos-the-declarative-host">NixOS: the declarative host<a class="headerlink" href="#nixos-the-declarative-host" title="Permanent link">#</a></h2>
+<p>Introduced in <a href="../04-os-and-hypervisors/">Chapter 4</a>: a Linux distribution where the <em>whole system</em> is a declarative configuration. In IaC terms it collapses Ansible, the package manager, and much of Compose into one layer — <code>services.jellyfin.enable = true;</code> installs, configures, and runs Jellyfin; <code>virtualisation.oci-containers.containers.immich = { image = "..."; volumes = [...]; }</code> runs a container; <code>networking.firewall.allowedTCPPorts = [ 443 ];</code> opens a port; <code>services.restic.backups.nightly = { ... };</code> schedules a backup — all in one repo, all atomically applied with rollback. With <strong>flakes</strong> for reproducible pins, <strong>sops-nix</strong> or <strong>agenix</strong> for secrets, <strong>nixos-anywhere</strong> or <strong>disko</strong> for installing onto bare disks over SSH, and <strong>deploy-rs</strong>/<strong>colmena</strong>/<strong>nixos-rebuild --target-host</strong> for pushing to many machines, a NixOS lab is <em>fully</em> reproducible from Git in a way no other stack matches.</p>
+<p>The costs are the language, the error messages, the fragmentation of documentation, the "is this in nixpkgs yet" question, and the time. A meaningful number of experienced self-hosters have converged on NixOS as the host OS for exactly the reasons this chapter exists; an equal number tried and returned to Debian + Ansible. Try it in a VM before committing a lab to it. <strong>Guix System</strong> is the Scheme-based cousin — even more principled, far smaller ecosystem.</p>
+<h2 id="keeping-versions-current-renovate">Keeping versions current: Renovate<a class="headerlink" href="#keeping-versions-current-renovate" title="Permanent link">#</a></h2>
+<p><strong>Renovate</strong> (Mend) scans a repository for dependencies — Docker image tags in Compose files, Helm chart versions, GitHub Actions, Terraform providers, npm/pip packages — and opens <strong>pull requests</strong> when newer versions exist, with the changelog/release notes linked, grouped and scheduled as you configure (<code>"schedule": ["after 10pm every weekday"]</code>, group all minor updates, auto-merge patch releases, pin digests). Run it as the hosted GitHub App (free for public/private GitHub repos) or <strong>self-hosted</strong> against your Forgejo/Gitea (a scheduled CI job or a container running <code>renovate</code> with a token; the <code>renovatebot/renovate</code> image). Configuration in <code>renovate.json</code> at the repo root; presets (<code>config:recommended</code>) do the right thing.</p>
+<p>This is the mature answer to the update problem from <a href="../05-containers/">Chapter 5</a>: every image bump is a reviewed, versioned commit; merging the PR is the update; the deploy step (below) applies it; <code>git revert</code> is the rollback. <strong>Dependabot</strong> is GitHub-only and less flexible. <strong>Diun</strong>/<strong>WUD</strong> notify but do not PR. The combination "pinned tags in Compose + Renovate PRs + auto-deploy on merge" is what a well-run 2026 home lab looks like.</p>
+<h2 id="deploying-on-merge-gitops-for-compose">Deploying on merge: GitOps for Compose<a class="headerlink" href="#deploying-on-merge-gitops-for-compose" title="Permanent link">#</a></h2>
+<p>Once configs are in Git and Renovate opens PRs, you want merging to <em>deploy</em> without SSHing in:</p>
+<ul>
+<li><strong>Komodo</strong> (<a href="../22-dev-git-automation/">Chapter 22</a>) — define stacks as resources pointing at your Git repo; Komodo's periphery agent on each host pulls and deploys on a webhook from Forgejo/Gitea when <code>main</code> changes. Multi-host, with a UI, alerts, and everything as TOML you can also sync from Git. <strong>The current best fit for Compose GitOps.</strong></li>
+<li><strong>Portainer's Git-backed stacks</strong> with webhook redeploys — works; less elegant.</li>
+<li><strong>A webhook receiver + script</strong>: <strong>webhook</strong> (adnanh) or <strong>Forgejo Actions runner on the host</strong> runs <code>git pull &amp;&amp; docker compose up -d --pull always</code> when a push arrives. Ten lines; entirely sufficient for one host.</li>
+<li><strong>Ansible from CI</strong>: a Forgejo Actions workflow runs the playbook on merge (the runner needs SSH access to hosts — a dedicated deploy key). Cleanest when Ansible already owns the hosts.</li>
+<li><strong>Watchtower/<code>docker compose pull</code> on a timer</strong> — the <em>non</em>-GitOps way: it pulls whatever the tag points at, so pin exact versions and let Renovate move them, or accept surprise updates.</li>
+<li><strong>Doco-CD</strong>, <strong>compose-updater</strong>, <strong>shepherd</strong> (Swarm) — smaller tools in this space.</li>
+</ul>
+<h2 id="gitops-for-kubernetes">GitOps for Kubernetes<a class="headerlink" href="#gitops-for-kubernetes" title="Permanent link">#</a></h2>
+<p>If you run k3s/Talos (<a href="../05-containers/">Chapter 5</a>), GitOps is not optional — it is how you should operate it:</p>
+<ul>
+<li><strong>Flux CD</strong> — controllers in the cluster watch a Git repo (and Helm repos, OCI registries) and reconcile the cluster to match: Kustomizations, HelmReleases, image automation, SOPS-encrypted secrets natively, notifications. Lightweight, composable, CLI-driven; the choice of the <strong>home-operations</strong> community whose template (<code>onedr0p/cluster-template</code>) is the widely-copied starting point.</li>
+<li><strong>Argo CD</strong> — the same model with a rich <strong>web UI</strong> showing every application's sync state, diffs, and history; ApplicationSets for multi-cluster patterns; more moving parts. Popular in enterprises; a fine home choice if you want the UI.</li>
+<li>Supporting cast: <strong>Renovate</strong> for chart/image bumps, <strong>SOPS/age</strong> or <strong>External Secrets Operator</strong> (pulling from Infisical/OpenBao/1Password), <strong>cert-manager</strong>, <strong>external-dns</strong> (writes DNS records to Pi-hole/AdGuard/Cloudflare from Ingress annotations), <strong>Reloader</strong> (restarts pods on ConfigMap changes), <strong>kube-prometheus-stack</strong>.</li>
+</ul>
+<h2 id="documentation-as-code">Documentation as code<a class="headerlink" href="#documentation-as-code" title="Permanent link">#</a></h2>
+<p>The IaC repo <em>is</em> documentation if it is readable: a <code>README.md</code> per stack explaining what it does and why decisions were made; comments in Compose files; an <code>ARCHITECTURE.md</code> with the Mermaid diagram of hosts, VLANs, and services; ADRs (architecture decision records — short dated notes: "2026-03: switched from NPM to Caddy because…"). Pair it with the runbook wiki from <a href="../28-maintenance-operations/">Chapter 28</a>, or make the wiki <em>be</em> the repo (Otter Wiki/MkDocs rendering the same Markdown). <strong>NetBox</strong> or a simple <code>hosts.yml</code> as the source of truth for IPs and hardware. The test: could a competent stranger rebuild this from the repo alone?</p>
+<h2 id="a-reference-repository-layout">A reference repository layout<a class="headerlink" href="#a-reference-repository-layout" title="Permanent link">#</a></h2>
+<div class="highlight"><pre><span></span><code>homelab/
+├── README.md                    # what this is, how to bootstrap
+├── ARCHITECTURE.md              # diagram, VLANs, hosts, decisions
+├── .sops.yaml                   # age keys for secret encryption
+├── renovate.json
+├── .forgejo/workflows/          # lint on PR; deploy on merge
+├── terraform/
+│   ├── proxmox/                 # VMs and LXCs from templates
+│   ├── dns/                     # Cloudflare records
+│   └── tailscale/               # ACLs
+├── ansible/
+│   ├── inventory.yml
+│   ├── site.yml
+│   └── roles/{common,docker,nas_mounts,stacks}/
+├── stacks/                      # one directory per Compose stack
+│   ├── traefik/{compose.yaml,.env.enc,config/}
+│   ├── media/{compose.yaml,.env.enc}
+│   ├── immich/{compose.yaml,.env.enc}
+│   └── ...
+├── komodo/                      # Komodo resource TOML (if used)
+└── docs/                        # runbooks, ADRs
+</code></pre></div>
+<h2 id="recommendations-by-tier">Recommendations by tier<a class="headerlink" href="#recommendations-by-tier" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Tier 1:</strong> <code>stacks/</code> in Git with <code>.env</code> gitignored (or SOPS-encrypted); a <code>bootstrap.sh</code> that turns fresh Debian into your Docker host; Renovate (hosted GitHub app or self-hosted) opening PRs; <code>git pull &amp;&amp; docker compose up -d</code> by hand or via a webhook. That is IaC enough.</li>
+<li><strong>Tier 2:</strong> add Ansible for the host layer (common + docker + mounts roles; Geerling's roles), OpenTofu for Proxmox VMs from a cloud-init template and for DNS, Komodo for deploy-on-merge, SOPS+age for secrets, Semaphore if you want a UI for runs.</li>
+<li><strong>Tier 3:</strong> everything above; consider NixOS for hosts if the model appeals; Kubernetes with Flux/Argo if you run it; Packer for templates; a CI pipeline that lints (ansible-lint, tofu validate, <code>docker compose config</code>), plans, and deploys; ADRs for every significant decision.</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Every Compose file and its configuration is in a Git repository hosted on your own forge (and mirrored elsewhere).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Secrets are out of the repo (<code>.gitignore</code>) or encrypted in it (SOPS + age); the age key is in the password manager and printed.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A fresh host can be brought to production state by a documented script or playbook — tested at least once on a scratch VM.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Image tags are pinned; Renovate (or equivalent) proposes updates; merging deploys (or you have a one-command deploy).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> VMs are created from templates via Terraform/OpenTofu or at minimum a documented cloud-init procedure; Terraform state is backed up.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Configuration that cannot be code (router, switch, hypervisor UI settings) is exported to the repo or backups on a schedule.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> An <code>ARCHITECTURE.md</code> with a current diagram; decisions recorded as they are made.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> The "competent stranger" test has been considered honestly.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../26-databases-backing-services/">← 26. Databases and Backing Services</a><a class="next" href="../28-maintenance-operations/">28. Maintenance and Operations →</a></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/27-automation-iac.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#how-much-iac-does-a-home-lab-need">How much IaC does a home lab need?</a></li>
+<li><a href="#ansible-configuring-hosts">Ansible: configuring hosts</a></li>
+<li><a href="#terraform-and-opentofu-provisioning">Terraform and OpenTofu: provisioning</a></li>
+<li><a href="#cloud-init-and-vm-templates">cloud-init and VM templates</a></li>
+<li><a href="#nixos-the-declarative-host">NixOS: the declarative host</a></li>
+<li><a href="#keeping-versions-current-renovate">Keeping versions current: Renovate</a></li>
+<li><a href="#deploying-on-merge-gitops-for-compose">Deploying on merge: GitOps for Compose</a></li>
+<li><a href="#gitops-for-kubernetes">GitOps for Kubernetes</a></li>
+<li><a href="#documentation-as-code">Documentation as code</a></li>
+<li><a href="#a-reference-repository-layout">A reference repository layout</a></li>
+<li><a href="#recommendations-by-tier">Recommendations by tier</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
