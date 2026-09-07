@@ -102,7 +102,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 23-ai-llm.md — Ollama, Open WebUI, LocalAI, llama.cpp, vLLM, ComfyUI/SD, Whisper/Speaches, Piper/Kokoro, SearXNG/Perplexica, LibreChat, AnythingLLM; GPU/VRAM sizing, quantization
 - [x] 24-gaming.md — Pterodactyl/Pelican, Crafty, PufferPanel, AMP, itzg Minecraft, RomM, Gaseous, EmulatorJS, Sunshine/Moonlight
 - [x] 25-misc-apps.md — Recipes (Mealie/Tandoor), Grocy, finance (Firefly III/Actual/Ghostfolio/Wallos), inventory (Homebox), Speedtest Tracker, ChangeDetection, Invidious, analytics (Umami/Plausible/Matomo), blogging (Ghost/WordPress/Hugo), URL shorteners, Excalidraw, Cal.com, DocuSeal, etc.
-- [ ] 26-databases-backing-services.md — PostgreSQL, MariaDB, Redis/Valkey, MongoDB, SQLite; pgAdmin/Adminer; object storage (Garage/SeaweedFS/MinIO); message queues
+- [x] 26-databases-backing-services.md — PostgreSQL, MariaDB, Redis/Valkey, MongoDB, SQLite; pgAdmin/Adminer; object storage (Garage/SeaweedFS/MinIO); message queues
 
 ### Part IV — Operations
 - [ ] 27-automation-iac.md — Ansible, Terraform/OpenTofu + Proxmox, cloud-init, NixOS, Renovate, GitOps (Komodo, Flux/ArgoCD)
