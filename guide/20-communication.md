@@ -56,3 +56,35 @@ The 25-year-old federated chat protocol (Jabber): **Prosody** (Lua, light, modul
 | Mobile clients | Element X, FluffyChat, many | Official | Official | Official | Conversations / Monal |
 | Licence | AGPL / Apache (varies by server) | MIT (Team) + paid | MIT + paid tiers | Apache 2.0 | MIT |
 | Best for | Households, communities, privacy | Small teams | Slack replacement with support desk | Organised async groups | Lightest federated E2EE |
+
+## Voice and video
+
+- **Jitsi Meet** — the self-hosted Zoom: browser-based (no accounts needed by default), screen sharing, recording (with Jibri), lobby and passwords, breakout rooms, mobile apps, and JWT/OIDC authentication for who may create rooms. A Compose stack of several containers (web, prosody, jicofo, jvb). Video quality is good for a handful of participants; the **JVB** (videobridge) needs UDP 10000 open to the internet (or a TURN server) for participants outside your network — this is the one place where a forwarded port is nearly unavoidable, or where a VPS should host it. Works best with a small number of participants; large meetings need real bandwidth and CPU on the bridge.
+- **Element Call / LiveKit** — Matrix's native group calls, powered by **LiveKit** (an open-source SFU) with the **Matrix RTC** backend. Element X and Element Web use it; you run a LiveKit server (and its JWT service) alongside your homeserver. E2EE calls. The modern path for Matrix users; setup is more involved than Jitsi's but the integration is seamless once done.
+- **Nextcloud Talk** — chat and calls inside Nextcloud; for more than 2–3 participants it needs the **High Performance Backend** (a separate signalling server, now open source and included in AIO). Fine for a Nextcloud household.
+- **Mumble** — low-latency **voice** chat (the gamers' standard for two decades): tiny server (**Murmur**, ~20 MB), positional audio, channels, ACLs, clients everywhere including **Mumla** (Android) and **Mumble** (iOS). No video. Unbeatable for a gaming group or a family voice channel on a Raspberry Pi. **TeamSpeak** (proprietary) is the alternative nobody needs.
+- **BigBlueButton** (education-oriented conferencing with whiteboards and breakout rooms — heavy, needs a dedicated server), **Galène** (a minimal, efficient SFU in Go — great for small groups), **MiroTalk** (WebRTC P2P/SFU meeting rooms, light), **Peer Calls**, **Rocket.Chat/Mattermost built-in calls**. **Signal/WhatsApp calls** are not self-hostable.
+
+**Recommendation:** Jitsi Meet for ad-hoc video with anyone (send a link); Mumble for persistent voice; Element Call if you are on Matrix and want calls in the same client.
+
+## Email: the honest chapter
+
+Self-hosting email is possible, and the tooling in 2026 is better than it has ever been. Before choosing to do it, understand what you are signing up for.
+
+### Why it is hard
+
+- **Deliverability.** The large providers (Gmail, Outlook/Microsoft 365, Yahoo, iCloud) treat mail from unknown IPs with suspicion. Residential IP ranges are **blanket-blocked** for outbound SMTP by nearly every recipient and by most ISPs (port 25 outbound is blocked at the ISP level for the majority of home connections). So your mail server *cannot* live at home and send mail directly. It lives on a **VPS** — and VPS IP ranges are also treated with suspicion, especially cheap ones with a history of spam. A new IP starts with **no reputation**; building it takes weeks of low-volume legitimate mail, and a single misstep (an open relay, a compromised account, a mailing-list blast) lands you on a blocklist that can take days to escape. Microsoft in particular is opaque and slow about delisting.
+- **The standards are non-negotiable now.** **SPF**, **DKIM**, and **DMARC** (with `p=quarantine` or `reject`) are required by Gmail and Yahoo for bulk senders since 2024 and effectively required for everyone. **Reverse DNS (PTR)** must match your HELO name. **TLS** with a valid certificate. **MTA-STS** and **DANE** are nice-to-haves. Any mail server package below sets these up; you still have to publish the DNS records correctly and understand what they do.
+- **Inbound spam** must be filtered (rspamd is excellent) and *you* tune the false positives.
+- **Availability.** If your server is down, senders retry for a few days, then bounce. A home internet outage or a botched update can lose mail. Email is the one service where downtime has irreversible consequences.
+- **Time.** Initial setup is a weekend. Ongoing: monitoring blocklists, reading rspamd reports, updating, occasionally begging Microsoft. Perhaps an hour a month once stable — and the "once stable" takes a few months.
+
+### Why people do it anyway
+
+Complete control over the most important account you have (every password reset goes through it); no provider reading or mining it; unlimited addresses and domains; catch-all and plus-addressing; no risk of a provider locking you out; learning the protocols that underpin the internet. For some, it is the point of self-hosting.
+
+### The realistic architectures
+
+1. **Don't.** Use a privacy-respecting paid provider (**Fastmail**, **Proton**, **mailbox.org**, **Migadu**, **Posteo**, **Tuta**) with your own domain. USD 1–5/month per user. You keep domain portability (the actual lock-in protection), gain deliverability, and lose only the purity. **This is the right answer for most households**, and choosing it is not a failure.
+2. **Receive at home, send via a relay.** Run your mail server at home (or on a VPS) for storage, IMAP, webmail, and filtering, but route **outbound** mail through a reputable **SMTP relay** — **Amazon SES** (USD 0.10 per 1,000 emails), **Mailgun**, **Postmark**, **SMTP2GO**, **Brevo**, **Resend**, or your ISP's relay. Deliverability becomes the relay's problem; you keep your mailbox and data. Inbound to a home IP requires port 25 open inbound (many ISPs allow it even when blocking outbound) and a static IP or a **backup MX**/**inbound relay** on a VPS that forwards to home over a VPN. **The recommendation for anyone who insists on self-hosting the mailbox.**
+3. **Full stack on a VPS.** Mail server on a VPS with a clean IP (check its history against blocklists *before* committing; Hetzner, OVH, and Vultr ranges vary — some providers block port 25 on new accounts until you ask). Do everything right (rDNS, SPF, DKIM, DMARC, TLS, rate limits, no open relay, MTA-STS), warm the IP slowly, monitor with **mail-tester.com** and blocklist checks, and accept the occasional Microsoft fight. Feasible; hundreds of people do it successfully; not effortless.
