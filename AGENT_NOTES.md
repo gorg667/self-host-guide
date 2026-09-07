@@ -109,7 +109,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 28-maintenance-operations.md — Update cadence, pinning, runbooks, documentation, disaster drills, bus factor
 - [x] 29-power-cost-environment.md — Measuring watts, cost calc, idle tuning (powertop/C-states/ASPM), spin-down, heat/noise, UPS + NUT
 - [x] 30-legal-ethical.md — Licensing (OSS vs source-available), hosting for family, copyright, ISP ToS, GDPR-lite
-- [ ] 31-reference-architectures.md — Starter / Intermediate / Advanced blueprints with Mermaid diagrams + full compose stacks
+- [x] 31-reference-architectures.md — Starter / Intermediate / Advanced blueprints with Mermaid diagrams + full compose stacks
 - [ ] 32-troubleshooting-faq.md — Common failures & fixes, FAQ
 - [ ] 33-resources-community.md — Communities, creators, wikis, newsletters
 - [ ] 34-appendix.md — Glossary, port reference, checklists, compose cheat-sheet

@@ -935,3 +935,114 @@ HA groups only for `docker-core` and `haos` (their disks on `nas-vm` NFS so they
 - Authentik's database on `postgres-01`; its blueprints (YAML config) in Git so a rebuild is `compose up` + apply.
 
 Why Pocket ID is enough for most people, and the full IdP comparison, in [Identity & SSO](10-identity-sso.md).
+
+### Observability
+
+```yaml
+# monitoring VM, /srv/stacks/observability/compose.yaml (abridged)
+services:
+  prometheus:
+    image: prom/prometheus:v3.4.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=90d"]
+    volumes: ["./prometheus:/etc/prometheus", "/srv/appdata/prometheus:/prometheus"]
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    volumes: ["./alertmanager:/etc/alertmanager"]
+  grafana:
+    image: grafana/grafana:12.0.2
+    environment:
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"      # Authentik OIDC
+      GF_SERVER_ROOT_URL: https://grafana.home.example.com
+    volumes: ["/srv/appdata/grafana:/var/lib/grafana", "./grafana/provisioning:/etc/grafana/provisioning"]
+  loki:
+    image: grafana/loki:3.5
+    volumes: ["./loki:/etc/loki", "/srv/appdata/loki:/loki"]
+  alloy:
+    image: grafana/alloy:v1.9.1
+    volumes: ["./alloy:/etc/alloy", "/var/run/docker.sock:/var/run/docker.sock:ro", "/var/log:/var/log:ro"]
+```
+
+Exporters: `node_exporter` on every host and the NAS, `pve-exporter` for Proxmox, `smartctl_exporter`, `zfs_exporter`, `blackbox_exporter` for HTTPS/certificate probes, `cadvisor` per Docker VM, the OPNsense `node_exporter` plugin, Traefik's `/metrics`. Alerting rules that matter: disk > 85 %, ZFS pool degraded, SMART failing, backup job age > 26 h, certificate expiry < 14 d, host down 5 min, UPS on battery. Alertmanager → ntfy, with a **separate** ntfy.sh topic as fallback so a dead `docker-core` still alerts. Uptime Kuma runs *outside* the cluster (QDevice Pi or the VPS) for the external view. Dashboards and rationale in [Monitoring](12-monitoring.md).
+
+### Service layer highlights
+
+Beyond the Intermediate set:
+
+- **Frigate** on `pve-02` with a Coral TPU or OpenVINO on the iGPU, recordings on `tank/cameras`, integrated with Home Assistant; cameras on VLAN 50 with no internet ([Home automation](19-home-automation.md)).
+- **Matrix (Synapse or Conduwuit) + Element** for family chat, behind Pangolin with `.well-known` delegation ([Communication](20-communication.md)).
+- **Email**: still probably *not* self-hosted; if you insist, Mailcow or Stalwart on the VPS with the home lab as backup MX at most ([Communication](20-communication.md)).
+- **Ollama + Open WebUI** on the GPU node; SearXNG for private search; Immich ML pointed at the GPU ([AI/LLM](23-ai-llm.md)).
+- **Forgejo + Actions runner** hosting the very repos that define this lab; Renovate as an Action; Komodo deploying on push ([Dev, Git & automation](22-dev-git-automation.md)).
+- **Game servers** via Pelican/Pterodactyl or Crafty in `docker-lab`, exposed through Pangolin's raw TCP/UDP resources ([Gaming](24-gaming.md)).
+
+### Exposure model (Advanced)
+
+```mermaid
+flowchart LR
+    User((Public user)) --> DNS[Public DNS<br/>public names → VPS IP]
+    DNS --> VPS[VPS: Pangolin + Traefik + CrowdSec]
+    VPS -. Newt / WireGuard .-> Core[docker-core Traefik + Authentik]
+    Core --> Apps[Apps]
+    Fam((Family, phones)) -- WireGuard on OPNsense or Tailscale --> Core
+    Admin((You)) -- WireGuard + VLAN 99 jump host + 2FA --> Mgmt[Proxmox / TrueNAS / OPNsense UIs]
+```
+
+- Public: Pangolin on the VPS; CrowdSec with the Traefik bouncer + community blocklists; Pangolin resource-level auth for anything not meant for anonymous users; rate limiting; geo-blocking where sensible.
+- Remote family: WireGuard profiles from OPNsense (QR codes), Tailscale as fallback with an ACL that only permits VLAN 10 ports 443/53.
+- Management: never public, never on the app VLAN, always 2FA. SSH keys only; CrowdSec on the jump host anyway.
+- Trust boundaries are enforced by the **firewall and VLANs**; Traefik middleware is defence in depth, not the wall ([Security](13-security.md)).
+
+### Backups (Advanced)
+
+| Layer | Tool | Target | Cadence | Retention | Verified by |
+|---|---|---|---|---|---|
+| VMs/LXCs | PBS (VM on pve-03 or the NAS) | `tank/backups` | nightly | 7d/4w/6m | PBS verify weekly; monthly restore into `docker-lab` |
+| App data & DB dumps | Restic (or Kopia) from each docker VM | `fast/appdata` snapshots → `tank/backups/restic` | hourly | 48h/14d/12m | `restic check --read-data-subset=5%` weekly |
+| Postgres | `pg_dumpall` + WAL archiving with pgBackRest | `tank/backups/pg` | dumps nightly, WAL continuous | 30 d PITR | monthly restore test to a scratch DB |
+| NAS datasets | ZFS replication | Friend's NAS (encrypted raw send) | nightly | matches source policy | staleness alert on the far end |
+| Off-site cold | rclone crypt → Backblaze B2 (photos, documents, PBS subset) | B2 | nightly | 90-day object lock | quarterly random-file restore |
+| Config | OPNsense Git backup, TrueNAS config export, Authentik blueprints, Compose repos, OpenTofu state (encrypted) | Forgejo + mirror to GitHub/Codeberg | on change | git history | yearly rebuild drill |
+
+3-2-1-1-0 satisfied: ≥3 copies, 2 media types, 1 off-site (friend + B2), 1 immutable (B2 object lock), 0 errors (verify jobs). Methodology in [Backups](11-backups.md).
+
+### What Advanced still leaves out (and why)
+
+- **Kubernetes.** For a home lab, k3s/Talos adds operational surface for benefits you mostly don't need with Proxmox HA underneath. If you want to *learn* k8s, run it inside VMs on `docker-lab`.
+- **Ceph.** Three nodes with 10 GbE is the bare minimum and it wants enterprise SSDs; ZFS on a NAS plus PBS is simpler and faster at this scale.
+- **Hosted email as primary.** Deliverability is a full-time job; keep it on a provider or a VPS.
+- **Perfect HA.** OPNsense and the NAS are each single points of failure. CARP with two router boxes and a second NAS are possible; most people should spend that money on better backups.
+
+---
+
+## Cross-cutting checklists
+
+### Before you call a blueprint "done"
+
+- [ ] Every service reachable by HTTPS with a valid certificate; `http://` redirects.
+- [ ] No ports forwarded on the router except those you can name and justify.
+- [ ] `docker ps` shows no container publishing a port that the proxy should own.
+- [ ] Every stack in Git; secrets in `.env`/secret files that are *not* in Git; a README telling future-you how to bootstrap.
+- [ ] Backups run, alert on failure **and** on silence, and a restore was performed in the last 90 days.
+- [ ] Monitoring lives partly *outside* the thing it monitors.
+- [ ] Notifications reach your phone for: disk, backup, certificate, host-down, UPS.
+- [ ] A printed/offline "break-glass" sheet: router admin, Proxmox root, IdP recovery codes, Restic/PBS encryption keys, B2 credentials, registrar 2FA backup.
+- [ ] Household knows what happens if you're unavailable (see [Planning](01-planning.md) on the "bus factor").
+
+### Sizing rules of thumb
+
+| Workload | RAM | CPU | Notes |
+|---|---|---|---|
+| Traefik/Caddy | 100–200 MB | negligible | |
+| AdGuard/Pi-hole + Unbound | 100–300 MB | negligible | |
+| Jellyfin | 0.5–2 GB | 1 core + iGPU per 2–4 transcodes | 4K HDR tone-mapping wants a real GPU |
+| Immich (server + ML + DB) | 2–4 GB, 6+ during ML jobs | 2–4 cores for initial import | ML can move to the GPU node |
+| Nextcloud + Postgres + Redis | 1–2 GB | 2 cores | PHP tuning matters more than hardware |
+| Paperless-ngx | 0.5–1.5 GB | bursts to 2 cores during OCR | |
+| Home Assistant OS | 2–4 GB | 2 vCPU | more if Frigate runs inside |
+| Frigate (4 cams, detect) | 2–4 GB | 2 cores + Coral/iGPU | recordings are I/O, not CPU |
+| Prometheus + Grafana + Loki | 2–4 GB | 2 cores | retention drives disk, not RAM |
+| Authentik | 1–1.5 GB | 1–2 cores | Pocket ID: ~50 MB |
+| Ollama (8B Q4) | model in VRAM + 2 GB | GPU | CPU-only is possible, slow |
+| Proxmox host overhead + ZFS ARC | 4 GB + ARC (cap it) | 1–2 cores | |
+
+Details behind these numbers, per service, in the Part III chapters.
