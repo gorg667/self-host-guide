@@ -846,3 +846,92 @@ flowchart LR
 5. Replace Beszel with Prometheus + Grafana + Loki when you want history and dashboards.
 
 ---
+
+## Advanced: dedicated router, NAS, Proxmox cluster, GitOps
+
+### Goals
+
+- No single box whose failure takes down internet, DNS, storage *and* services at once.
+- Storage as a service: one NAS, ZFS, replicated; compute nodes are disposable.
+- Everything reproducible from Git: hosts (Ansible), VMs (OpenTofu), stacks (Komodo/Compose), DNS records (OpenTofu), firewall (OPNsense config exported to Git).
+- Observability with history: Prometheus/Grafana/Loki; alerting rules, not just up/down.
+- Public services hardened with CrowdSec and an IdP with groups.
+
+### Bill of materials
+
+| Item | Suggested | Notes |
+|---|---|---|
+| Router | Fanless 4×2.5 GbE N100/N305 box (Protectli VP2420, Qotom, "Topton" class) running **OPNsense** | 8–12 W; handles gigabit + IDS. Or a MikroTik/Ubiquiti gateway if you prefer appliances |
+| Switch | 8–16 port 2.5 GbE managed with 2–4 × 10 GbE SFP+ uplinks (MikroTik CRS310-8G+2S+, TP-Link TL-SG3210XHP-M2, Ubiquiti Flex 2.5G PoE) | 10 GbE between NAS and compute; 2.5 GbE to nodes and APs |
+| NAS | 4–8 bay: used Supermicro/HP tower, Jonsbo N3/N5 + ASRock Rack board, or a used Xeon E-2200 board with ECC; **or** a Synology/QNAP if you want an appliance | TrueNAS SCALE. 32–64 GB ECC. Two pools: NVMe mirror (appdata, VM disks over NFS/iSCSI), HDD RAIDZ2 (bulk) |
+| Compute | 2–3 × mini PC (MS-01, Lenovo P3 Tiny, used 1L PCs) | Same model for live-migration sanity. 32–96 GB each |
+| Quorum | Pi/thin client as **QDevice** if you run 2 nodes | Prevents split-brain; also hosts external monitoring |
+| GPU (optional) | One node with a low-profile GPU (Intel Arc A310/A380 for transcoding; RTX 3060 12 GB / used 3090 for LLMs) | Passthrough to a VM; see [AI/LLM](23-ai-llm.md) |
+| Power | 1–1.5 kVA UPS with SNMP or USB; NUT master on the NAS | Whole rack ~100–200 W idle |
+| Rack | 12–18U wall-mount or a Lack rack | Cable management is not optional at this size |
+
+### Network layout
+
+```mermaid
+flowchart TB
+    Internet((Internet)) --- OPN[OPNsense<br/>WAN + VLAN gateway, DHCP, WireGuard, IDS]
+    OPN === Core[10 GbE / 2.5 GbE switch]
+    Core --- NAS[TrueNAS SCALE<br/>VLAN 10 · 10 GbE<br/>NFS/iSCSI/SMB]
+    Core --- N1[PVE node 1]
+    Core --- N2[PVE node 2]
+    Core --- N3[PVE node 3 / QDevice]
+    Core --- AP[APs · VLAN 20/30/40 SSIDs]
+    Core --- Cams[PoE cameras · VLAN 50]
+    VPS[VPS: Pangolin + CrowdSec] -. Newt tunnel .-> N1
+    Friend[Friend's NAS] -. ZFS replication over Tailscale .-> NAS
+```
+
+| VLAN | Subnet | Purpose | Rules |
+|---|---|---|---|
+| 10 | 10.0.10.0/24 | Servers, NAS, Proxmox guests | Allow from 20; from 30 selectively; from 99 all |
+| 20 | 10.0.20.0/24 | Trusted laptops/phones | Allow anywhere |
+| 30 | 10.0.30.0/24 | IoT | Internet + HA/MQTT only |
+| 40 | 10.0.40.0/24 | Guest | Internet only, rate-limited |
+| 50 | 10.0.50.0/24 | Cameras | **No internet**; Frigate only |
+| 99 | 10.0.99.0/24 | Management: IPMI/iDRAC, switch, PVE web UI, TrueNAS UI | Reachable only from a jump host or with VPN + 2FA |
+
+OPNsense also runs: Unbound (recursive, DNSSEC) as upstream for two AdGuard instances (one per compute node), WireGuard for road-warriors, Suricata in IDS mode on WAN, and the CrowdSec plugin. The OPNsense config goes to Git nightly via the built-in Git backup. Rationale for each piece in [Networking](03-networking.md) and [Security](13-security.md).
+
+### Storage layout (TrueNAS SCALE)
+
+```
+fast  (2× NVMe mirror)    → fast/vm         NFS 4.2 → Proxmox storage "nas-vm"  (or iSCSI zvols)
+                           → fast/appdata    NFS     → docker VMs (/srv/appdata)
+tank  (6× HDD RAIDZ2)      → tank/media      SMB+NFS
+                           → tank/photos     NFS
+                           → tank/cameras    NFS → Frigate recordings
+                           → tank/backups    → PBS datastore (NFS, or a PBS VM with a passed-through disk)
+                           → tank/replica    → receives ZFS replication from friend; sends ours to them
+```
+
+Snapshots: `fast/*` every 15 min (keep 24), hourly (48), daily (14); `tank/*` daily (30), weekly (12), monthly (12). Replication task: `tank/photos`, `tank/backups`, `fast/appdata` → friend's NAS nightly over Tailscale (raw send of encrypted datasets, so they never hold the key). Scrubs monthly; SMART long test weekly; alerts → ntfy via TrueNAS' webhook alert service.
+
+!!! danger "Databases on NFS"
+    SQLite over NFS is a known corruption source (locking). Postgres tolerates NFS with `hard` mounts and `sync=always` but you pay latency. The Advanced blueprint therefore runs a **dedicated Postgres VM** on a node's local NVMe mirror with backups to the NAS, and keeps SQLite-based apps' data on local VM disks. Bulk assets (media, photo originals) live on NFS happily. See [Databases & backing services](26-databases-backing-services.md).
+
+### Proxmox cluster layout
+
+| Node | Guests |
+|---|---|
+| **pve-01** | `docker-core` (Traefik, IdP, Komodo, ntfy, AdGuard #1), `postgres-01`, `haos` |
+| **pve-02** | `docker-apps` (Immich, Nextcloud, Paperless, Forgejo, media stack), `frigate` (Coral/iGPU), AdGuard #2 (LXC) |
+| **pve-03** (or QDevice) | `docker-lab` (experiments), `monitoring` (Prometheus/Grafana/Loki), `ollama` (GPU passthrough) |
+
+HA groups only for `docker-core` and `haos` (their disks on `nas-vm` NFS so they can float); everything else is restored from PBS if a node dies — accept a 30-minute RTO rather than run every VM on shared storage. Cluster/corosync traffic on VLAN 99, ideally on a second NIC. Node provisioning via Ansible (repos, `zfs_arc_max`, IOMMU kernel args, NUT client, node exporter, unattended security updates). VM creation via **OpenTofu** with the `bpg/proxmox` provider and cloud-init — a working module is in [Automation & IaC](27-automation-iac.md).
+
+### Identity
+
+**Authentik** (or **Kanidm** if you prefer a lighter, LDAP-first, Rust implementation) on `docker-core`:
+
+- Groups: `admins`, `family`, `media-users`, `guests`.
+- OIDC clients for every app that supports it; **LDAP outpost** for Jellyfin (LDAP plugin) and other legacy apps.
+- Forward-auth outpost as the Traefik middleware, with **policies per application**: admins only for infrastructure UIs, `family` for Immich/Nextcloud, `media-users` for the public Jellyfin entry.
+- Passkeys + TOTP enforced; recovery codes printed and kept in the safe ([Passwords & secrets](21-passwords-secrets.md)).
+- Authentik's database on `postgres-01`; its blueprints (YAML config) in Git so a rebuild is `compose up` + apply.
+
+Why Pocket ID is enough for most people, and the full IdP comparison, in [Identity & SSO](10-identity-sso.md).
