@@ -92,7 +92,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 ### Part III — Application services (reviews by category)
 - [x] 14-dashboards.md — Homepage, Homarr, Dashy, Glance, Heimdall, Organizr, Flame
 - [x] 15-media.md — Jellyfin/Plex/Emby, *arr stack, Jellyseerr, download clients + Gluetun, transcoding (QSV/NVENC/VAAPI), Navidrome, Audiobookshelf, Kavita/Komga, Tdarr
-- [ ] 16-photos.md — Immich, PhotoPrism, Nextcloud Memories, Lychee, Ente, LibrePhotos
+- [x] 16-photos.md — Immich, PhotoPrism, Nextcloud Memories, Lychee, Ente, LibrePhotos
 - [ ] 17-files-sync-documents.md — Nextcloud, Seafile, Syncthing, OpenCloud/oCIS, FileBrowser, Copyparty, Paperless-ngx, Stirling PDF, OnlyOffice/Collabora, file sharing
 - [ ] 18-notes-productivity.md — Obsidian LiveSync, Joplin, Trilium, Outline, BookStack, Wiki.js, Memos, SilverBullet, AFFiNE, Hedgedoc; Vikunja/Planka; Radicale/Baikal; Linkwarden/Linkding/Karakeep/Wallabag; FreshRSS/Miniflux
 - [ ] 19-home-automation.md — Home Assistant, Zigbee2MQTT/ZHA, Z-Wave JS, Mosquitto, Node-RED, ESPHome, Frigate, Scrypted, Homebridge, Matter, Music Assistant

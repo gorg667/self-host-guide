@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photos: Replacing Google Photos and iCloud — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li class="active"><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 16 · ~3,127 words · 14 min read</div>
+    <article class="prose">
+      <h1 id="photos-replacing-google-photos-and-icloud">Photos: Replacing Google Photos and iCloud<a class="headerlink" href="#photos-replacing-google-photos-and-icloud" title="Permanent link">#</a></h1>
+<p>Photos are the data people care about most and the data most people have handed to a cloud provider without a second thought. For a decade the honest self-hosting advice was "there is no good replacement for Google Photos — keep using it." That changed. <strong>Immich</strong> has reached the point where, for a household willing to run a server, it is a genuine replacement: automatic phone backup, a fast timeline, face recognition, object and scene search, shared albums, and mobile apps that feel finished. This chapter reviews Immich in depth, then the alternatives — PhotoPrism, Nextcloud Memories, Ente, Lychee, LibrePhotos, Photoview, Piwigo, and Damselfly — and covers the operational realities: storage layout, the migration from Google/Apple, backup (photos are the most irreplaceable thing you own), and sharing with people outside your household.</p>
+<h2 id="what-a-photo-server-must-do">What a photo server must do<a class="headerlink" href="#what-a-photo-server-must-do" title="Permanent link">#</a></h2>
+<p>The bar Google Photos set, which any replacement must clear for a normal household to adopt it:</p>
+<ol>
+<li><strong>Automatic background upload from phones</strong>, reliably, over Wi-Fi and optionally cellular, including videos and Live Photos/motion photos, without the app being opened.</li>
+<li><strong>A fast, infinite-scroll timeline</strong> of tens of thousands of items, with a scrubber by year/month.</li>
+<li><strong>Search that works</strong>: by person (face recognition), by place (GPS/reverse geocoding), by content ("dog on beach," "birthday cake"), by date, by camera.</li>
+<li><strong>Sharing</strong>: albums shared with other users on the server; public links for people without accounts; partner sharing (see each other's libraries).</li>
+<li><strong>Multi-user</strong>, so each family member has a private library and shared albums.</li>
+<li><strong>RAW support</strong> (at least previews), HEIC/HEVC, 360°, and video playback with transcoding for compatibility.</li>
+<li><strong>Memories/"on this day,"</strong> duplicate detection, trash with retention, archive/hide, favourites.</li>
+<li><strong>Getting the data out</strong> in a normal folder structure with metadata intact — the anti-lock-in guarantee.</li>
+</ol>
+<p>Anything that does 1–5 well is viable. Only one currently does all eight well.</p>
+<h2 id="immich">Immich<a class="headerlink" href="#immich" title="Permanent link">#</a></h2>
+<p>Immich (MIT, started 2022 by Alex Tran, now developed by a core team funded via FUTO since 2024, with a large contributor base) is a high-performance photo and video management server built explicitly to replace Google Photos. Architecture: a <strong>server</strong> (Node.js API and background jobs), a <strong>machine-learning</strong> container (CLIP for semantic search, face detection and recognition, optional on GPU), <strong>PostgreSQL with the VectorChord/pgvecto.rs extension</strong> for vector search, and <strong>Valkey/Redis</strong> for job queues. Web app, plus native <strong>iOS and Android apps</strong> (Flutter) with background backup.</p>
+<p><strong>What it does exceptionally well:</strong></p>
+<ul>
+<li><strong>Mobile backup</strong> that works like Google Photos: select albums to back up, it uploads in the background (with the usual iOS background-execution caveats, mitigated well), shows what is and is not backed up, handles Live Photos and motion photos, and can free up phone storage of backed-up items.</li>
+<li><strong>Timeline performance</strong> on libraries of 100k+ items — smooth scrolling, instant year jumps.</li>
+<li><strong>Search</strong>: CLIP-based natural-language search ("red car at sunset") that genuinely works; face recognition with naming, merging, and hiding; map view with clustering; metadata search; "smart search" across everything. All local, no cloud API.</li>
+<li><strong>Sharing</strong>: albums with other users (view or edit), public links with optional password and expiry, <strong>partner sharing</strong> (your partner sees your timeline in theirs), and shared album activity (comments, likes).</li>
+<li><strong>External libraries</strong>: point Immich at an existing folder tree (your 20 years of organised photos) read-only; it indexes without moving anything. Uploads from phones go to Immich's own managed storage. This is how most people migrate.</li>
+<li><strong>Storage template</strong>: uploaded files are stored under a configurable path template (<code>{{y}}/{{MM}}/{{filename}}</code>) — human-readable folders, not opaque blobs — with original files untouched and sidecar XMP written.</li>
+<li><strong>Duplicate detection</strong>, trash, archive, stacking (RAW+JPEG, bursts), memories, people, places, tags (since 2024), folders view, slideshow, 360° viewer, video transcoding with hardware acceleration (QSV, NVENC, VAAPI, RKMPP), HEIC/RAW preview generation, reverse geocoding (offline, bundled data).</li>
+<li><strong>Administration</strong>: per-user quotas, OIDC login (with auto-registration and group-to-admin mapping), library and job management, a CLI for bulk upload (<code>immich upload</code>), a well-documented REST API, and <strong>immich-go</strong> (a community tool for bulk import from Google Takeout with metadata reconciliation — essential for migrations).</li>
+</ul>
+<p><strong>What to know before running it:</strong></p>
+<ul>
+<li><strong>Resource needs</strong> are the highest in this chapter: ~2–4 GB RAM for the stack with ML running (the ML container alone is 1–2 GB), several GB of disk for ML models, and real CPU during initial indexing of a large library (days for 100k items on a small CPU; hours with a GPU — Immich's ML supports CUDA, ROCm, OpenVINO, ARM NN, and RKNN). After indexing, idle is modest. ML can run on a <em>different</em> machine (point the server at it) — a GPU box that sleeps, or a Mac.</li>
+<li><strong>Update discipline.</strong> Until the 2.0 release (late 2025), Immich carried a "breaking changes may occur" warning and lived up to it — releases occasionally required manual steps (database migrations, Compose changes, ML model re-downloads). <strong>Read the release notes before every update</strong> and pin the version tag (<code>ghcr.io/immich-app/immich-server:v2.x.y</code>) rather than <code>release</code>/<code>latest</code>. Post-2.0 stability is much improved, but the habit remains wise. Watch the GitHub releases page or subscribe via RSS.</li>
+<li><strong>PostgreSQL with a vector extension</strong> means you cannot casually swap in your existing shared Postgres — the recommended image (<code>ghcr.io/immich-app/postgres</code>, based on <code>tensorchord/pgvecto-rs</code> / VectorChord) is specific. Run the dedicated one.</li>
+<li><strong>Backups</strong>: the originals are plain files in the upload directory (back them up like any files); the database holds <em>everything else</em> — albums, faces, people names, favourites, sharing — and must be dumped consistently (<code>pg_dumpall</code> via a hook; Immich also has a built-in nightly DB dump to <code>backups/</code> in the upload location since 1.9x). Losing the DB with the files intact means re-indexing and losing curation. See <a href="../11-backups/">Chapter 11</a>.</li>
+<li><strong>Mobile apps and remote access</strong>: the apps need to reach the server URL from anywhere. A mesh VPN with split DNS is the clean answer; exposing Immich publicly is done by many people (behind a proxy with CrowdSec and Immich's own auth) but is a meaningful exposure of your most private data. Cloudflare Tunnel's 100 MB upload limit breaks video backup; Pangolin or a direct proxy does not.</li>
+<li><strong>Not a photo editor</strong> or a DAM. Basic edits (crop/rotate) exist; anything more means Darktable/digiKam on your originals.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="c1"># immich/compose.yaml — based on the official file; pin versions</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">immich</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">immich-server</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/immich-app/immich-server:v2.0.1</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">immich_server</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/tank/photos/immich:/usr/src/app/upload</span><span class="w">      </span><span class="c1"># managed uploads (precious!)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/tank/photos/archive:/mnt/archive:ro</span><span class="w">         </span><span class="c1"># external library of existing photos</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/localtime:/etc/localtime:ro</span>
+<span class="w">    </span><span class="nt">env_file</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.env</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">devices</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/dev/dri:/dev/dri&quot;</span><span class="p p-Indicator">]</span><span class="w">                       </span><span class="c1"># hardware video transcoding (Intel/AMD)</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">redis</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">database</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">default</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> disable</span><span class="p">:</span><span class="w"> </span><span class="nv">false</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">immich-machine-learning</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/immich-app/immich-machine-learning:v2.0.1</span><span class="w">   </span><span class="c1"># -cuda / -rocm / -openvino / -armnn variants</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">immich_machine_learning</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;model-cache:/cache&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">env_file</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.env</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">redis</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker.io/valkey/valkey:8-bookworm</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">immich_redis</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> test</span><span class="p">:</span><span class="w"> </span><span class="nv">redis-cli ping || exit 1</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">database</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">immich_postgres</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DB_PASSWORD}</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DB_USERNAME}</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DB_DATABASE_NAME}</span>
+<span class="w">      </span><span class="nt">POSTGRES_INITDB_ARGS</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;--data-checksums&#39;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/mnt/fast/immich-db:/var/lib/postgresql/data&quot;</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># local SSD, not NFS</span>
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model-cache</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> external</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p><strong>Verdict:</strong> the recommendation for almost everyone. It is the first self-hosted photo solution that non-technical family members adopt without complaint.</p>
+<h2 id="the-alternatives">The alternatives<a class="headerlink" href="#the-alternatives" title="Permanent link">#</a></h2>
+<h3 id="photoprism">PhotoPrism<a class="headerlink" href="#photoprism" title="Permanent link">#</a></h3>
+<p>The most mature alternative (Go + TensorFlow, since 2018): a polished web UI, AI-based labelling (object/scene classification, not natural-language CLIP search), face recognition, places with an interactive map, RAW conversion, live photos, video, duplicates, albums, sharing links, and excellent metadata handling (it is meticulous about EXIF/XMP and sidecars). It indexes an existing folder tree in place — PhotoPrism is fundamentally a <strong>library indexer</strong>, which makes it ideal for a curated archive you manage yourself. Single container + MariaDB (or SQLite), ~1–2 GB RAM, CPU-heavy on indexing (TensorFlow, no GPU acceleration for classification in the free edition).</p>
+<p><strong>The trade-offs:</strong> no first-party mobile app — mobile backup is via <strong>PhotoSync</strong> (paid, excellent, third-party) or a WebDAV/Syncthing/Nextcloud folder that PhotoPrism watches; this is the decisive gap versus Immich for households. Multi-user requires <strong>PhotoPrism Plus</strong> (a paid membership, from ~EUR 5/month — the Community Edition is single-user with a "guest/viewer" role only). Search is label-based, not semantic. Development pace is steady but slower than Immich's.</p>
+<p><strong>Pick it if:</strong> you are a single photographer with a large curated archive, you prefer indexing-in-place over an upload model, and metadata fidelity matters more than mobile backup.</p>
+<h3 id="nextcloud-memories-and-nextcloud-photos">Nextcloud Memories (and Nextcloud Photos)<a class="headerlink" href="#nextcloud-memories-and-nextcloud-photos" title="Permanent link">#</a></h3>
+<p>If you already run Nextcloud (<a href="../17-files-sync-documents/">Chapter 17</a>), the <strong>Memories</strong> app (by Varun Patil) turns it into a very capable photo timeline: fast scrolling (it maintains its own index), albums, face recognition (via the <strong>Recognize</strong> app — runs on CPU, slowly, or on a GPU), places/map, tags, video with hardware transcoding (via <strong>go-vod</strong>), RAW previews, "on this day," sharing via Nextcloud's sharing model, and — because it is Nextcloud — the <strong>Nextcloud mobile app's auto-upload</strong> handles phone backup. No additional server. It is a <em>dramatically</em> better experience than the stock Nextcloud Photos app.</p>
+<p><strong>The trade-offs:</strong> performance and features trail Immich (search is tag-based, face recognition via Recognize is slower and less accurate, the mobile experience is Nextcloud's generic file app rather than a photos app — Memories has a PWA that works well); tied to Nextcloud's PHP performance and upgrade cadence. <strong>Pick it if</strong> Nextcloud is already your files platform and you want photos without a second system.</p>
+<h3 id="ente-photos">Ente Photos<a class="headerlink" href="#ente-photos" title="Permanent link">#</a></h3>
+<p><strong>Ente</strong> is the privacy-maximalist option: <strong>end-to-end encrypted</strong> photo storage where the server never sees your photos in plaintext, with face recognition and semantic search running <em>on the client device</em>. Open source (AGPL, server and clients), excellent mobile and desktop apps, family plans, sharing, and — since 2024 — a documented <strong>self-hosting</strong> path for the server (Go + Postgres + S3-compatible object storage such as MinIO/Garage). It is a hosted commercial service first, with self-hosting as a supported option.</p>
+<p><strong>The trade-offs:</strong> E2EE means the <em>server</em> cannot do ML — search and faces work per device, and heavy processing happens on your phone/laptop; self-hosting requires object storage; the self-hosted setup is less turnkey than Immich's Compose file. <strong>Pick it if</strong> end-to-end encryption is non-negotiable — e.g., you want to host it on a VPS you do not fully trust.</p>
+<h3 id="lychee">Lychee<a class="headerlink" href="#lychee" title="Permanent link">#</a></h3>
+<p>A photo <em>gallery</em> rather than a Google Photos replacement: elegant album-based presentation, public and password-protected albums, per-user support, EXIF display, basic tagging, and a clean upload UI. PHP/Laravel, light. Perfect for a photographer sharing curated albums with clients or family; not for backing up 40,000 phone snapshots.</p>
+<h3 id="librephotos">LibrePhotos<a class="headerlink" href="#librephotos" title="Permanent link">#</a></h3>
+<p>A fork of the abandoned Ownphotos: face recognition, object detection, semantic search, timeline, places, events, multi-user, and indexing of existing folders. Python/Django with a heavy ML dependency set (~4+ GB RAM). Ambitious feature list, rougher execution, smaller community than Immich or PhotoPrism; development has been slow. Worth a look only if the others do not fit.</p>
+<h3 id="photoview-piwigo-damselfly-homegallery-pigallery2">Photoview, Piwigo, Damselfly, HomeGallery, Pigallery2<a class="headerlink" href="#photoview-piwigo-damselfly-homegallery-pigallery2" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Photoview</strong> — a fast, minimal, read-only gallery for an existing folder tree with face recognition and a map. Very low resources. Good for "browse my archive on the TV."</li>
+<li><strong>Piwigo</strong> — the veteran (since 2002) PHP gallery with a huge plugin ecosystem and a Piwigo-hosted option; dated but complete; good for very large organised galleries.</li>
+<li><strong>Damselfly</strong> — a .NET DAM/organiser oriented at photographers: tagging, keyword workflow, Lightroom-like exports, AI tagging, in-place indexing.</li>
+<li><strong>HomeGallery</strong> — static-site-generator-style gallery with reverse image search; interesting and light.</li>
+<li><strong>Pigallery2</strong> — a fast directory-based gallery with a map, faces via metadata, and video, running on a Pi.</li>
+<li><strong>Synology Photos / QNAP QuMagie</strong> — the commercial NAS apps; Synology Photos is genuinely decent and has a mobile app with backup; it is why some people buy a Synology. Locked to the hardware.</li>
+</ul>
+<h3 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Immich</th>
+<th>PhotoPrism</th>
+<th>Nextcloud Memories</th>
+<th>Ente (self-hosted)</th>
+<th>Lychee</th>
+<th>LibrePhotos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mobile auto-backup</td>
+<td><strong>Native apps, excellent</strong></td>
+<td>Third-party (PhotoSync)</td>
+<td>Nextcloud app</td>
+<td><strong>Native apps, excellent</strong></td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Timeline performance</td>
+<td><strong>Excellent</strong></td>
+<td>Good</td>
+<td>Good</td>
+<td>Good</td>
+<td>n/a (albums)</td>
+<td>Fair</td>
+</tr>
+<tr>
+<td>Face recognition</td>
+<td><strong>Yes (server)</strong></td>
+<td>Yes (server)</td>
+<td>Yes (Recognize)</td>
+<td>Yes (on-device)</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Semantic search</td>
+<td><strong>Yes (CLIP)</strong></td>
+<td>Labels only</td>
+<td>Tags only</td>
+<td>Yes (on-device)</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Multi-user</td>
+<td><strong>Free</strong></td>
+<td>Paid (Plus)</td>
+<td>Yes (Nextcloud users)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Partner sharing</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>Via NC sharing</td>
+<td>Family plans</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Index existing folders in place</td>
+<td>Yes (external libraries)</td>
+<td><strong>Yes (primary model)</strong></td>
+<td>Yes (it's your NC files)</td>
+<td>No (upload model)</td>
+<td>Upload</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>E2E encryption</td>
+<td>No</td>
+<td>No</td>
+<td>No (server-side enc. optional)</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Hardware ML/transcode</td>
+<td>Yes (many)</td>
+<td>Transcode yes; ML no</td>
+<td>Transcode yes</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>Partial</td>
+</tr>
+<tr>
+<td>RAM (typical)</td>
+<td>2–4 GB</td>
+<td>1–2 GB</td>
+<td>+0.5–1 GB on Nextcloud</td>
+<td>1–2 GB + object store</td>
+<td>200 MB</td>
+<td>4+ GB</td>
+</tr>
+<tr>
+<td>Licence</td>
+<td>MIT</td>
+<td>AGPL (CE) + paid Plus</td>
+<td>AGPL</td>
+<td>AGPL</td>
+<td>MIT</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Households replacing Google Photos</td>
+<td>Solo photographers with archives</td>
+<td>Existing Nextcloud users</td>
+<td>E2EE purists</td>
+<td>Curated public galleries</td>
+<td>(Niche)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="storage-layout-and-workflow">Storage layout and workflow<a class="headerlink" href="#storage-layout-and-workflow" title="Permanent link">#</a></h2>
+<p>A pattern that serves both "phone dump" and "curated archive" without conflict:</p>
+<div class="highlight"><pre><span></span><code>/mnt/tank/photos/
+├── immich/            # Immich-managed uploads (phones, web). Storage template: {{y}}/{{y}}-{{MM}}/{{filename}}
+│   ├── library/       #   originals, human-readable
+│   ├── thumbs/        #   regenerable
+│   ├── encoded-video/ #   regenerable
+│   └── backups/       #   Immich&#39;s own nightly DB dumps
+└── archive/           # Your curated, pre-existing collection, read-only external library in Immich
+    ├── 2009/
+    ├── 2010 Wedding/
+    └── ...
+</code></pre></div>
+<ul>
+<li>Everything under <code>photos/</code> is on redundant storage with snapshots and is <strong>irreplaceable-class</strong> for backup purposes. <code>thumbs/</code> and <code>encoded-video/</code> can be excluded from off-site backup (regenerable) to save space.</li>
+<li>The database lives on local SSD (<code>/mnt/fast/immich-db</code>) — never on NFS — and is dumped nightly to <code>photos/immich/backups/</code> (which <em>is</em> backed up).</li>
+<li>RAW workflows: shoot → import to <code>archive/YYYY/...</code> with your DAM (Darktable, digiKam, Lightroom) → Immich indexes the external library and shows RAW previews; edits/exports land as JPEGs alongside. Immich stacks RAW+JPEG pairs.</li>
+<li><strong>Do not point two indexers at the same writable directory</strong> (e.g., Immich uploads <em>and</em> PhotoPrism import) unless one is read-only; sidecar and rename fights ensue.</li>
+</ul>
+<h2 id="migrating-from-google-photos-and-icloud">Migrating from Google Photos and iCloud<a class="headerlink" href="#migrating-from-google-photos-and-icloud" title="Permanent link">#</a></h2>
+<p><strong>From Google Photos:</strong> request a <strong>Google Takeout</strong> export of Photos (it arrives as many multi-GB zips with photos alongside <code>.json</code> metadata files — and, infamously, with EXIF dates sometimes stripped or wrong). Use <strong>immich-go</strong> (<code>immich-go upload from-google-photos --server ... --key ... *.zip</code>) which reads the JSON sidecars to restore dates, GPS, albums, favourites, and archived state, deduplicates, and uploads straight from the zips. Do a dry run first. For other targets, <strong>google-photos-takeout-helper</strong> / <strong>GPTH</strong> fixes the metadata into the files themselves so any tool can index them. Budget a weekend for a large library; the upload itself is the slow part.</p>
+<p><strong>From iCloud:</strong> on a Mac, the Photos app can <strong>Export Unmodified Originals</strong> with IPTC/XMP sidecars; or use <strong>icloudpd</strong> (iCloud Photos Downloader, a Docker container that pulls your entire iCloud library incrementally and can keep running to sync new items — useful during a transition). Live Photos come as HEIC+MOV pairs; Immich pairs them. On the phone, install the Immich app and enable backup of the Camera Roll going forward.</p>
+<p><strong>Going forward:</strong> run both for a month. Verify counts match (Immich shows library statistics). Check a random sample of old photos for correct dates and locations. Then turn off Google/iCloud backup on the phones, keep the cloud copy for another six months as a safety net, and only then delete. <strong>Keep the Takeout zips</strong> in cold storage forever; they are a valid backup in themselves.</p>
+<h2 id="sharing-outside-the-household">Sharing outside the household<a class="headerlink" href="#sharing-outside-the-household" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Immich shared links</strong> — public URL, optional password and expiry, view or allow-upload (great for collecting event photos from guests). The link goes through your reverse proxy; it works only if Immich is reachable from the internet (exposed or via Cloudflare Tunnel/Pangolin for that hostname).</li>
+<li><strong>Immich partner sharing</strong> for a spouse; <strong>shared albums</strong> for family members with accounts. Create accounts for grandparents and install the app on their phone with the VPN — they get a live feed of grandchildren.</li>
+<li><strong>Lychee</strong> or <strong>Photoview</strong> in front of a curated export for public galleries, keeping Immich itself private.</li>
+<li><strong>Nextcloud public shares</strong> if using Memories.</li>
+<li><strong>Ente's sharing</strong> works even self-hosted, with E2EE preserved.</li>
+</ul>
+<h2 id="backup-the-non-negotiable-part">Backup: the non-negotiable part<a class="headerlink" href="#backup-the-non-negotiable-part" title="Permanent link">#</a></h2>
+<p>Photos are the single most irreplaceable dataset most people own. Apply the full <a href="../11-backups/">Chapter 11</a> treatment without compromise:</p>
+<ul>
+<li>Redundant local storage (mirror or RAIDZ2) with snapshots.</li>
+<li>Nightly off-site encrypted backup of originals <strong>and</strong> the nightly DB dump (Restic/Borg/Kopia to B2/Hetzner/a friend's box).</li>
+<li>An <strong>immutable or offline copy</strong> — photos are what ransomware is aimed at.</li>
+<li>Phones keep local copies until the server backup is confirmed (do not "free up space" on the phone until the off-site job has run).</li>
+<li><strong>Test a restore quarterly</strong>: restore a month's folder and the DB to a scratch Immich instance and confirm faces, albums, and dates survive.</li>
+<li>Keep the Google Takeout / iCloud export zips as a permanent cold copy.</li>
+</ul>
+<h2 id="recommendation">Recommendation<a class="headerlink" href="#recommendation" title="Permanent link">#</a></h2>
+<p><strong>Immich</strong>, on its own Postgres, with the ML container (on a GPU if you have one, otherwise patience for the first index), external library for the archive, storage template on, version pinned, release notes read before updates, database dumped nightly, everything under <code>photos/</code> backed up off-site with an immutable copy. Mobile apps via a mesh VPN with split DNS; public share links via a single exposed hostname if you need them.</p>
+<p><strong>PhotoPrism</strong> for the solo photographer with a curated archive; <strong>Nextcloud Memories</strong> for the Nextcloud household; <strong>Ente</strong> for E2EE; <strong>Lychee</strong> for a public gallery.</p>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Photo storage on redundant, snapshotted storage; classified irreplaceable.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Immich (or chosen server) running with database on local SSD, version pinned.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Phones backing up automatically; verified after 48 hours that new photos appear and old ones are complete.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> External library for the existing archive indexed; a random sample checked for correct dates/places.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Face recognition and smart search jobs completed; people named.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Off-site encrypted backup of originals + DB dump nightly; immutable copy; restore tested.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Takeout/iCloud exports retained in cold storage.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Remote access via VPN (or a deliberately exposed, protected hostname); Cloudflare Tunnel upload limit understood if used.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Cloud photo backup disabled on phones only after a month of parallel running and a verified count.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../15-media/">← 15. Media: Streaming, Libraries, and Automation</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/16-photos.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#what-a-photo-server-must-do">What a photo server must do</a></li>
+<li><a href="#immich">Immich</a></li>
+<li><a href="#the-alternatives">The alternatives</a><ul>
+<li><a href="#photoprism">PhotoPrism</a></li>
+<li><a href="#nextcloud-memories-and-nextcloud-photos">Nextcloud Memories (and Nextcloud Photos)</a></li>
+<li><a href="#ente-photos">Ente Photos</a></li>
+<li><a href="#lychee">Lychee</a></li>
+<li><a href="#librephotos">LibrePhotos</a></li>
+<li><a href="#photoview-piwigo-damselfly-homegallery-pigallery2">Photoview, Piwigo, Damselfly, HomeGallery, Pigallery2</a></li>
+<li><a href="#comparison">Comparison</a></li>
+</ul>
+</li>
+<li><a href="#storage-layout-and-workflow">Storage layout and workflow</a></li>
+<li><a href="#migrating-from-google-photos-and-icloud">Migrating from Google Photos and iCloud</a></li>
+<li><a href="#sharing-outside-the-household">Sharing outside the household</a></li>
+<li><a href="#backup-the-non-negotiable-part">Backup: the non-negotiable part</a></li>
+<li><a href="#recommendation">Recommendation</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

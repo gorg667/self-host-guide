@@ -86,3 +86,126 @@ networks:
 ```
 
 **Verdict:** the recommendation for almost everyone. It is the first self-hosted photo solution that non-technical family members adopt without complaint.
+
+## The alternatives
+
+### PhotoPrism
+
+The most mature alternative (Go + TensorFlow, since 2018): a polished web UI, AI-based labelling (object/scene classification, not natural-language CLIP search), face recognition, places with an interactive map, RAW conversion, live photos, video, duplicates, albums, sharing links, and excellent metadata handling (it is meticulous about EXIF/XMP and sidecars). It indexes an existing folder tree in place — PhotoPrism is fundamentally a **library indexer**, which makes it ideal for a curated archive you manage yourself. Single container + MariaDB (or SQLite), ~1–2 GB RAM, CPU-heavy on indexing (TensorFlow, no GPU acceleration for classification in the free edition).
+
+**The trade-offs:** no first-party mobile app — mobile backup is via **PhotoSync** (paid, excellent, third-party) or a WebDAV/Syncthing/Nextcloud folder that PhotoPrism watches; this is the decisive gap versus Immich for households. Multi-user requires **PhotoPrism Plus** (a paid membership, from ~EUR 5/month — the Community Edition is single-user with a "guest/viewer" role only). Search is label-based, not semantic. Development pace is steady but slower than Immich's.
+
+**Pick it if:** you are a single photographer with a large curated archive, you prefer indexing-in-place over an upload model, and metadata fidelity matters more than mobile backup.
+
+### Nextcloud Memories (and Nextcloud Photos)
+
+If you already run Nextcloud ([Chapter 17](17-files-sync-documents.md)), the **Memories** app (by Varun Patil) turns it into a very capable photo timeline: fast scrolling (it maintains its own index), albums, face recognition (via the **Recognize** app — runs on CPU, slowly, or on a GPU), places/map, tags, video with hardware transcoding (via **go-vod**), RAW previews, "on this day," sharing via Nextcloud's sharing model, and — because it is Nextcloud — the **Nextcloud mobile app's auto-upload** handles phone backup. No additional server. It is a *dramatically* better experience than the stock Nextcloud Photos app.
+
+**The trade-offs:** performance and features trail Immich (search is tag-based, face recognition via Recognize is slower and less accurate, the mobile experience is Nextcloud's generic file app rather than a photos app — Memories has a PWA that works well); tied to Nextcloud's PHP performance and upgrade cadence. **Pick it if** Nextcloud is already your files platform and you want photos without a second system.
+
+### Ente Photos
+
+**Ente** is the privacy-maximalist option: **end-to-end encrypted** photo storage where the server never sees your photos in plaintext, with face recognition and semantic search running *on the client device*. Open source (AGPL, server and clients), excellent mobile and desktop apps, family plans, sharing, and — since 2024 — a documented **self-hosting** path for the server (Go + Postgres + S3-compatible object storage such as MinIO/Garage). It is a hosted commercial service first, with self-hosting as a supported option.
+
+**The trade-offs:** E2EE means the *server* cannot do ML — search and faces work per device, and heavy processing happens on your phone/laptop; self-hosting requires object storage; the self-hosted setup is less turnkey than Immich's Compose file. **Pick it if** end-to-end encryption is non-negotiable — e.g., you want to host it on a VPS you do not fully trust.
+
+### Lychee
+
+A photo *gallery* rather than a Google Photos replacement: elegant album-based presentation, public and password-protected albums, per-user support, EXIF display, basic tagging, and a clean upload UI. PHP/Laravel, light. Perfect for a photographer sharing curated albums with clients or family; not for backing up 40,000 phone snapshots.
+
+### LibrePhotos
+
+A fork of the abandoned Ownphotos: face recognition, object detection, semantic search, timeline, places, events, multi-user, and indexing of existing folders. Python/Django with a heavy ML dependency set (~4+ GB RAM). Ambitious feature list, rougher execution, smaller community than Immich or PhotoPrism; development has been slow. Worth a look only if the others do not fit.
+
+### Photoview, Piwigo, Damselfly, HomeGallery, Pigallery2
+
+- **Photoview** — a fast, minimal, read-only gallery for an existing folder tree with face recognition and a map. Very low resources. Good for "browse my archive on the TV."
+- **Piwigo** — the veteran (since 2002) PHP gallery with a huge plugin ecosystem and a Piwigo-hosted option; dated but complete; good for very large organised galleries.
+- **Damselfly** — a .NET DAM/organiser oriented at photographers: tagging, keyword workflow, Lightroom-like exports, AI tagging, in-place indexing.
+- **HomeGallery** — static-site-generator-style gallery with reverse image search; interesting and light.
+- **Pigallery2** — a fast directory-based gallery with a map, faces via metadata, and video, running on a Pi.
+- **Synology Photos / QNAP QuMagie** — the commercial NAS apps; Synology Photos is genuinely decent and has a mobile app with backup; it is why some people buy a Synology. Locked to the hardware.
+
+### Comparison
+
+| | Immich | PhotoPrism | Nextcloud Memories | Ente (self-hosted) | Lychee | LibrePhotos |
+|---|---|---|---|---|---|---|
+| Mobile auto-backup | **Native apps, excellent** | Third-party (PhotoSync) | Nextcloud app | **Native apps, excellent** | No | No |
+| Timeline performance | **Excellent** | Good | Good | Good | n/a (albums) | Fair |
+| Face recognition | **Yes (server)** | Yes (server) | Yes (Recognize) | Yes (on-device) | No | Yes |
+| Semantic search | **Yes (CLIP)** | Labels only | Tags only | Yes (on-device) | No | Yes |
+| Multi-user | **Free** | Paid (Plus) | Yes (Nextcloud users) | Yes | Yes | Yes |
+| Partner sharing | **Yes** | No | Via NC sharing | Family plans | No | No |
+| Index existing folders in place | Yes (external libraries) | **Yes (primary model)** | Yes (it's your NC files) | No (upload model) | Upload | Yes |
+| E2E encryption | No | No | No (server-side enc. optional) | **Yes** | No | No |
+| Hardware ML/transcode | Yes (many) | Transcode yes; ML no | Transcode yes | n/a | n/a | Partial |
+| RAM (typical) | 2–4 GB | 1–2 GB | +0.5–1 GB on Nextcloud | 1–2 GB + object store | 200 MB | 4+ GB |
+| Licence | MIT | AGPL (CE) + paid Plus | AGPL | AGPL | MIT | MIT |
+| Best for | Households replacing Google Photos | Solo photographers with archives | Existing Nextcloud users | E2EE purists | Curated public galleries | (Niche) |
+
+## Storage layout and workflow
+
+A pattern that serves both "phone dump" and "curated archive" without conflict:
+
+```
+/mnt/tank/photos/
+├── immich/            # Immich-managed uploads (phones, web). Storage template: {{y}}/{{y}}-{{MM}}/{{filename}}
+│   ├── library/       #   originals, human-readable
+│   ├── thumbs/        #   regenerable
+│   ├── encoded-video/ #   regenerable
+│   └── backups/       #   Immich's own nightly DB dumps
+└── archive/           # Your curated, pre-existing collection, read-only external library in Immich
+    ├── 2009/
+    ├── 2010 Wedding/
+    └── ...
+```
+
+- Everything under `photos/` is on redundant storage with snapshots and is **irreplaceable-class** for backup purposes. `thumbs/` and `encoded-video/` can be excluded from off-site backup (regenerable) to save space.
+- The database lives on local SSD (`/mnt/fast/immich-db`) — never on NFS — and is dumped nightly to `photos/immich/backups/` (which *is* backed up).
+- RAW workflows: shoot → import to `archive/YYYY/...` with your DAM (Darktable, digiKam, Lightroom) → Immich indexes the external library and shows RAW previews; edits/exports land as JPEGs alongside. Immich stacks RAW+JPEG pairs.
+- **Do not point two indexers at the same writable directory** (e.g., Immich uploads *and* PhotoPrism import) unless one is read-only; sidecar and rename fights ensue.
+
+## Migrating from Google Photos and iCloud
+
+**From Google Photos:** request a **Google Takeout** export of Photos (it arrives as many multi-GB zips with photos alongside `.json` metadata files — and, infamously, with EXIF dates sometimes stripped or wrong). Use **immich-go** (`immich-go upload from-google-photos --server ... --key ... *.zip`) which reads the JSON sidecars to restore dates, GPS, albums, favourites, and archived state, deduplicates, and uploads straight from the zips. Do a dry run first. For other targets, **google-photos-takeout-helper** / **GPTH** fixes the metadata into the files themselves so any tool can index them. Budget a weekend for a large library; the upload itself is the slow part.
+
+**From iCloud:** on a Mac, the Photos app can **Export Unmodified Originals** with IPTC/XMP sidecars; or use **icloudpd** (iCloud Photos Downloader, a Docker container that pulls your entire iCloud library incrementally and can keep running to sync new items — useful during a transition). Live Photos come as HEIC+MOV pairs; Immich pairs them. On the phone, install the Immich app and enable backup of the Camera Roll going forward.
+
+**Going forward:** run both for a month. Verify counts match (Immich shows library statistics). Check a random sample of old photos for correct dates and locations. Then turn off Google/iCloud backup on the phones, keep the cloud copy for another six months as a safety net, and only then delete. **Keep the Takeout zips** in cold storage forever; they are a valid backup in themselves.
+
+## Sharing outside the household
+
+- **Immich shared links** — public URL, optional password and expiry, view or allow-upload (great for collecting event photos from guests). The link goes through your reverse proxy; it works only if Immich is reachable from the internet (exposed or via Cloudflare Tunnel/Pangolin for that hostname).
+- **Immich partner sharing** for a spouse; **shared albums** for family members with accounts. Create accounts for grandparents and install the app on their phone with the VPN — they get a live feed of grandchildren.
+- **Lychee** or **Photoview** in front of a curated export for public galleries, keeping Immich itself private.
+- **Nextcloud public shares** if using Memories.
+- **Ente's sharing** works even self-hosted, with E2EE preserved.
+
+## Backup: the non-negotiable part
+
+Photos are the single most irreplaceable dataset most people own. Apply the full [Chapter 11](11-backups.md) treatment without compromise:
+
+- Redundant local storage (mirror or RAIDZ2) with snapshots.
+- Nightly off-site encrypted backup of originals **and** the nightly DB dump (Restic/Borg/Kopia to B2/Hetzner/a friend's box).
+- An **immutable or offline copy** — photos are what ransomware is aimed at.
+- Phones keep local copies until the server backup is confirmed (do not "free up space" on the phone until the off-site job has run).
+- **Test a restore quarterly**: restore a month's folder and the DB to a scratch Immich instance and confirm faces, albums, and dates survive.
+- Keep the Google Takeout / iCloud export zips as a permanent cold copy.
+
+## Recommendation
+
+**Immich**, on its own Postgres, with the ML container (on a GPU if you have one, otherwise patience for the first index), external library for the archive, storage template on, version pinned, release notes read before updates, database dumped nightly, everything under `photos/` backed up off-site with an immutable copy. Mobile apps via a mesh VPN with split DNS; public share links via a single exposed hostname if you need them.
+
+**PhotoPrism** for the solo photographer with a curated archive; **Nextcloud Memories** for the Nextcloud household; **Ente** for E2EE; **Lychee** for a public gallery.
+
+## Checklist
+
+- [ ] Photo storage on redundant, snapshotted storage; classified irreplaceable.
+- [ ] Immich (or chosen server) running with database on local SSD, version pinned.
+- [ ] Phones backing up automatically; verified after 48 hours that new photos appear and old ones are complete.
+- [ ] External library for the existing archive indexed; a random sample checked for correct dates/places.
+- [ ] Face recognition and smart search jobs completed; people named.
+- [ ] Off-site encrypted backup of originals + DB dump nightly; immutable copy; restore tested.
+- [ ] Takeout/iCloud exports retained in cold storage.
+- [ ] Remote access via VPN (or a deliberately exposed, protected hostname); Cloudflare Tunnel upload limit understood if used.
+- [ ] Cloud photo backup disabled on phones only after a month of parallel running and a verified count.
