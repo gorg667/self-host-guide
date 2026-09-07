@@ -90,7 +90,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 13-security.md — Threat model, SSH, fail2ban, CrowdSec, firewalls, Docker hardening, secrets, Wazuh, checklists
 
 ### Part III — Application services (reviews by category)
-- [ ] 14-dashboards.md — Homepage, Homarr, Dashy, Glance, Heimdall, Organizr, Flame
+- [x] 14-dashboards.md — Homepage, Homarr, Dashy, Glance, Heimdall, Organizr, Flame
 - [ ] 15-media.md — Jellyfin/Plex/Emby, *arr stack, Jellyseerr, download clients + Gluetun, transcoding (QSV/NVENC/VAAPI), Navidrome, Audiobookshelf, Kavita/Komga, Tdarr
 - [ ] 16-photos.md — Immich, PhotoPrism, Nextcloud Memories, Lychee, Ente, LibrePhotos
 - [ ] 17-files-sync-documents.md — Nextcloud, Seafile, Syncthing, OpenCloud/oCIS, FileBrowser, Copyparty, Paperless-ngx, Stirling PDF, OnlyOffice/Collabora, file sharing

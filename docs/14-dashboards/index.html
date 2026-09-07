@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboards and Start Pages — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li class="active"><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 14 · ~1,728 words · 7 min read</div>
+    <article class="prose">
+      <h1 id="dashboards-and-start-pages">Dashboards and Start Pages<a class="headerlink" href="#dashboards-and-start-pages" title="Permanent link">#</a></h1>
+<p>Once you have fifteen services, you have fifteen URLs to remember, and your family has none of them memorised. A dashboard — a single page listing every service with an icon, a link, and ideally a live status or a useful widget — is the fix. It is also the first thing most self-hosters build, because it is satisfying and the payoff is immediate. This chapter compares Homepage, Homarr, Glance, Dashy, Heimdall, Flame, Organizr, and a few others, and offers guidance on making a dashboard that people actually use.</p>
+<h2 id="what-a-dashboard-is-for">What a dashboard is for<a class="headerlink" href="#what-a-dashboard-is-for" title="Permanent link">#</a></h2>
+<p>Two distinct audiences, and it is worth being honest about which you are building for:</p>
+<p><strong>You, the operator.</strong> You want density: every service, status indicators, container health, disk usage, download queue, the *arr calendar, Proxmox node load, Pi-hole block percentage, links to admin panels. Widgets that pull live data from APIs. A dark theme. Keyboard shortcuts.</p>
+<p><strong>The household.</strong> They want five big buttons — Photos, Films, Files, Recipes, Home — that work, and nothing that looks like a server room. No admin links, no status noise, ideally a friendly name and an icon per service.</p>
+<p>The best setups run <strong>two dashboards</strong> (or two views of one): an operator page at <code>home.example.com</code> with everything, and a family page at <code>start.example.com</code> with the essentials. Several of the tools below support per-group visibility to do this from one instance.</p>
+<h2 id="the-candidates">The candidates<a class="headerlink" href="#the-candidates" title="Permanent link">#</a></h2>
+<h3 id="homepage">Homepage<a class="headerlink" href="#homepage" title="Permanent link">#</a></h3>
+<p>The current community favourite (<code>gethomepage.dev</code>). Configured entirely by <strong>YAML files</strong> (<code>services.yaml</code>, <code>widgets.yaml</code>, <code>bookmarks.yaml</code>, <code>settings.yaml</code>), with a fast, clean, information-dense UI. Its defining feature is <strong>service widgets</strong>: 100+ integrations that show live data next to a service's link — Sonarr/Radarr queue and wanted counts, Jellyfin/Plex now-playing, Immich photo counts, Pi-hole/AdGuard stats, Proxmox node CPU/RAM, TrueNAS pool status, Uptime Kuma incidents, qBittorrent speeds, Home Assistant entity states, Gitea, Nextcloud, Paperless, Vaultwarden (via a proxy), Portainer, Traefik, Tailscale, weather, calendars, and more. <strong>Docker integration</strong>: point it at the socket (via a socket proxy, please) and it shows container status and can auto-discover services from container labels (<code>homepage.group</code>, <code>homepage.name</code>, <code>homepage.icon</code>, <code>homepage.href</code>), so a new stack appears on the dashboard without editing YAML. Icons via the <strong>Dashboard Icons</strong> project (thousands of service logos by name: <code>icon: jellyfin.png</code>) or Material Design Icons / Simple Icons.</p>
+<p><strong>Strengths:</strong> the widget ecosystem is unmatched; YAML in Git; auto-discovery via labels; light (~100 MB); actively developed with frequent releases; supports multiple "layouts" and per-group column control; a <code>HOMEPAGE_ALLOWED_HOSTS</code> setting for security.</p>
+<p><strong>Weaknesses:</strong> YAML editing is the <em>only</em> configuration method — no UI editor (this is a feature for some); widget API keys live in the config files (use <code>{{HOMEPAGE_VAR_*}}</code> environment substitution and <code>.env</code>); the many-widgets page hammers a dozen APIs every few seconds, which is fine at home; no built-in authentication or per-user views (put it behind forward-auth and run two instances for two audiences).</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># homepage/compose.yaml</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">homepage</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/gethomepage/homepage:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">homepage</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">HOMEPAGE_ALLOWED_HOSTS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">home.example.com</span>
+<span class="w">      </span><span class="nt">HOMEPAGE_VAR_SONARR_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SONARR_KEY}</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./config:/app/config</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/docker.sock:/var/run/docker.sock:ro</span><span class="w">   </span><span class="c1"># or a socket proxy: DOCKER_HOST=tcp://socket-proxy:2375</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># homepage/config/services.yaml</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Media</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Jellyfin</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">icon</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jellyfin.png</span>
+<span class="w">        </span><span class="nt">href</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://jellyfin.example.com</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Films and TV</span>
+<span class="w">        </span><span class="nt">widget</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jellyfin</span>
+<span class="w">          </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://jellyfin:8096</span>
+<span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="nv">HOMEPAGE_VAR_JELLYFIN_KEY</span><span class="p p-Indicator">}}</span>
+<span class="w">          </span><span class="nt">enableBlocks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Sonarr</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">icon</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sonarr.png</span>
+<span class="w">        </span><span class="nt">href</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://sonarr.example.com</span>
+<span class="w">        </span><span class="nt">widget</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sonarr</span>
+<span class="w">          </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://sonarr:8989</span>
+<span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="nv">HOMEPAGE_VAR_SONARR_KEY</span><span class="p p-Indicator">}}</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Infrastructure</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Proxmox</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">icon</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">proxmox.png</span>
+<span class="w">        </span><span class="nt">href</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://pve.example.com:8006</span>
+<span class="w">        </span><span class="nt">widget</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">proxmox</span>
+<span class="w">          </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://10.0.20.2:8006</span>
+<span class="w">          </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api@pam!homepage</span>
+<span class="w">          </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="nv">HOMEPAGE_VAR_PVE_TOKEN</span><span class="p p-Indicator">}}</span>
+</code></pre></div>
+<h3 id="homarr">Homarr<a class="headerlink" href="#homarr" title="Permanent link">#</a></h3>
+<p>The <strong>UI-configured</strong> counterpart: drag-and-drop tile layout, an in-browser editor for everything, built-in <strong>user accounts and groups with per-board permissions</strong> (so the family sees one board and you see another, from one instance), integrations for the *arr stack, media servers, Pi-hole/AdGuard, Docker, Proxmox, Home Assistant, Dash. (system stats), Uptime Kuma, and more, plus widgets for calendars, weather, RSS, notebooks, iframes, and a Docker container manager. Since the 1.0 rewrite (2025) it is a polished, capable product with OIDC login support.</p>
+<p><strong>Strengths:</strong> no YAML required; multi-user with per-board access is exactly the operator/family split; looks great; drag-and-drop layouts; OIDC.</p>
+<p><strong>Weaknesses:</strong> heavier (~300–500 MB with its database); configuration lives in a database, not files — back it up and accept it is not in Git; fewer integrations than Homepage's widget list, though the important ones are present; the 0.x → 1.0 migration was disruptive.</p>
+<p><strong>Pick Homarr if:</strong> you want a UI and per-user boards. <strong>Pick Homepage if:</strong> you want YAML and the deepest widget catalogue.</p>
+<h3 id="glance">Glance<a class="headerlink" href="#glance" title="Permanent link">#</a></h3>
+<p>A 2024 arrival with a different philosophy: a <strong>personal start page</strong> rather than a service launcher. YAML-configured (like Homepage) but oriented around feeds and information — RSS, Reddit, Hacker News, YouTube channels, Twitch, weather, stocks/crypto, calendar, releases from GitHub repos, Docker container status, server stats (via a small agent), a "monitor" widget for service uptime, bookmarks, iframes, custom API widgets with templating, and multiple pages. Extremely light (a single Go binary, ~20 MB), fast, and beautiful in a restrained way.</p>
+<p><strong>Pick it if:</strong> you want your browser's new-tab page to be a self-hosted dashboard that mixes your services with the things you read. It is less a Homepage competitor than a complement — some people run both.</p>
+<h3 id="dashy">Dashy<a class="headerlink" href="#dashy" title="Permanent link">#</a></h3>
+<p>Configured by YAML <em>or</em> a built-in UI editor (which writes the YAML), with a huge feature list: status checks per item, widgets (many overlap with Homepage's), themes (dozens), icon packs, multi-page, search with keyboard shortcuts, authentication (basic, Keycloak, forward-auth headers) with per-user item visibility, and a cloud backup/restore feature. Vue-based.</p>
+<p><strong>Strengths:</strong> the most configurable <em>look</em>; UI editor for those who want it plus YAML for those who do not; built-in auth and per-user visibility.</p>
+<p><strong>Weaknesses:</strong> heavier front-end; development has slowed relative to Homepage/Homarr; widget freshness lags; occasional rough edges. A good tool that has been overtaken in mind-share.</p>
+<h3 id="heimdall">Heimdall<a class="headerlink" href="#heimdall" title="Permanent link">#</a></h3>
+<p>The classic (LinuxServer.io). A simple grid of tiles with "enhanced" apps that show a stat or two (Sonarr queue, Pi-hole blocks, Nextcloud users) via a built-in list of supported apps, a UI for adding items, user accounts, and a search bar. It does exactly one thing and has done it reliably since 2018.</p>
+<p><strong>Pick it if:</strong> you want a five-minute setup with a UI and do not care about deep widgets. It is the right "family dashboard" for many people precisely because it is simple.</p>
+<h3 id="flame">Flame<a class="headerlink" href="#flame" title="Permanent link">#</a></h3>
+<p>A minimalist start page with a UI editor: applications, bookmarks, a search bar, weather, themes, and Docker label auto-discovery. No widgets. Light and pleasant. Development has been sporadic. <strong>Simple Icons</strong>-style. If you want "links, tidy, nothing else," Flame or Heimdall.</p>
+<h3 id="organizr">Organizr<a class="headerlink" href="#organizr" title="Permanent link">#</a></h3>
+<p>An older, different beast: a <strong>tabbed iframe container</strong> that loads your services <em>inside</em> the dashboard page, with user roles, per-tab access, and an HTTP auth backend that lets Nginx/Traefik use Organizr as an auth gate (<code>auth_request</code>). Popular in the Plex/*arr community for years as an all-in-one portal. Iframes are increasingly blocked by apps' security headers (<code>X-Frame-Options</code>), which limits it; PHP-based. Still maintained; a niche choice.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<p><strong>Fenrus</strong>, <strong>Mafl</strong>, <strong>Hiccup</strong>, <strong>LinkStack</strong> (link-in-bio, not a dashboard), <strong>Sui</strong> / <strong>Startpage</strong>-style static pages, <strong>Portall</strong>, <strong>Dashboard Icons</strong> (not a dashboard — the icon repository everything uses), <strong>Homer</strong> (a single YAML file rendered as a static page — no backend at all, the lightest possible option, and it can be served from any web server), <strong>Hajimari</strong> (Kubernetes-focused), <strong>Gethomepage</strong>'s many forks, <strong>Umbrel/CasaOS</strong> home screens (bundled with those platforms; <a href="../04-os-and-hypervisors/">Chapter 4</a>).</p>
+<h2 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Homepage</th>
+<th>Homarr</th>
+<th>Glance</th>
+<th>Dashy</th>
+<th>Heimdall</th>
+<th>Homer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Configuration</td>
+<td>YAML</td>
+<td>UI</td>
+<td>YAML</td>
+<td>YAML + UI</td>
+<td>UI</td>
+<td>YAML (static)</td>
+</tr>
+<tr>
+<td>Service widgets</td>
+<td><strong>100+</strong></td>
+<td>~40</td>
+<td>Docker, monitor, custom API</td>
+<td>Many</td>
+<td>Basic "enhanced" apps</td>
+<td>None (static)</td>
+</tr>
+<tr>
+<td>Docker auto-discovery</td>
+<td><strong>Yes (labels)</strong></td>
+<td>Yes</td>
+<td>Container status</td>
+<td>Partial</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Multi-user / per-user views</td>
+<td>No (run two)</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>Yes</td>
+<td>Basic</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>External (forward-auth)</td>
+<td>Built-in + OIDC</td>
+<td>External</td>
+<td>Built-in + headers</td>
+<td>Built-in</td>
+<td>External</td>
+</tr>
+<tr>
+<td>Feeds/RSS</td>
+<td>Limited</td>
+<td>Yes</td>
+<td><strong>Yes (core)</strong></td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>~100 MB</td>
+<td>~400 MB</td>
+<td>~20 MB</td>
+<td>~150 MB</td>
+<td>~100 MB</td>
+<td>~0 (static)</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Operators wanting data density in Git</td>
+<td>Households wanting UI + per-user boards</td>
+<td>Personal start page with feeds</td>
+<td>Themes + UI editor + auth</td>
+<td>Simplest family page</td>
+<td>Zero-backend static page</td>
+</tr>
+</tbody>
+</table>
+<h2 id="making-a-dashboard-people-use">Making a dashboard people use<a class="headerlink" href="#making-a-dashboard-people-use" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Two audiences, two views.</strong> Operator page with everything; family page with 5–10 large tiles, friendly names ("Photos," not "Immich"), and no admin links. Homarr's boards, Dashy's per-user visibility, or two Homepage instances.</li>
+<li><strong>Icons matter.</strong> The Dashboard Icons project has nearly everything; consistent iconography makes a page scannable.</li>
+<li><strong>Status, not noise.</strong> A green/red dot per service is useful. Twelve live graphs are not, on the family page.</li>
+<li><strong>Set it as the browser home page</strong> on family devices and as the new-tab page on yours. A dashboard nobody opens is decoration.</li>
+<li><strong>Search.</strong> Homepage, Homarr, Dashy, and Glance all support a search bar with provider shortcuts (<code>!g</code> for Google, <code>!yt</code>) — configure it to hit your <strong>SearXNG</strong> (<a href="../23-ai-llm/">Chapter 23</a>) and it becomes a genuinely useful start page.</li>
+<li><strong>Protect it.</strong> The dashboard reveals your entire service inventory and often holds API keys. Behind the reverse proxy, forward-auth or at least LAN/VPN-only, never public.</li>
+<li><strong>Socket proxy for Docker integration.</strong> Every dashboard that reads container status wants the Docker socket. Give it a read-only socket proxy (<a href="../13-security/">Chapter 13</a>).</li>
+<li><strong>Keep it in Git</strong> if it is YAML. The dashboard is documentation of what you run.</li>
+</ul>
+<h2 id="recommendation">Recommendation<a class="headerlink" href="#recommendation" title="Permanent link">#</a></h2>
+<p><strong>Homepage</strong> for the operator view — the widget depth and YAML-in-Git are decisive. <strong>Homarr</strong> if you want one instance serving both audiences with per-board permissions and a UI, or if you simply prefer clicking. <strong>Heimdall</strong> or <strong>Homer</strong> for a family page that must never be fiddled with. <strong>Glance</strong> as a personal new-tab page if you read feeds. Any of them takes under an hour to set up and is among the most-used pages in your lab from then on.</p>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../13-security/">← 13. Security for the Home Lab</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/14-dashboards.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#what-a-dashboard-is-for">What a dashboard is for</a></li>
+<li><a href="#the-candidates">The candidates</a><ul>
+<li><a href="#homepage">Homepage</a></li>
+<li><a href="#homarr">Homarr</a></li>
+<li><a href="#glance">Glance</a></li>
+<li><a href="#dashy">Dashy</a></li>
+<li><a href="#heimdall">Heimdall</a></li>
+<li><a href="#flame">Flame</a></li>
+<li><a href="#organizr">Organizr</a></li>
+<li><a href="#others">Others</a></li>
+</ul>
+</li>
+<li><a href="#comparison">Comparison</a></li>
+<li><a href="#making-a-dashboard-people-use">Making a dashboard people use</a></li>
+<li><a href="#recommendation">Recommendation</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
