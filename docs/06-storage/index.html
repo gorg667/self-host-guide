@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storage: Filesystems, Redundancy, and Sharing — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li class="active"><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 06 · ~4,544 words · 20 min read</div>
+    <article class="prose">
+      <h1 id="storage-filesystems-redundancy-and-sharing">Storage: Filesystems, Redundancy, and Sharing<a class="headerlink" href="#storage-filesystems-redundancy-and-sharing" title="Permanent link">#</a></h1>
+<p>Storage is where your data lives, and data is the only part of a home lab that cannot be re-downloaded or rebuilt. Every other component — the hardware, the OS, the containers — is replaceable in an afternoon. This chapter covers the technologies that keep data intact: ZFS in depth (because it is the community's default and deserves the space), Btrfs, traditional mdadm/LVM, the MergerFS + SnapRAID pattern for media, Ceph for clusters, the network protocols for sharing storage (NFS, SMB, iSCSI), drive health monitoring, and capacity planning.</p>
+<p>One principle to carry through the chapter: <strong>redundancy is not backup.</strong> RAID, mirrors, and parity protect against <em>drive failure</em>. They do nothing against accidental deletion, ransomware, a bug that corrupts files, a fire, or a fat-fingered <code>rm</code>. Every technology here should be paired with <a href="../11-backups/">Chapter 11</a>.</p>
+<h2 id="concepts-first">Concepts first<a class="headerlink" href="#concepts-first" title="Permanent link">#</a></h2>
+<p><strong>Bit rot</strong> is the silent corruption of data at rest: a bit flips on a platter or in flash, the drive does not notice, and years later a photo has a grey band across it. Traditional filesystems (ext4, XFS, NTFS) cannot detect this. <strong>Checksumming filesystems</strong> (ZFS, Btrfs) store a hash of every block and verify it on read; with redundancy, they can <em>repair</em> it from a good copy. This is the main reason the community pushes ZFS and Btrfs for anything precious.</p>
+<p><strong>Redundancy levels</strong>: a <strong>mirror</strong> (RAID1) writes every block to two or more drives; capacity is one drive's worth, survives n−1 failures. <strong>Single parity</strong> (RAID5, RAIDZ1) stripes data across n drives with one drive's worth of parity; capacity n−1, survives one failure. <strong>Double parity</strong> (RAID6, RAIDZ2) survives two. <strong>Triple parity</strong> (RAIDZ3) survives three. <strong>Striping</strong> (RAID0) has no redundancy and is not for data you care about.</p>
+<p><strong>Rebuild risk</strong>: when a drive fails, the array rebuilds onto a replacement by reading <em>every other drive in full</em>. With 16–24 TB drives this takes one to two days, during which a second failure (statistically more likely because the surviving drives are the same age and under stress) is fatal for single-parity arrays. This is why the modern recommendation is <strong>RAIDZ2/RAID6 for arrays of large drives</strong>, and why mirrors remain popular: a mirror rebuild reads one drive, not all of them.</p>
+<p><strong>URE (unrecoverable read error)</strong> rates on consumer drives (~1 in 10^14 bits ≈ every 12.5 TB read) mean that a RAID5 rebuild across 40 TB of surviving drives has a meaningful chance of hitting an unreadable sector. Traditional RAID controllers kill the array; ZFS loses only the affected file and tells you which one. Another reason for ZFS and for double parity.</p>
+<p><strong>Snapshots</strong> are point-in-time, read-only views of a filesystem that cost almost nothing to create (they share blocks with the live data via copy-on-write). They are the fastest defence against "I deleted the wrong thing" and, when sent to another machine, a fast incremental backup mechanism. ZFS and Btrfs have them natively; LVM has them awkwardly; ext4/XFS do not.</p>
+<h2 id="zfs">ZFS<a class="headerlink" href="#zfs" title="Permanent link">#</a></h2>
+<p>ZFS (via OpenZFS on Linux and FreeBSD) is a combined volume manager and filesystem designed at Sun in the early 2000s for data integrity above all else. It is the storage layer under TrueNAS, is native in Proxmox, and is a first-class option on Debian/Ubuntu (via the <code>zfs-dkms</code> or Ubuntu's in-tree module). For anyone storing irreplaceable data on more than one drive, it is the default recommendation of this guide.</p>
+<h3 id="vocabulary">Vocabulary<a class="headerlink" href="#vocabulary" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>vdev</strong> (virtual device): a group of drives with a redundancy type — a mirror of 2–3 drives, a RAIDZ1/2/3 group of 3–12 drives, or a single drive (no redundancy). Redundancy exists <em>within</em> a vdev.</li>
+<li><strong>pool</strong> (zpool): one or more vdevs striped together. Data is spread across vdevs; <strong>losing any vdev loses the pool</strong>. So every vdev should be redundant.</li>
+<li><strong>dataset</strong>: a filesystem within the pool, with its own properties (compression, record size, quotas, snapshots) and mount point. Create many: <code>tank/media</code>, <code>tank/photos</code>, <code>tank/docker</code>, <code>tank/backups</code>. Datasets are free; they let you snapshot, replicate, and tune each kind of data separately.</li>
+<li><strong>zvol</strong>: a block device carved from the pool, for VM disks or iSCSI.</li>
+<li><strong>ARC</strong>: the in-RAM read cache. ZFS uses up to half of system RAM by default and releases it under pressure. <strong>L2ARC</strong>: an optional SSD extension of ARC; rarely useful at home (you need more RAM first). <strong>SLOG</strong>: an optional separate device for the ZFS intent log, which accelerates <em>synchronous</em> writes only (NFS with <code>sync</code>, databases, VM disks); needs an enterprise SSD with power-loss protection; useless for normal file copies. <strong>Special vdev</strong>: an SSD vdev holding metadata and optionally small files; dramatically speeds directory listings on large spinning pools; <em>must be redundant</em> because losing it loses the pool.</li>
+<li><strong>scrub</strong>: reads every block in the pool and verifies checksums, repairing from redundancy. Schedule monthly.</li>
+<li><strong>resilver</strong>: rebuilding a replaced drive.</li>
+</ul>
+<h3 id="choosing-a-layout">Choosing a layout<a class="headerlink" href="#choosing-a-layout" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Layout</th>
+<th>Drives</th>
+<th>Usable</th>
+<th>Survives</th>
+<th>Read perf</th>
+<th>Write perf</th>
+<th>Rebuild stress</th>
+<th>Expandability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2-way mirror</td>
+<td>2</td>
+<td>50%</td>
+<td>1</td>
+<td>2×</td>
+<td>1×</td>
+<td>Low (reads one drive)</td>
+<td>Add another mirror vdev; replace both drives with larger</td>
+</tr>
+<tr>
+<td>3-way mirror</td>
+<td>3</td>
+<td>33%</td>
+<td>2</td>
+<td>3×</td>
+<td>1×</td>
+<td>Low</td>
+<td>Same</td>
+</tr>
+<tr>
+<td>Striped mirrors (RAID10)</td>
+<td>4, 6, 8…</td>
+<td>50%</td>
+<td>1 per mirror</td>
+<td>n×</td>
+<td>n/2×</td>
+<td>Low</td>
+<td>Add mirror pairs</td>
+</tr>
+<tr>
+<td>RAIDZ1</td>
+<td>3–5</td>
+<td>(n−1)/n</td>
+<td>1</td>
+<td>Good</td>
+<td>Good</td>
+<td>High</td>
+<td>Add another vdev; <strong>RAIDZ expansion</strong> (OpenZFS 2.3+, 2025) adds single drives</td>
+</tr>
+<tr>
+<td>RAIDZ2</td>
+<td>5–10</td>
+<td>(n−2)/n</td>
+<td>2</td>
+<td>Good</td>
+<td>Good</td>
+<td>High</td>
+<td>Same</td>
+</tr>
+<tr>
+<td>RAIDZ3</td>
+<td>8–15</td>
+<td>(n−3)/n</td>
+<td>3</td>
+<td>Good</td>
+<td>OK</td>
+<td>High</td>
+<td>Same</td>
+</tr>
+</tbody>
+</table>
+<p>Guidance:</p>
+<ul>
+<li><strong>Two drives</strong>: a mirror. Simple, fast rebuild, easy to grow (replace one drive with a bigger one, resilver, replace the other, resilver, pool grows).</li>
+<li><strong>Four drives</strong>: striped mirrors if you value performance and flexible growth; RAIDZ2 if you value capacity (both give 50% usable with four drives, but RAIDZ2 survives <em>any</em> two failures while striped mirrors survive two only if they are in different pairs). RAIDZ1 with four drives is acceptable for replaceable data and not for precious data.</li>
+<li><strong>Six to eight drives</strong>: RAIDZ2. This is the home NAS sweet spot: 6×16 TB in RAIDZ2 = ~58 TB usable, survives two failures.</li>
+<li><strong>More than ten drives</strong>: two RAIDZ2 vdevs, or RAIDZ3, or striped mirrors.</li>
+<li><strong>RAIDZ1 with drives over ~8 TB</strong> is discouraged for precious data because of rebuild time and URE risk.</li>
+<li><strong>Mixed sizes</strong>: a vdev uses the size of its smallest member. ZFS is not the tool for a pile of random drives — that is Unraid or MergerFS+SnapRAID territory.</li>
+<li><strong>Do not use dedup.</strong> It needs enormous RAM (the "1 GB per TB" myth came from here), rarely saves much at home, and is hard to turn off. Compression, by contrast, is free — enable it everywhere.</li>
+</ul>
+<h3 id="raidz-expansion">RAIDZ expansion<a class="headerlink" href="#raidz-expansion" title="Permanent link">#</a></h3>
+<p>OpenZFS 2.3 (released January 2025; in TrueNAS 24.10+ and Proxmox 8.4/9+) added the long-awaited ability to add a single drive to an existing RAIDZ vdev. Caveats: existing data keeps its old parity ratio until rewritten (so usable space grows less than you would expect until you rewrite files — a <code>zfs send | zfs recv</code> to a new dataset or a rebalancing script does this), and the operation takes as long as a resilver. It removes the biggest historical objection to RAIDZ for home users who grow gradually.</p>
+<h3 id="creating-a-pool">Creating a pool<a class="headerlink" href="#creating-a-pool" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Identify drives by stable IDs, never by /dev/sdX (which can change between boots)</span>
+ls<span class="w"> </span>-l<span class="w"> </span>/dev/disk/by-id/<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>part
+
+<span class="c1"># A 6-drive RAIDZ2 pool named &#39;tank&#39;</span>
+zpool<span class="w"> </span>create<span class="w"> </span>-o<span class="w"> </span><span class="nv">ashift</span><span class="o">=</span><span class="m">12</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-O<span class="w"> </span><span class="nv">compression</span><span class="o">=</span>lz4<span class="w"> </span>-O<span class="w"> </span><span class="nv">atime</span><span class="o">=</span>off<span class="w"> </span>-O<span class="w"> </span><span class="nv">xattr</span><span class="o">=</span>sa<span class="w"> </span>-O<span class="w"> </span><span class="nv">acltype</span><span class="o">=</span>posixacl<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-O<span class="w"> </span><span class="nv">normalization</span><span class="o">=</span>formD<span class="w"> </span>-O<span class="w"> </span><span class="nv">mountpoint</span><span class="o">=</span>/mnt/tank<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>tank<span class="w"> </span>raidz2<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/dev/disk/by-id/ata-WDC_WD160EDGZ-11B2DA0_XXXXXXXX<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/dev/disk/by-id/ata-WDC_WD160EDGZ-11B2DA0_YYYYYYYY<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>...<span class="w"> </span><span class="o">(</span><span class="m">6</span><span class="w"> </span>total<span class="o">)</span>
+
+<span class="c1"># Datasets for different data</span>
+zfs<span class="w"> </span>create<span class="w"> </span>tank/media<span class="w">      </span><span class="c1"># large sequential files</span>
+zfs<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="nv">recordsize</span><span class="o">=</span>1M<span class="w"> </span>tank/media
+zfs<span class="w"> </span>create<span class="w"> </span>tank/photos
+zfs<span class="w"> </span>create<span class="w"> </span>tank/documents
+zfs<span class="w"> </span>create<span class="w"> </span>tank/docker<span class="w">     </span><span class="c1"># container config/data</span>
+zfs<span class="w"> </span>create<span class="w"> </span>-o<span class="w"> </span><span class="nv">recordsize</span><span class="o">=</span>16k<span class="w"> </span>tank/db<span class="w">   </span><span class="c1"># databases (match the DB page size; 8k–16k)</span>
+zfs<span class="w"> </span>create<span class="w"> </span>tank/backups
+
+<span class="c1"># Status</span>
+zpool<span class="w"> </span>status<span class="w"> </span>-v
+zfs<span class="w"> </span>list<span class="w"> </span>-o<span class="w"> </span>name,used,avail,compressratio,mountpoint
+</code></pre></div>
+<p>Property notes:</p>
+<ul>
+<li><strong><code>ashift=12</code></strong> (4 KiB sectors) is correct for every modern drive, including "512e" drives that lie about their sector size. <code>ashift=13</code> for some SSDs. Getting this wrong is permanent and hurts performance.</li>
+<li><strong><code>compression=lz4</code></strong> (or <code>zstd</code> for slightly better ratios at more CPU) costs nothing on incompressible media and saves real space on everything else. Always on.</li>
+<li><strong><code>atime=off</code></strong> avoids a write on every read. Always.</li>
+<li><strong><code>xattr=sa</code>, <code>acltype=posixacl</code></strong> are needed for Docker, Samba ACLs, and general sanity on Linux.</li>
+<li><strong><code>recordsize</code></strong>: default 128K is fine; 1M for media/backups; 16K for database datasets; 64K for VM zvols (<code>volblocksize</code>).</li>
+<li><strong><code>sync=disabled</code></strong> on a dataset trades safety for speed; only on scratch data.</li>
+<li><strong>Encryption</strong>: <code>-O encryption=aes-256-gcm -O keyformat=passphrase</code> (or a keyfile) at dataset creation. Native ZFS encryption encrypts data and most metadata; dataset names and sizes remain visible. Encrypted datasets can be replicated raw (<code>zfs send -w</code>) to an untrusted backup target that never sees the key — the ideal off-site pattern. The alternative is LUKS underneath ZFS, which encrypts everything but loses the raw-send trick.</li>
+</ul>
+<h3 id="snapshots-and-replication">Snapshots and replication<a class="headerlink" href="#snapshots-and-replication" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>zfs<span class="w"> </span>snapshot<span class="w"> </span>tank/photos@2026-09-07
+zfs<span class="w"> </span>list<span class="w"> </span>-t<span class="w"> </span>snapshot
+zfs<span class="w"> </span>rollback<span class="w"> </span>tank/photos@2026-09-07<span class="w">          </span><span class="c1"># revert (destroys later snapshots unless -r)</span>
+ls<span class="w"> </span>/mnt/tank/photos/.zfs/snapshot/2026-09-07/<span class="w">  </span><span class="c1"># browse a snapshot read-only</span>
+zfs<span class="w"> </span>destroy<span class="w"> </span>tank/photos@2026-09-07
+</code></pre></div>
+<p>Automate with <strong>sanoid</strong> (policy-based snapshot creation and pruning — "keep 48 hourly, 30 daily, 6 monthly") and <strong>syncoid</strong> (its companion for incremental replication to another pool or host over SSH). Alternatives: <strong>zrepl</strong> (a single Go daemon doing both, with a push/pull model and good for many datasets), <strong>zfs-auto-snapshot</strong> (older, simpler), <strong>pyznap</strong>, and TrueNAS's built-in periodic snapshot and replication tasks. A replicated snapshot chain on a second machine is a real backup of the <em>files</em>; it is still on the same site until you replicate off-site too.</p>
+<h3 id="zfs-on-what">ZFS on what?<a class="headerlink" href="#zfs-on-what" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>TrueNAS</strong>: the UI for all of this. The right choice if you do not want to type <code>zpool</code>.</li>
+<li><strong>Proxmox</strong>: ZFS root and data pools in the installer and UI; snapshots/replication of VMs between nodes built in.</li>
+<li><strong>Debian/Ubuntu</strong>: <code>apt install zfsutils-linux</code> (Ubuntu) or <code>zfs-dkms</code> from contrib (Debian). Perfectly viable as a bare-metal NAS OS with Samba/NFS installed by hand; Cockpit with the 45Drives ZFS/Samba plugins gives it a web UI.</li>
+<li><strong>Memory</strong>: 8 GB minimum, 16 GB comfortable, more if you want a bigger ARC. ECC preferred, not required (<a href="../02-hardware/">Chapter 2</a>).</li>
+<li><strong>Controllers</strong>: an HBA in IT mode or motherboard SATA. <strong>Never</strong> hardware RAID (ZFS must see the raw drives). <strong>USB</strong> enclosures work for a mirror of two drives on a Tier 1 box, with the caveat that USB bridges occasionally drop and resilver; avoid USB for larger arrays.</li>
+</ul>
+<h3 id="zfs-gotchas">ZFS gotchas<a class="headerlink" href="#zfs-gotchas" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Never fill past 80–85%.</strong> Performance drops sharply and fragmentation becomes permanent.</li>
+<li><strong><code>/dev/sdX</code> names change.</strong> Always use <code>/dev/disk/by-id/</code>.</li>
+<li><strong>Pool import on a new machine</strong>: <code>zpool import -f tank</code>. Your pool is portable — this is disaster recovery.</li>
+<li><strong>Feature flags</strong>: a pool upgraded with newer features cannot be imported by an older OpenZFS. Do not <code>zpool upgrade</code> casually if you might move the pool to an older system.</li>
+<li><strong>Removing a vdev</strong> from a pool is possible only for mirrors and single drives (device removal), not RAIDZ. Plan vdev layout before adding data.</li>
+<li><strong><code>zfs destroy</code> is immediate and permanent.</strong> Type dataset names carefully. <code>-n</code> does a dry run.</li>
+</ul>
+<h2 id="btrfs">Btrfs<a class="headerlink" href="#btrfs" title="Permanent link">#</a></h2>
+<p>Btrfs is the Linux-native copy-on-write filesystem with checksums, snapshots, transparent compression, and built-in multi-device support. It is the default on Fedora and openSUSE, powers Synology's newer models (on top of mdadm), and is the backing store for Unraid's cache pools.</p>
+<p><strong>Where it shines:</strong> single-disk and mirror (<code>raid1</code>, and the <code>raid1c3</code>/<code>raid1c4</code> variants for three and four copies) setups. Btrfs <code>raid1</code> is unusual — it means "two copies of every block on any two devices," which means you <em>can</em> mix drive sizes and it will use the space sensibly. Add and remove devices from a live filesystem; convert between profiles with <code>btrfs balance</code>; snapshot subvolumes instantly; send/receive incremental snapshots like ZFS. Lighter on RAM than ZFS, in the mainline kernel (no DKMS), and well suited to a Tier 1 box with two USB drives or a mini PC with two NVMe slots.</p>
+<p><strong>Where it does not:</strong> <strong>Btrfs RAID5/6 is still not safe for production</strong> (the "write hole" problem remains documented in the kernel's own status page as of 2026; improvements in recent kernels help but the upstream recommendation is still to avoid it for metadata). If you want parity, use ZFS or mdadm. Btrfs's tooling for diagnosing and repairing problems is less friendly than ZFS's; <code>btrfs check --repair</code> comes with a warning to ask on the mailing list first. Quotas (<code>qgroups</code>) have performance implications. Databases and VM images on Btrfs want <code>nodatacow</code> (<code>chattr +C</code>), which disables checksumming for those files — a trade-off ZFS does not force.</p>
+<p><strong>Tooling:</strong> <strong>snapper</strong> (openSUSE's snapshot manager, with timeline and pre/post-package-update snapshots) and <strong>btrbk</strong> (snapshot + send/receive backups, excellent for the "snapshot hourly, replicate nightly to a USB drive or another host" workflow). Synology's Snapshot Replication and Unraid's cache-pool snapshots are Btrfs underneath.</p>
+<p><strong>Verdict:</strong> Btrfs mirror is the right choice for a Tier 1 machine that wants checksumming without ZFS's RAM appetite or out-of-tree module; ZFS is the right choice for anything with parity or more than a handful of drives.</p>
+<h2 id="mdadm-lvm-ext4-and-xfs-the-traditional-stack">mdadm, LVM, ext4, and XFS: the traditional stack<a class="headerlink" href="#mdadm-lvm-ext4-and-xfs-the-traditional-stack" title="Permanent link">#</a></h2>
+<p><strong>mdadm</strong> is Linux software RAID: assemble drives into a <code>/dev/md0</code> device with RAID 0/1/5/6/10, then put any filesystem on it. <strong>LVM</strong> adds a volume layer (resize, thin provisioning, snapshots of a sort). <strong>ext4</strong> and <strong>XFS</strong> are the mature, fast, non-checksumming filesystems that go on top. Synology, QNAP, and every Linux server from 2005–2015 used this stack, and it still works.</p>
+<p><strong>Why you would:</strong> you know it; you want maximum compatibility; you want the flexibility of adding a drive to an mdadm RAID5/6 with <code>--grow</code> (which ZFS only recently matched); you are on a low-memory device; or you want a boot drive setup (mdadm RAID1 for the OS on two SSDs is dead simple).</p>
+<p><strong>Why you would not:</strong> no bit-rot detection or repair. A silently corrupted block on one mirror member is a coin toss at read time. LVM snapshots are heavy and slow compared with CoW filesystems. Rebuilds hit URE problems on large drives. For a NAS holding precious data in 2026, this stack is a step down from ZFS or Btrfs, and the only remaining argument for it is familiarity.</p>
+<p><strong>dm-integrity</strong> (a device-mapper layer adding checksums under mdadm) and <strong><code>dm-crypt</code>/LUKS</strong> for encryption can be layered in, at the cost of complexity. If you find yourself building that stack, you probably want ZFS.</p>
+<h2 id="mergerfs-snapraid-the-media-library-pattern">MergerFS + SnapRAID: the media-library pattern<a class="headerlink" href="#mergerfs-snapraid-the-media-library-pattern" title="Permanent link">#</a></h2>
+<p>For large libraries of <em>replaceable</em> files that change rarely — movies, TV, music, ISOs — a different approach optimises for flexibility and idle power rather than real-time redundancy.</p>
+<p><strong>MergerFS</strong> is a FUSE union filesystem: point it at any number of drives, each with its own ordinary filesystem (ext4/XFS/Btrfs), and it presents one merged directory tree. Files live whole on one drive; a policy decides where new files go (e.g., "the drive with the most free space" or "keep this directory's files together"). Drives can be any size, added or removed at any time. Losing a drive loses only what was on it; every other drive is still a plain readable filesystem. Only the drive holding the file being read spins up.</p>
+<p><strong>SnapRAID</strong> adds <em>scheduled</em> parity: run <code>snapraid sync</code> nightly and it computes parity across all drives onto one or more dedicated parity drives (one parity drive survives one failure, two survive two, up to six). It also checksums every file and can <code>scrub</code> to detect bit rot, and <code>fix</code> to restore a failed drive's contents or a corrupted file from parity. Because parity is a batch job, the array is <em>not</em> protected for changes since the last sync — irrelevant for a media library where files are added and then never modified, unacceptable for live documents or databases.</p>
+<p>The combination gives you: mix any drives, add one at a time, spin down idle drives, survive 1–6 failures (after the last sync), detect bit rot, and never rebuild a whole array — at the cost of no real-time protection and slow-ish single-drive write speed. <strong>OpenMediaVault</strong> has plugins for both; <strong>Unraid</strong> is the commercial analogue with real-time parity; plain Debian with a <code>mergerfs</code> mount in <code>fstab</code> and a <code>snapraid</code> cron job is the DIY route. For a Tier 1–2 media server with a dozen mismatched drives, this is often the right answer — keep the precious data (photos, documents, configs) on a separate ZFS or Btrfs mirror.</p>
+<div class="highlight"><pre><span></span><code># /etc/fstab example
+/dev/disk/by-id/ata-DRIVE1-part1  /mnt/disk1  xfs   defaults  0 2
+/dev/disk/by-id/ata-DRIVE2-part1  /mnt/disk2  xfs   defaults  0 2
+/dev/disk/by-id/ata-PARITY-part1  /mnt/parity1 xfs  defaults  0 2
+/mnt/disk*  /mnt/storage  fuse.mergerfs  cache.files=partial,dropcacheonclose=true,category.create=mfs,minfreespace=50G,fsname=mergerfs  0 0
+</code></pre></div>
+<h2 id="ceph-and-distributed-storage">Ceph and distributed storage<a class="headerlink" href="#ceph-and-distributed-storage" title="Permanent link">#</a></h2>
+<p><strong>Ceph</strong> is a distributed storage system providing block (RBD), object (S3-compatible RGW), and file (CephFS) storage across many nodes with configurable replication or erasure coding, self-healing, and no single point of failure. Proxmox integrates it: three or more nodes each contribute drives (OSDs), and VM disks on Ceph RBD can live-migrate and survive node failures. It is genuinely enterprise-grade and genuinely heavy: <strong>three nodes minimum</strong> (five for comfort), a dedicated 10 GbE (ideally 25 GbE) network for replication, enterprise SSDs (consumer SSDs will be destroyed by Ceph's write patterns and their lack of PLP causes latency spikes), and a real learning investment. Performance on three consumer-grade nodes over 1 GbE is poor. Run it if you want to learn Ceph or genuinely need HA storage for a Tier 3 cluster; do not run it as your NAS.</p>
+<p><strong>GlusterFS</strong> is in maintenance mode and not recommended for new deployments. <strong>SeaweedFS</strong>, <strong>Garage</strong>, and <strong>MinIO</strong> are object stores rather than general filesystems; see <a href="../26-databases-backing-services/">Chapter 26</a>. <strong>Longhorn</strong> and <strong>Rook</strong> are Kubernetes-native storage; see <a href="../05-containers/">Chapter 5</a>. <strong>Proxmox ZFS replication</strong> (scheduled <code>zfs send</code> of VM disks between nodes, with HA failover to the replica) is the pragmatic alternative to Ceph for two- and three-node home clusters — asynchronous (you lose changes since the last replication interval, which can be as short as a minute) but simple and fast.</p>
+<h2 id="sharing-storage-over-the-network">Sharing storage over the network<a class="headerlink" href="#sharing-storage-over-the-network" title="Permanent link">#</a></h2>
+<h3 id="nfs">NFS<a class="headerlink" href="#nfs" title="Permanent link">#</a></h3>
+<p>Network File System is the Unix-native protocol: simple, fast, stateless, and the right choice for Linux-to-Linux sharing — a NAS exporting media to a Docker host, Proxmox storage backends, Kubernetes persistent volumes. NFSv4 (with <code>sec=sys</code> at home; Kerberos is available but nobody does it) has a single port (2049) and better locking than v3. Permissions are by UID/GID — the same numeric IDs must mean the same thing on both ends, or you use <code>all_squash</code>/<code>anonuid</code> to map everything to one user. <code>/etc/exports</code> on the server:</p>
+<div class="highlight"><pre><span></span><code>/mnt/tank/media  10.0.20.0/24(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
+</code></pre></div>
+<p>Mount with <code>nfs4</code> in <code>fstab</code> or, better, as a <strong>systemd automount</strong> or with <code>x-systemd.automount,noauto</code> options so a NAS that is down does not hang the client's boot. Docker containers reading media over NFS is standard; <strong>SQLite databases over NFS is corruption waiting to happen</strong> — keep app configs on local disk.</p>
+<h3 id="smb-cifs">SMB / CIFS<a class="headerlink" href="#smb-cifs" title="Permanent link">#</a></h3>
+<p>Server Message Block is the Windows-native protocol (and macOS's preferred one since Apple abandoned AFP). Use it for anything a Windows or Mac client touches, and for Time Machine backups (Samba supports the <code>fruit</code> VFS module for this). <strong>Samba</strong> is the Linux implementation; TrueNAS, OMV, Synology, and Unraid all put a UI on it. SMB3 is encrypted-capable and multichannel-capable; performance on a modern Samba is near line rate. User-based authentication (Samba users mapped to Linux users, or Active Directory) rather than NFS's host-based trust. Guest/anonymous shares should be disabled on any network with untrusted devices. SMB from Linux clients works (<code>cifs-utils</code>) but NFS is usually a better choice between Linux machines.</p>
+<h3 id="iscsi">iSCSI<a class="headerlink" href="#iscsi" title="Permanent link">#</a></h3>
+<p>Block-level: the NAS exports a LUN (a zvol or a file), the client sees a raw disk and formats it itself. Used for VM disk storage (Proxmox and ESXi backends), Windows machines wanting a "local" drive on the NAS, and game libraries. The client owns the filesystem, so only one client can mount a LUN read-write at a time (unless a cluster filesystem is used). Faster than SMB for random I/O; less flexible. Over 10 GbE it is excellent; over 1 GbE it is fine for VMs and a poor fit for bulk data.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<p><strong>WebDAV</strong> (HTTP-based; Nextcloud speaks it, useful for mobile apps and across the internet); <strong>SFTP</strong> (SSH file transfer; universal, secure, slow-ish; fine for occasional use); <strong>rsync daemon</strong> (for bulk sync); <strong>S3-compatible object storage</strong> (Garage/MinIO/SeaweedFS — for applications that speak S3 rather than for people; <a href="../26-databases-backing-services/">Chapter 26</a>); <strong>9p/virtiofs</strong> (for sharing host directories into VMs on Proxmox/KVM without a network protocol — virtiofs is fast and increasingly well supported).</p>
+<h3 id="which-protocol">Which protocol<a class="headerlink" href="#which-protocol" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Client</th>
+<th>Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux server / Docker host reading bulk data</td>
+<td>NFS</td>
+</tr>
+<tr>
+<td>Proxmox VM storage backend</td>
+<td>NFS (simple) or iSCSI/ZFS-over-iSCSI (performance)</td>
+</tr>
+<tr>
+<td>Windows PC, Mac, or phone browsing files</td>
+<td>SMB</td>
+</tr>
+<tr>
+<td>Time Machine</td>
+<td>SMB with Samba <code>fruit</code></td>
+</tr>
+<tr>
+<td>Application needing a "local" disk</td>
+<td>iSCSI</td>
+</tr>
+<tr>
+<td>Application built for the cloud</td>
+<td>S3</td>
+</tr>
+<tr>
+<td>Over the internet</td>
+<td>Don't; use a VPN, or WebDAV/SFTP behind the reverse proxy, or Nextcloud/Seafile</td>
+</tr>
+</tbody>
+</table>
+<h2 id="drive-health-and-smart">Drive health and SMART<a class="headerlink" href="#drive-health-and-smart" title="Permanent link">#</a></h2>
+<p>Every drive reports SMART attributes; every serious lab monitors them.</p>
+<div class="highlight"><pre><span></span><code>apt<span class="w"> </span>install<span class="w"> </span>smartmontools
+smartctl<span class="w"> </span>-a<span class="w"> </span>/dev/sda<span class="w">                   </span><span class="c1"># everything</span>
+smartctl<span class="w"> </span>-H<span class="w"> </span>/dev/sda<span class="w">                   </span><span class="c1"># overall health</span>
+smartctl<span class="w"> </span>-t<span class="w"> </span>long<span class="w"> </span>/dev/sda<span class="w">              </span><span class="c1"># start an extended self-test (hours)</span>
+smartctl<span class="w"> </span>-a<span class="w"> </span>/dev/nvme0<span class="w">                 </span><span class="c1"># NVMe drives report differently (percentage_used, media_errors)</span>
+</code></pre></div>
+<p>Attributes that predict failure (from Backblaze's and Google's published studies): <strong>5 Reallocated Sector Count</strong>, <strong>187 Reported Uncorrectable</strong>, <strong>188 Command Timeout</strong>, <strong>197 Current Pending Sector</strong>, <strong>198 Offline Uncorrectable</strong>. A non-zero and <em>rising</em> value on any of these means replace the drive; do not wait for it to fail. <strong>199 UDMA CRC Errors</strong> rising means a bad cable or port, not a bad drive. For NVMe, watch <code>percentage_used</code>, <code>media_and_data_integrity_errors</code>, and <code>critical_warning</code>. Temperature persistently over 45 °C for HDDs shortens life.</p>
+<p>Configure <code>smartd</code> (part of smartmontools) to run short self-tests weekly and long tests monthly and email/notify on changes, or — much better — run <strong>Scrutiny</strong>, a web UI that collects SMART data from all your hosts, applies Backblaze's failure-rate thresholds, and shows trends and alerts (<a href="../12-monitoring/">Chapter 12</a>). ZFS <code>zpool status</code> also reports read/write/checksum error counters per drive; any non-zero value deserves investigation, and a monthly scrub is what surfaces them.</p>
+<p><strong>Burn-in new drives</strong> before trusting them: a <code>badblocks -wsv /dev/sdX</code> (destructive, takes a day or two on a large drive) or at minimum a long SMART self-test. Infant mortality is real; better to discover it before the drive is in an array with data.</p>
+<h2 id="capacity-planning">Capacity planning<a class="headerlink" href="#capacity-planning" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Start from your data classification</strong> (<a href="../01-planning/">Chapter 1</a>). Precious data (photos, documents, configs) is usually under 2 TB per household and grows slowly; put it on a mirror or RAIDZ2 with snapshots and off-site backup. Media is usually the bulk and grows fast; put it on RAIDZ2 or MergerFS+SnapRAID with more relaxed backup.</li>
+<li><strong>Account for the 80% rule</strong> on ZFS: a "58 TB usable" RAIDZ2 pool is really ~46 TB of comfortable capacity.</li>
+<li><strong>Account for snapshots</strong>: they consume space as data changes. A dataset with 30 daily snapshots of a busy directory can use 20–50% more than the live data. Media libraries snapshot cheaply (files rarely change); Docker config and databases less so.</li>
+<li><strong>Fewer, larger drives.</strong> Per-terabyte cost is lowest around 16–24 TB in 2026; each drive is a failure point, a SATA port, and 5–8 W.</li>
+<li><strong>Plan growth for three years</strong>, not ten. Drives get cheaper; buy what you need plus a year's growth, and plan how you will expand (add a vdev; RAIDZ expansion; replace drives with bigger ones in a mirror).</li>
+<li><strong>Leave a slot free</strong> for a hot spare or for the replacement drive during a resilver.</li>
+<li><strong>Boot drive</strong>: separate, small, mirrored if convenient. Never put the OS on the data pool.</li>
+</ul>
+<h2 id="recommendations-by-tier">Recommendations by tier<a class="headerlink" href="#recommendations-by-tier" title="Permanent link">#</a></h2>
+<p><strong>Tier 1 (one machine):</strong> OS on the internal NVMe. Data on two large drives as a <strong>ZFS or Btrfs mirror</strong> (internal SATA bays if the machine has them; a two-bay USB 3 enclosure if not). Snapshots via sanoid or btrbk. Off-site backup of the precious datasets (<a href="../11-backups/">Chapter 11</a>). If media dominates and drives are mismatched: MergerFS+SnapRAID for media, a small mirror for precious data.</p>
+<p><strong>Tier 2 (dedicated NAS):</strong> <strong>TrueNAS</strong> (or Debian + ZFS, or OMV) with <strong>6–8 drives in RAIDZ2</strong>, an NVMe boot mirror, 16–32 GB RAM. Datasets per data type; NFS to the Docker/Proxmox hosts; SMB to desktops. Sanoid/syncoid or TrueNAS replication to a second box or off-site. Scrutiny watching SMART. Monthly scrubs.</p>
+<p><strong>Tier 3 (cluster):</strong> <strong>Proxmox ZFS replication</strong> between nodes for VM disks (or Ceph if you have the nodes, the network, and the appetite); a <strong>separate storage server</strong> with RAIDZ2 pools and 10 GbE for bulk data and PBS; encrypted raw ZFS replication off-site. Special vdev on mirrored enterprise SSDs if directory listings on huge pools are slow.</p>
+<h2 id="storage-checklist">Storage checklist<a class="headerlink" href="#storage-checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Data classified; precious data on a checksumming filesystem with redundancy.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Every array drive is CMR (<a href="../02-hardware/">Chapter 2</a>); drives from mixed batches; burned in before use.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Layout chosen: mirror for 2–4 drives, RAIDZ2 for 5–10; no RAIDZ1 on large drives for precious data; no Btrfs RAID5/6.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> ZFS: <code>ashift=12</code>, <code>compression=lz4</code>, <code>atime=off</code>, <code>xattr=sa</code>; drives referenced by <code>/dev/disk/by-id</code>; no dedup; pool kept under 80%.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Datasets/subvolumes per data type with appropriate <code>recordsize</code>; databases and SQLite apps on local disk, not network shares.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Automated snapshots (sanoid/zrepl/btrbk/TrueNAS tasks) with a retention policy; replication to a second machine if possible.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Monthly scrub scheduled; SMART monitored by smartd or Scrutiny; alerts go somewhere you will see them.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Sharing protocol matched to client (NFS for Linux, SMB for Windows/Mac); no guest SMB shares; network mounts use automount so a down NAS does not hang clients.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> UPS communicating with the storage host so it shuts down cleanly (<a href="../29-power-cost-environment/">Chapter 29</a>).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> You have read <a href="../11-backups/">Chapter 11</a> and understand that none of the above is a backup.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../05-containers/">← 05. Containers: Docker, Compose, Podman, and Kubernetes</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/06-storage.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#concepts-first">Concepts first</a></li>
+<li><a href="#zfs">ZFS</a><ul>
+<li><a href="#vocabulary">Vocabulary</a></li>
+<li><a href="#choosing-a-layout">Choosing a layout</a></li>
+<li><a href="#raidz-expansion">RAIDZ expansion</a></li>
+<li><a href="#creating-a-pool">Creating a pool</a></li>
+<li><a href="#snapshots-and-replication">Snapshots and replication</a></li>
+<li><a href="#zfs-on-what">ZFS on what?</a></li>
+<li><a href="#zfs-gotchas">ZFS gotchas</a></li>
+</ul>
+</li>
+<li><a href="#btrfs">Btrfs</a></li>
+<li><a href="#mdadm-lvm-ext4-and-xfs-the-traditional-stack">mdadm, LVM, ext4, and XFS: the traditional stack</a></li>
+<li><a href="#mergerfs-snapraid-the-media-library-pattern">MergerFS + SnapRAID: the media-library pattern</a></li>
+<li><a href="#ceph-and-distributed-storage">Ceph and distributed storage</a></li>
+<li><a href="#sharing-storage-over-the-network">Sharing storage over the network</a><ul>
+<li><a href="#nfs">NFS</a></li>
+<li><a href="#smb-cifs">SMB / CIFS</a></li>
+<li><a href="#iscsi">iSCSI</a></li>
+<li><a href="#others">Others</a></li>
+<li><a href="#which-protocol">Which protocol</a></li>
+</ul>
+</li>
+<li><a href="#drive-health-and-smart">Drive health and SMART</a></li>
+<li><a href="#capacity-planning">Capacity planning</a></li>
+<li><a href="#recommendations-by-tier">Recommendations by tier</a></li>
+<li><a href="#storage-checklist">Storage checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

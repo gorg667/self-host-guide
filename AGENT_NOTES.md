@@ -75,7 +75,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 03-networking.md — IP/subnets, VLANs, DHCP/DNS, NAT/port forwarding, CGNAT, IPv6, firewalls, router OS (OPNsense/pfSense/OpenWrt/UniFi/MikroTik), segmentation
 - [x] 04-os-and-hypervisors.md — Proxmox VE, TrueNAS SCALE, Unraid, Debian/Ubuntu, NixOS, XCP-ng, Harvester; LXC vs VM; comparison matrix; Proxmox install walkthrough
 - [x] 05-containers.md — Docker, Compose, Podman, k3s/Talos/microk8s; best practices; updates (Watchtower/Diun/Renovate); patterns
-- [ ] 06-storage.md — ZFS deep dive, Btrfs, mdadm/LVM, MergerFS+SnapRAID, Ceph, NFS/SMB/iSCSI, SMART, capacity planning
+- [x] 06-storage.md — ZFS deep dive, Btrfs, mdadm/LVM, MergerFS+SnapRAID, Ceph, NFS/SMB/iSCSI, SMART, capacity planning
 
 ### Part II — Core infrastructure services
 - [ ] 07-reverse-proxy-tls.md — NPM, Traefik, Caddy, Nginx, HAProxy, Pangolin, SWAG; Let's Encrypt DNS-01, wildcard, internal CA, split DNS
