@@ -179,3 +179,81 @@ Not a backup tool — a **sync/copy tool for cloud storage** ("rsync for the clo
 | Browse/mount snapshots | Yes | Yes | Yes | Restore UI | Yes (file restore) | It's a filesystem | n/a |
 | RAM (multi-TB repo) | Medium–high | Low | Medium | Medium | Low | Low | Low |
 | Best for | Cloud + friend SFTP + flexibility | SSH targets, Hetzner box, efficiency | UI + multi-client | Consumer clouds, small sets | Proxmox VMs/LXCs | ZFS-to-ZFS second machine | Bulk mirrors; exotic backends |
+
+## Destinations
+
+### Local second device
+
+A second machine on the LAN — the PBS box, a Raspberry Pi with a big USB drive, an old NAS, the other Proxmox node — receiving nightly backups. Fast to back up, fast to restore, cheap. Protects against drive/pool/host failure, not against fire, theft, or a whole-LAN ransomware event unless the copy is pull-based or append-only.
+
+### Cloud object storage
+
+**Backblaze B2** (~USD 6/TB/month, free egress up to 3× stored per month; S3-compatible; object lock supported) is the community default. **Hetzner Storage Box** (~EUR 4/1 TB, EUR 13/5 TB, EUR 26/10 TB — per month; SFTP/SMB/WebDAV/Borg/rsync; snapshots; no S3) is the value pick in Europe and excellent for Borg. **Wasabi** (~USD 7/TB, no egress fees, 1 TB minimum, 90-day retention minimum), **Storj** (decentralised, ~USD 4/TB), **Scaleway Glacier**, **AWS S3 Glacier Deep Archive** (~USD 1/TB/month but slow and expensive to restore — only for the disaster copy of something you hope never to restore), **Cloudflare R2** (no egress fees, 10 GB free), **iDrive e2** (aggressive pricing). Consumer clouds (Google Drive, OneDrive, Dropbox) work via rclone but have API rate limits, may terminate accounts for "abuse," and are poor targets for millions of small chunks — fine for a few hundred GB, not for TBs. **Always encrypt client-side** (every tool above does); the provider should see only ciphertext.
+
+### A friend's or relative's house
+
+The self-hoster's off-site: a small machine (Pi 5 + USB drive, or an N100 box) at another household, reachable over a mesh VPN ([Chapter 8](08-remote-access-vpn.md)), receiving Restic/Borg/ZFS pushes — or, better, *pulling* from you. Reciprocate: host theirs. Zero monthly cost, full control, real geographic separation. The catch is the human element (their internet goes down, they unplug it, they move house); monitor it.
+
+### Cold offline media
+
+External drives rotated off-site; **LTO tape** for people with 50+ TB and patience (a used LTO-6/7 drive costs USD 300–800, tapes are USD 5–15/TB, tapes last 30 years, and nothing is more ransomware-proof than a tape in a drawer — PBS supports tape natively); **M-Disc** Blu-ray for tiny precious sets (100 GB per disc, rated for centuries). Slow, manual, and the only truly air-gapped option.
+
+## Backing up a Docker host: a worked pattern
+
+A reference approach for a Tier 1–2 Docker host with data on a ZFS/Btrfs pool:
+
+1. **Snapshots** hourly on the data pool (sanoid/btrbk): instant local undo for the last 48 hours, 30 days of dailies.
+2. **02:30 — pre-backup hooks**: `pg_dumpall` / `mariadb-dump` / `sqlite3 .backup` for every database into `/opt/backups/dumps`; Home Assistant backup via its API; Vaultwarden `sqlite3 .backup`.
+3. **03:00 — local**: PBS backs up the Docker-host VM (if on Proxmox), *or* ZFS replication sends the `tank/docker` and `tank/photos` datasets to the second machine.
+4. **03:30 — off-site**: Restic (via Backrest) backs up `/opt/stacks`, `/opt/backups/dumps`, `/mnt/tank/photos`, `/mnt/tank/documents` to B2 (or Borg via Borgmatic to a Hetzner box / friend's machine). Retention: 7 daily, 4 weekly, 12 monthly, 3 yearly. Bucket has object lock / repo is append-only.
+5. **Weekly**: `restic check --read-data-subset=5%` or `borg check`; ZFS scrub monthly.
+6. **Monthly**: rsync the photo and document datasets to a rotating external drive; swap with the one at the office/parents'.
+7. **Every run** pings **Healthchecks.io** (or self-hosted **Healthchecks**) / **Uptime Kuma push monitor**; a missed ping alerts via ntfy ([Chapter 12](12-monitoring.md)).
+8. **Quarterly**: restore drill (below).
+
+The media library is not in step 4. It has ZFS redundancy and snapshots; it is either re-acquirable or mirrored to a cheap cold copy separately.
+
+## Testing restores
+
+A backup that has never been restored is a hypothesis. Test it.
+
+**Monthly, small:** pick a random file from a random snapshot and restore it to `/tmp`. Compare checksums. Takes two minutes. Backrest and Kopia make this a UI click; `restic restore latest --include /path/to/file --target /tmp/r`.
+
+**Quarterly, medium:** restore a whole service. Spin up a fresh directory, restore its config and data from backup, restore the database dump into a fresh Postgres container, `docker compose up`, log in, verify the data is there and recent. Then throw it away. This catches the errors that matter: "the database dump was empty," "the bind mount path changed," "the `.env` was never backed up."
+
+**Yearly, full:** the disaster drill. Pretend the primary host is gone. On a spare machine (or a VM), install the OS from scratch following your documentation, install Docker, restore `/opt/stacks` and the data from the *off-site* copy (not the local one — the local one burned too), bring up the stack. Time it. Write down every step you had forgotten to document. This is the only way to know your RTO and to discover that your documentation is fiction.
+
+**Verify integrity automatically:** `restic check`, `borg check --verify-data` (slow), `kopia snapshot verify`, PBS verification jobs, ZFS scrubs on the replica pool. Schedule them.
+
+**Watch for silent failure:** a job that runs but backs up nothing (a mount that was not mounted, so it backed up an empty directory — this is *very* common with NFS/SMB sources), a snapshot that is 0 bytes, a dump that contains only an error message. Alert on backup *size* anomalies, not just on job exit codes. Healthchecks-style dead-man's switches catch jobs that never ran; size checks catch jobs that ran and did nothing.
+
+## Ransomware-specific defences
+
+- **Pull, don't push**, where possible: the backup server fetches from the source with a read-only key; the source has no credentials to the backup store.
+- **Append-only / immutable** for the off-site copy: Borg append-only mode, Restic `rest-server --append-only`, S3 Object Lock in compliance mode with a retention period, Hetzner Storage Box snapshots (which the client cannot delete).
+- **Separate credentials**: the backup destination's credentials must not be reachable from the machines being backed up in a form that permits deletion. A B2 application key scoped to write-only (no `deleteFiles`) plus lifecycle rules for pruning, or prune from a separate trusted machine.
+- **Offline copy**: the rotated external drive. Nothing beats unplugged.
+- **Snapshot retention on the replica**: if ransomware encrypts your files, ZFS replication will faithfully replicate the encrypted files — but the replica's *older snapshots* still hold the clean data. Keep weeks of snapshots on the replica, and make sure the source cannot destroy them (pull model, or a restricted SSH key that permits `zfs recv` but not `zfs destroy`).
+
+## Recommendations by tier
+
+**Tier 1 (one machine, Tier-1 budget):** Btrfs/ZFS snapshots on the data drive (btrbk/sanoid). **Restic via Backrest** nightly to **Backblaze B2** (or Hetzner) for irreplaceable and painful data, with DB dump pre-hooks. A rotating **external USB drive** monthly for the offline copy. Healthchecks ping. Total cost: USD 3–10/month for a few hundred GB off-site. Restore test quarterly.
+
+**Tier 2 (compute + NAS):** ZFS snapshots + **syncoid/zrepl replication** from the NAS to a second box (the PBS machine, or the Proxmox node's local pool) — pull-based. **PBS** for all VMs/LXCs, with a **sync job to a remote PBS** (a friend's, or a small VPS with a big disk) or PBS's own backups pushed off-site via Restic. **Restic/Borg** off-site for the irreplaceable datasets. Object lock on the bucket. Monthly external drive for photos.
+
+**Tier 3:** all of the above, plus a **second PBS off-site**, raw encrypted ZFS replication to a remote pool, tape or Glacier Deep Archive for the yearly full, and automated restore testing (a script that restores last night's backup into a scratch VM and runs smoke tests).
+
+## Checklist
+
+- [ ] Data classified; irreplaceable data has three copies, two media, one off-site, one immutable/offline.
+- [ ] Backup tool chosen; repository encrypted; **the repository password/key is stored somewhere that does not depend on the lab** (printed, in a second password manager, with a trusted person).
+- [ ] Databases dumped or snapshotted consistently — never file-copied while running.
+- [ ] `/opt/stacks` (all Compose files and configs) backed up nightly and in Git.
+- [ ] Off-site destination configured; client-side encryption on; append-only or object lock enabled.
+- [ ] Retention policy set and pruning automated.
+- [ ] Every backup job reports to a dead-man's switch (Healthchecks/Uptime Kuma push); alerts go to your phone.
+- [ ] Integrity checks (`restic check`/`borg check`/PBS verify/ZFS scrub) scheduled.
+- [ ] Backup size monitored for anomalies (empty-mount problem).
+- [ ] Monthly single-file restore; quarterly service restore; yearly full disaster drill from the off-site copy — **dates in the calendar**.
+- [ ] Router/firewall/switch/hypervisor configs exported and included.
+- [ ] Media library's protection level decided consciously (redundancy + snapshots, or a cold copy, or accepted loss with a manifest).
