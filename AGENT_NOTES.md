@@ -98,7 +98,7 @@ Legend: `[ ]` not started · `[~]` draft/partial · `[x]` complete (first full p
 - [x] 19-home-automation.md — Home Assistant, Zigbee2MQTT/ZHA, Z-Wave JS, Mosquitto, Node-RED, ESPHome, Frigate, Scrypted, Homebridge, Matter, Music Assistant
 - [x] 20-communication.md — Matrix (Synapse/Conduit/Tuwunel), Rocket.Chat, Mattermost, XMPP, Jitsi, Mumble; self-hosted email (Mailcow/Mailu/Stalwart/docker-mailserver) with caveats
 - [x] 21-passwords-secrets.md — Vaultwarden, Bitwarden, Passbolt, KeePassXC+Syncthing, Psono, Infisical, OpenBao, 2FAuth
-- [ ] 22-dev-git-automation.md — Gitea/Forgejo/GitLab, Woodpecker/Gitea Actions, Harbor, code-server/Coder, Portainer/Dockge/Komodo, n8n/Windmill/Activepieces, it-tools
+- [x] 22-dev-git-automation.md — Gitea/Forgejo/GitLab, Woodpecker/Gitea Actions, Harbor, code-server/Coder, Portainer/Dockge/Komodo, n8n/Windmill/Activepieces, it-tools
 - [ ] 23-ai-llm.md — Ollama, Open WebUI, LocalAI, llama.cpp, vLLM, ComfyUI/SD, Whisper/Speaches, Piper/Kokoro, SearXNG/Perplexica, LibreChat, AnythingLLM; GPU/VRAM sizing, quantization
 - [ ] 24-gaming.md — Pterodactyl/Pelican, Crafty, PufferPanel, AMP, itzg Minecraft, RomM, Gaseous, EmulatorJS, Sunshine/Moonlight
 - [ ] 25-misc-apps.md — Recipes (Mealie/Tandoor), Grocy, finance (Firefly III/Actual/Ghostfolio/Wallos), inventory (Homebox), Speedtest Tracker, ChangeDetection, Invidious, analytics (Umami/Plausible/Matomo), blogging (Ghost/WordPress/Hugo), URL shorteners, Excalidraw, Cal.com, DocuSeal, etc.
