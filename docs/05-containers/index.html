@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Containers: Docker, Compose, Podman, and Kubernetes — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li class="active"><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 05 · ~4,452 words · 20 min read</div>
+    <article class="prose">
+      <h1 id="containers-docker-compose-podman-and-kubernetes">Containers: Docker, Compose, Podman, and Kubernetes<a class="headerlink" href="#containers-docker-compose-podman-and-kubernetes" title="Permanent link">#</a></h1>
+<p>Containers are how self-hosted software is distributed and run in 2026. Nearly every project reviewed in Part III ships a container image and a <code>docker-compose.yml</code>; the community's shared vocabulary — volumes, bind mounts, networks, <code>PUID</code>/<code>PGID</code>, <code>restart: unless-stopped</code> — is Docker's vocabulary. This chapter explains what containers actually are, how to run them well, the patterns that keep a stack of forty services manageable, the update problem, the Docker-and-firewall trap, and when (rarely) Kubernetes is the right call.</p>
+<h2 id="what-a-container-is">What a container is<a class="headerlink" href="#what-a-container-is" title="Permanent link">#</a></h2>
+<p>A container is an ordinary Linux process (or process tree) that the kernel has been told to lie to. <strong>Namespaces</strong> give it a private view of the filesystem, network interfaces, process IDs, hostname, and users. <strong>cgroups</strong> limit how much CPU and memory it can use. An <strong>image</strong> — a stack of read-only filesystem layers built from a <code>Dockerfile</code> — provides the private filesystem: the application, its libraries, and nothing else. Start a container and you get a process that believes it is alone on a minimal machine, but is actually sharing your kernel with everything else and started in a few milliseconds.</p>
+<p>This has three consequences that matter to self-hosters:</p>
+<ol>
+<li><strong>Dependency isolation.</strong> Service A needs Python 3.9 and service B needs 3.12; each brings its own. Nothing you install for one service can break another.</li>
+<li><strong>Reproducibility.</strong> The image is the same bytes on your machine as on the developer's. "Works on my machine" mostly stops being a thing.</li>
+<li><strong>Disposability.</strong> The container's own filesystem is ephemeral by design. Anything you want to keep — configuration, databases, uploaded files — must live in a <strong>volume</strong> or <strong>bind mount</strong> outside the container. Once you internalise this, upgrading becomes "pull new image, recreate container, data untouched," and disaster recovery becomes "restore the volumes, run <code>docker compose up</code>."</li>
+</ol>
+<p>Containers are not virtual machines. They share the host kernel, so a kernel exploit from inside a container is a host compromise; a container running as root that is given the Docker socket or <code>--privileged</code> <em>is</em> root on the host. Treat them as a packaging and isolation convenience, not a security boundary — then harden accordingly (<a href="../13-security/">Chapter 13</a>).</p>
+<h2 id="docker-engine">Docker Engine<a class="headerlink" href="#docker-engine" title="Permanent link">#</a></h2>
+<p>Docker is the runtime that popularised containers and remains the default. Install it from Docker's own repository, not your distribution's (which lags badly and, on Ubuntu, may hand you a snap):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Debian/Ubuntu — official convenience script (read it first if you are cautious)</span>
+curl<span class="w"> </span>-fsSL<span class="w"> </span>https://get.docker.com<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+sudo<span class="w"> </span>usermod<span class="w"> </span>-aG<span class="w"> </span>docker<span class="w"> </span><span class="nv">$USER</span><span class="w">   </span><span class="c1"># optional: run docker without sudo (this is root-equivalent; see Security)</span>
+<span class="c1"># Verify</span>
+docker<span class="w"> </span>version<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>version
+</code></pre></div>
+<p><code>docker compose</code> (with a space — the v2 plugin written in Go) replaced the old Python <code>docker-compose</code> (with a hyphen) in 2022. If a tutorial says <code>docker-compose</code>, mentally substitute.</p>
+<h3 id="the-daemon-configuration">The daemon configuration<a class="headerlink" href="#the-daemon-configuration" title="Permanent link">#</a></h3>
+<p><code>/etc/docker/daemon.json</code> is where you set host-wide options. A sensible starting point:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;log-driver&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;json-file&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;log-opts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;max-size&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10m&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;max-file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;3&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;default-address-pools&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;base&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;172.20.0.0/14&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">24</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;live-restore&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div>
+<ul>
+<li><strong>Log rotation.</strong> Without <code>log-opts</code>, container logs grow without bound and eventually fill your disk. This is the single most common "why is my root filesystem full" cause on Docker hosts.</li>
+<li><strong>Address pools.</strong> Docker's default <code>172.17.0.0/16</code> and subsequent <code>/16</code>s for each Compose network can collide with your LAN, a VPN, or a corporate network you connect from. Choosing an explicit pool of <code>/24</code>s avoids both the collision and the waste of a <code>/16</code> per project.</li>
+<li><strong><code>live-restore</code></strong> keeps containers running while the daemon restarts (e.g., during a Docker upgrade).</li>
+<li><strong>Storage driver</strong>: <code>overlay2</code> is the default and correct. On ZFS you can use the <code>zfs</code> driver, but <code>overlay2</code> on a ZFS dataset works fine and is simpler.</li>
+<li><strong>Data root</strong>: <code>"data-root": "/mnt/fast/docker"</code> moves <code>/var/lib/docker</code> (images, layers, named volumes) to another disk. Do this at install time, before pulling images.</li>
+</ul>
+<h2 id="docker-compose">Docker Compose<a class="headerlink" href="#docker-compose" title="Permanent link">#</a></h2>
+<p>Compose describes a <em>stack</em> — one or more containers plus their networks and volumes — in a YAML file, and manages them as a unit. It is the correct tool for essentially every self-hosted deployment on a single host, and it is what every project's README gives you.</p>
+<h3 id="anatomy-of-a-compose-file">Anatomy of a Compose file<a class="headerlink" href="#anatomy-of-a-compose-file" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># /opt/stacks/vaultwarden/compose.yaml</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vaultwarden</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vaultwarden/server:1.33.2</span><span class="w">        </span><span class="c1"># pin a version; see Updates</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vaultwarden</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">DOMAIN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://vault.example.com</span>
+<span class="w">      </span><span class="nt">SIGNUPS_ALLOWED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span>
+<span class="w">      </span><span class="nt">ADMIN_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${VW_ADMIN_TOKEN}</span><span class="w">         </span><span class="c1"># from .env, never committed</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/data</span><span class="w">                        </span><span class="c1"># bind mount: config + SQLite DB live here</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;127.0.0.1:8080:80&quot;</span><span class="w">                 </span><span class="c1"># bind to localhost only; reverse proxy fronts it</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">proxy</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;curl&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-fsS&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;http://localhost/alive&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">    </span><span class="nt">security_opt</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no-new-privileges:true</span>
+<span class="w">    </span><span class="nt">deploy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">limits</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256M</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                          </span><span class="c1"># created once: docker network create proxy</span>
+</code></pre></div>
+<p>Line by line, the decisions that matter:</p>
+<ul>
+<li><strong><code>image</code> tag.</strong> <code>latest</code> is convenient and dangerous: you have no idea what version you are running and <code>docker compose pull</code> may bring a breaking change at 3 am. Pin to at least a major version (<code>postgres:16</code>) and ideally a specific version, then update deliberately. See the Updates section.</li>
+<li><strong><code>restart: unless-stopped</code></strong> brings the container back after a crash or a host reboot, but respects a manual <code>docker stop</code>. <code>always</code> ignores the manual stop. <code>on-failure</code> is for one-shot jobs.</li>
+<li><strong><code>environment</code> and <code>.env</code>.</strong> Compose reads <code>${VAR}</code> from a <code>.env</code> file next to the Compose file. Secrets go there, and <code>.env</code> goes in <code>.gitignore</code>. For anything more serious, Docker secrets or an external secrets manager (<a href="../21-passwords-secrets/">Chapter 21</a>).</li>
+<li><strong>Bind mounts vs named volumes.</strong> <code>./data:/data</code> is a bind mount: the data is in a directory you can see, back up with any tool, and move to another host by copying. <code>vaultwarden_data:/data</code> (declared under a top-level <code>volumes:</code>) is a named volume: Docker manages it under <code>/var/lib/docker/volumes</code>, it survives <code>docker compose down</code>, and it is slightly faster on some filesystems. <strong>For self-hosting, bind mounts win</strong> for almost everything because backups and migrations are simpler. The exception is database data on macOS/Windows Docker Desktop (irrelevant for a Linux server) and cases where a project's docs insist.</li>
+<li><strong>Ports.</strong> <code>"8080:80"</code> publishes on <em>all</em> host interfaces — including the internet-facing one if the host is exposed — and, critically, <strong>bypasses <code>ufw</code>/<code>firewalld</code></strong> because Docker inserts its own iptables rules ahead of them. <code>"127.0.0.1:8080:80"</code> binds to localhost only, so only a reverse proxy on the same host can reach it. Better still: put the container and the reverse proxy on the same Docker network and publish <em>no</em> ports at all — the proxy reaches the container by service name on the internal network. See the Firewall section below.</li>
+<li><strong>Networks.</strong> A dedicated <code>proxy</code> network that the reverse proxy and every web-facing service join, plus per-stack default networks for internal traffic (a service and its database). Containers on the same network resolve each other by service name; containers on different networks cannot talk at all.</li>
+<li><strong>Healthcheck.</strong> Lets Docker (and Uptime Kuma, and Compose's <code>depends_on: condition: service_healthy</code>) know whether the service is actually working, not merely running.</li>
+<li><strong><code>no-new-privileges</code></strong> and <strong>memory limits</strong> are cheap hardening. More in <a href="../13-security/">Chapter 13</a>.</li>
+</ul>
+<h3 id="users-and-permissions-puidpgid">Users and permissions: PUID/PGID<a class="headerlink" href="#users-and-permissions-puidpgid" title="Permanent link">#</a></h3>
+<p>Many images — the whole <strong>LinuxServer.io</strong> (<code>lscr.io/linuxserver/*</code>) catalogue and many others — accept <code>PUID</code> and <code>PGID</code> environment variables and drop privileges to that user after starting. Set them to a dedicated host user (e.g., <code>id dockeruser</code> → <code>1000:1000</code>) that owns the bind-mounted directories, and files the container writes will be owned by that user on the host. Images that do not support this either run as root (and write root-owned files into your bind mounts — annoying) or accept a Compose-level <code>user: "1000:1000"</code> directive (which works only if the image does not need root at startup). Permission errors on bind mounts are the most common first-day Docker problem; they are almost always a mismatch between the container's UID and the directory's owner.</p>
+<h3 id="layout-on-disk">Layout on disk<a class="headerlink" href="#layout-on-disk" title="Permanent link">#</a></h3>
+<p>A convention that scales:</p>
+<div class="highlight"><pre><span></span><code>/opt/stacks/                     # or ~/docker, /srv/docker — anywhere, but one place
+├── traefik/
+│   ├── compose.yaml
+│   ├── .env
+│   └── config/
+├── media/
+│   ├── compose.yaml             # jellyfin + sonarr + radarr + prowlarr + qbittorrent
+│   ├── .env
+│   └── config/{jellyfin,sonarr,radarr,...}/
+├── immich/
+│   ├── compose.yaml
+│   ├── .env
+│   └── postgres/
+└── vaultwarden/
+    ├── compose.yaml
+    └── data/
+/mnt/data/                       # bulk storage on the big disks (NAS mount or local pool)
+├── media/{movies,tv,music}/
+├── photos/
+└── documents/
+</code></pre></div>
+<p>One directory per stack; the stack's <em>configuration and small state</em> in bind mounts next to its Compose file; <em>bulk data</em> on the big storage, mounted into containers at consistent paths. Back up <code>/opt/stacks</code> nightly (it is small and precious); back up <code>/mnt/data</code> per the data classification in <a href="../01-planning/">Chapter 1</a>. Keep <code>/opt/stacks</code> in Git (with <code>.env</code> and <code>data/</code> gitignored) and you have infrastructure as code for free.</p>
+<p>Group services into stacks by lifecycle, not by category alone: things that are always upgraded together and share a network belong in one Compose file (the *arr media stack); things that are independent get their own (Vaultwarden should not restart because you edited the media stack).</p>
+<h3 id="essential-commands">Essential commands<a class="headerlink" href="#essential-commands" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w">              </span><span class="c1"># create/start (in the directory with compose.yaml)</span>
+docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w">               </span><span class="c1"># stop and remove containers + default network; volumes untouched</span>
+docker<span class="w"> </span>compose<span class="w"> </span>pull<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w">   </span><span class="c1"># update to whatever the tags now point at</span>
+docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span><span class="w"> </span>servicename
+docker<span class="w"> </span>compose<span class="w"> </span>ps
+docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>servicename<span class="w"> </span>sh<span class="w"> </span><span class="c1"># shell inside</span>
+docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>servicename
+docker<span class="w"> </span>stats<span class="w">                      </span><span class="c1"># live CPU/RAM per container</span>
+docker<span class="w"> </span>system<span class="w"> </span>df<span class="w">                  </span><span class="c1"># disk usage</span>
+docker<span class="w"> </span>system<span class="w"> </span>prune<span class="w"> </span>-a<span class="w"> </span>--volumes<span class="w">  </span><span class="c1"># DANGER: removes all unused images, networks, AND volumes not attached to a container</span>
+docker<span class="w"> </span>image<span class="w"> </span>prune<span class="w"> </span>-a<span class="w">             </span><span class="c1"># safer: only unused images</span>
+</code></pre></div>
+<p><code>docker compose down -v</code> deletes named volumes. <code>docker system prune --volumes</code> deletes named volumes not currently in use. Both have destroyed people's data. Bind mounts are immune to both, which is another argument for them.</p>
+<h2 id="managing-many-stacks-guis-and-tools">Managing many stacks: GUIs and tools<a class="headerlink" href="#managing-many-stacks-guis-and-tools" title="Permanent link">#</a></h2>
+<p>Compose files and SSH are enough. Many people want a web UI; these are the good ones.</p>
+<p><strong>Dockge</strong> — a lightweight, Compose-centric UI by the Uptime Kuma author. Shows each stack as its YAML, lets you edit and deploy, converts <code>docker run</code> commands to Compose, streams logs. It does not abstract anything away: the files on disk are the source of truth, and you can switch between Dockge and the CLI freely. The best fit for people who want a UI <em>and</em> want to understand Compose.</p>
+<p><strong>Portainer</strong> — the long-standing full-featured container management UI: stacks, containers, images, volumes, networks, users and RBAC, multiple environments (remote Docker hosts, Swarm, Kubernetes). Business Edition is paid; Community Edition is free and sufficient. Its "stacks" store Compose content in its own database unless you point it at Git, which is a lock-in irritation. Heavier than Dockge but more capable, especially for managing several hosts.</p>
+<p><strong>Komodo</strong> — a newer Rust-based platform for managing Compose stacks across many servers with Git-backed configuration, builds, and alerting. Popular with people who outgrew Portainer and want GitOps-ish workflows without Kubernetes. See <a href="../22-dev-git-automation/">Chapter 22</a>.</p>
+<p><strong>Yacht</strong>, <strong>Arcane</strong>, <strong>Dockhand</strong>, <strong>Lazydocker</strong> (a terminal UI — excellent) — alternatives worth a look.</p>
+<p><strong>Dozzle</strong> — not a manager but a live log viewer for all containers on a host (or several). Indispensable for troubleshooting; covered in <a href="../12-monitoring/">Chapter 12</a>.</p>
+<h2 id="updates-the-hardest-operational-problem">Updates: the hardest operational problem<a class="headerlink" href="#updates-the-hardest-operational-problem" title="Permanent link">#</a></h2>
+<p>Every container is a bundle of software with its own CVEs and its own breaking changes. Keeping forty of them current without breaking anything is the ongoing cost of self-hosting.</p>
+<h3 id="the-approaches">The approaches<a class="headerlink" href="#the-approaches" title="Permanent link">#</a></h3>
+<p><strong>Pin nothing, <code>latest</code> everywhere, auto-update with Watchtower.</strong> Watchtower polls registries and recreates containers when a new image appears. Maximum currency, zero effort, and periodically something breaks at 4 am because a major version changed its database schema or config format. Immich, Nextcloud, Paperless, and most database images have all bitten people this way. <strong>Watchtower itself is no longer actively maintained</strong> (the original project was archived in 2025; a community fork, <code>nickfedor/watchtower</code>, continues). This approach is defensible only for stateless, low-risk services.</p>
+<p><strong>Pin major versions, notify, update manually.</strong> <code>image: postgres:16</code>, <code>image: ghcr.io/immich-app/immich-server:v1</code> (where the project offers a major tag). Run <strong>Diun</strong> (Docker Image Update Notifier) or Watchtower in monitor-only mode to get a notification (ntfy, Gotify, email, Discord…) when a new image is available. Read the release notes. Update when convenient. This is the guide's recommendation for anything with a database.</p>
+<p><strong>Pin exact versions, manage with Renovate.</strong> <code>image: vaultwarden/server:1.33.2</code>. Keep the Compose files in a Git repository (Gitea/Forgejo/GitHub). Run <strong>Renovate</strong> (self-hosted or via its GitHub app) against the repo; it opens a pull request for each image bump with the changelog linked. Merge the PR; a webhook or a cron <code>git pull &amp;&amp; docker compose up -d</code> (or Komodo, or a small script) applies it. This is GitOps for Compose, gives you a complete audit trail, and is how many advanced self-hosters run. It is more setup than the other two; <a href="../27-automation-iac/">Chapter 27</a> walks through it.</p>
+<p><strong>Whatever you do:</strong></p>
+<ul>
+<li>Take a snapshot (Proxmox/ZFS/Btrfs) or a backup before updating anything with a database.</li>
+<li>Read the release notes for major version bumps. Projects with a history of breaking changes: Immich (pre-1.0 semantics until 2025's v2), Nextcloud (one major at a time, never skip), Paperless-ngx, Authelia/Authentik, Traefik (v2→v3), Home Assistant (monthly; check the "breaking changes" section).</li>
+<li>Update databases separately and deliberately. A PostgreSQL major upgrade needs <code>pg_upgrade</code> or a dump/restore; the <code>postgres:16</code> → <code>postgres:17</code> image swap will simply refuse to start. Pin the Postgres major and upgrade it once a year on purpose. (Tools like <code>pgautoupgrade/pgautoupgrade</code> automate this; still take a backup.)</li>
+<li>Rebuild-from-scratch is a legitimate update strategy for the whole host every year or two. If your Compose files and data are cleanly separated, it takes an afternoon and clears out accumulated cruft.</li>
+</ul>
+<h3 id="image-provenance">Image provenance<a class="headerlink" href="#image-provenance" title="Permanent link">#</a></h3>
+<p>Prefer images from the project itself (<code>ghcr.io/immich-app/...</code>, <code>jellyfin/jellyfin</code>), from LinuxServer.io (consistent conventions, weekly rebuilds, good documentation), or from official Docker Hub library images (<code>postgres</code>, <code>redis</code>, <code>nginx</code>). Be wary of random <code>someuser/coolapp</code> images with no linked Dockerfile. Docker Hub's anonymous pull rate limits (as of 2025, 10 pulls per IP per hour for unauthenticated users) can bite a host that pulls many images at once; log in with a free account (<code>docker login</code>) or mirror through a pull-through cache to raise the limit. Many projects have moved to GHCR (GitHub Container Registry) partly for this reason.</p>
+<h2 id="networking-in-depth">Networking in depth<a class="headerlink" href="#networking-in-depth" title="Permanent link">#</a></h2>
+<h3 id="the-default-bridge-and-compose-networks">The default bridge and Compose networks<a class="headerlink" href="#the-default-bridge-and-compose-networks" title="Permanent link">#</a></h3>
+<p>Docker creates a bridge <code>docker0</code> (<code>172.17.0.0/16</code> by default) and each Compose project gets its own bridge network (<code>projectname_default</code>). Containers on a bridge get a private IP, reach the internet via NAT through the host, and can be reached from the host by published port only. Containers on the same user-defined network resolve each other by name via Docker's embedded DNS (<code>127.0.0.11</code>).</p>
+<h3 id="the-reverse-proxy-network-pattern">The reverse-proxy network pattern<a class="headerlink" href="#the-reverse-proxy-network-pattern" title="Permanent link">#</a></h3>
+<p>Create one shared network: <code>docker network create proxy</code>. The reverse proxy container joins it. Every web-facing service joins it too (<code>networks: [proxy, default]</code> — it stays on its own stack's default network for talking to its database, and on <code>proxy</code> for being reached). Publish <strong>no ports</strong> on services; publish only 80/443 on the proxy. The proxy reaches <code>http://jellyfin:8096</code> by name. Nothing else can reach anything, and the host firewall is irrelevant to inter-container traffic. This is the cleanest and most secure topology on a single host and is assumed throughout <a href="../07-reverse-proxy-tls/">Chapter 7</a>.</p>
+<h3 id="network-mode-host"><code>network_mode: host</code><a class="headerlink" href="#network-mode-host" title="Permanent link">#</a></h3>
+<p>The container shares the host's network stack directly: no NAT, no port publishing, it just listens on the host's interfaces. Required or strongly preferred for: Home Assistant (device discovery), Plex/Jellyfin DLNA and some discovery features, Pi-hole/AdGuard when you want them to see real client IPs without macvlan, Frigate in some configurations, anything using mDNS/SSDP. The cost is loss of network isolation and port conflicts with the host.</p>
+<h3 id="network-mode-servicegluetun-the-vpn-sidecar"><code>network_mode: "service:gluetun"</code> (the VPN sidecar)<a class="headerlink" href="#network-mode-servicegluetun-the-vpn-sidecar" title="Permanent link">#</a></h3>
+<p>A container can share <em>another container's</em> network namespace. The standard pattern for torrent clients: run <strong>Gluetun</strong> (a VPN client container supporting dozens of providers, with a built-in kill switch) and set <code>network_mode: "service:gluetun"</code> on qBittorrent. All of qBittorrent's traffic leaves through the VPN or not at all; ports for qBittorrent's web UI are published <em>on the Gluetun container</em>. Covered in <a href="../15-media/">Chapter 15</a>.</p>
+<h3 id="macvlan-and-ipvlan">macvlan and ipvlan<a class="headerlink" href="#macvlan-and-ipvlan" title="Permanent link">#</a></h3>
+<p>A macvlan network gives each container its own MAC and IP on your physical LAN (or a VLAN sub-interface), so it appears as a separate device to your router and switch. Use it when a service needs a dedicated IP — a second DNS server, Home Assistant on the IoT VLAN, anything a device must reach by a fixed address on port 53 or 80 without conflicting with the host.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">iot_vlan</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">driver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
+<span class="w">    </span><span class="nt">driver_opts</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">parent</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eth0.30</span><span class="w">          </span><span class="c1"># VLAN 30 sub-interface (create with ip link / netplan / systemd-networkd first)</span>
+<span class="w">    </span><span class="nt">ipam</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0.30.0/24</span>
+<span class="w">          </span><span class="nt">gateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0.30.1</span>
+<span class="w">          </span><span class="nt">ip_range</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0.30.64/27</span><span class="w">   </span><span class="c1"># Docker assigns from here; exclude from DHCP</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">homeassistant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">iot_vlan</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">ipv4_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0.30.70</span>
+</code></pre></div>
+<p>The known gotcha: <strong>the host cannot talk to its own macvlan containers</strong> (a kernel limitation of macvlan). If you need that, create a macvlan sub-interface on the host with its own IP and a route (a five-line script), or use <code>ipvlan</code> in L2 mode instead, which does not have the restriction on some configurations. Also, Wi-Fi interfaces generally cannot be macvlan parents.</p>
+<h3 id="the-docker-and-firewall-problem">The Docker-and-firewall problem<a class="headerlink" href="#the-docker-and-firewall-problem" title="Permanent link">#</a></h3>
+<p>Docker manages its own <code>iptables</code>/<code>nftables</code> chains (<code>DOCKER</code>, <code>DOCKER-USER</code>) and inserts them <em>before</em> the <code>INPUT</code>/<code>FORWARD</code> rules that <code>ufw</code> and <code>firewalld</code> manage. Consequence: <code>ufw deny 8080</code> does nothing to a container publishing <code>8080:80</code>; the port is open to whatever can reach the host. Countless people have unwittingly exposed databases and admin panels this way on VPSes.</p>
+<p>Solutions, from simplest to most thorough:</p>
+<ol>
+<li><strong>Publish on <code>127.0.0.1</code> only</strong> (or not at all — use the proxy network). No published port on <code>0.0.0.0</code>, no problem.</li>
+<li><strong>Use the <code>DOCKER-USER</code> chain</strong>, which Docker guarantees to evaluate first and never touches. Rules there (e.g., <code>iptables -I DOCKER-USER -i eth0 ! -s 10.0.0.0/8 -j DROP</code>) genuinely filter container traffic. The <code>ufw-docker</code> script automates this for <code>ufw</code> users.</li>
+<li><strong>Set <code>"iptables": false</code></strong> in <code>daemon.json</code> and manage everything yourself. Advanced; breaks Docker's networking unless you know exactly what you are doing.</li>
+<li><strong>Rely on the network firewall.</strong> On a home LAN behind a router with no port forwards, Docker's host-level exposure only matters to other LAN devices. Still fix it — the IoT VLAN should not be able to reach your Postgres — but it is not the emergency it is on a VPS.</li>
+</ol>
+<p>Podman (below) does not have this problem, since it does not manipulate host firewall rules the same way in rootless mode.</p>
+<h2 id="storage-considerations">Storage considerations<a class="headerlink" href="#storage-considerations" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Bind mounts on NFS/SMB.</strong> Works for media (Jellyfin reading files) and mostly works for config, but <strong>SQLite databases on network filesystems corrupt</strong>. Sonarr, Radarr, Jellyfin, Home Assistant, Vaultwarden, and dozens of other apps use SQLite. Keep their config/database bind mounts on local disk; mount only bulk media over the network.</li>
+<li><strong>Docker on ZFS or Btrfs.</strong> Fine with <code>overlay2</code>. Consider a dedicated dataset/subvolume for <code>/var/lib/docker</code> with <code>recordsize=128k</code> (or default) and exclude it from snapshots (it is rebuildable). Do snapshot <code>/opt/stacks</code>.</li>
+<li><strong>Database performance.</strong> Postgres and MariaDB want their data on local SSD, not spinning disk and never a network share.</li>
+<li><strong><code>tmpfs</code> mounts</strong> for transcoding scratch directories keep writes off your SSD: <code>tmpfs: [/transcode]</code> or <code>volumes: [type: tmpfs, target: /transcode, tmpfs: {size: 4g}]</code>.</li>
+</ul>
+<h2 id="hardware-access">Hardware access<a class="headerlink" href="#hardware-access" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Intel/AMD GPU for transcoding or ML</strong>: pass <code>/dev/dri</code> — <code>devices: ["/dev/dri:/dev/dri"]</code> — and add the container's user to the <code>render</code>/<code>video</code> group (<code>group_add: ["render"]</code> or the numeric GID). Jellyfin, Plex, Frigate, Immich ML, and Tdarr all use this.</li>
+<li><strong>NVIDIA GPU</strong>: install the NVIDIA Container Toolkit on the host; then <code>deploy: resources: reservations: devices: [{driver: nvidia, count: 1, capabilities: [gpu]}]</code> (or the legacy <code>runtime: nvidia</code>). Ollama, Frigate (TensorRT), Jellyfin NVENC, Immich, and the whole AI chapter rely on it.</li>
+<li><strong>USB devices</strong> (Zigbee/Z-Wave sticks, Coral TPU): <code>devices: ["/dev/ttyUSB0:/dev/ttyUSB0"]</code> or, more robustly, by-id paths under <code>/dev/serial/by-id/</code>, which survive reboots and re-plugging.</li>
+<li><strong><code>privileged: true</code></strong> gives the container every device and capability. It is the lazy fix and a security hole. Almost nothing genuinely needs it; Home Assistant's container docs ask for it (for full device access) and people grant it — accept the trade-off consciously or run HAOS in a VM instead.</li>
+</ul>
+<h2 id="podman">Podman<a class="headerlink" href="#podman" title="Permanent link">#</a></h2>
+<p>Podman is Red Hat's daemonless, rootless-by-default container engine with a Docker-compatible CLI (<code>alias docker=podman</code> works for most things). Its differences from Docker are its selling points:</p>
+<ul>
+<li><strong>Rootless.</strong> Containers run as your unprivileged user; a container breakout yields your user, not root. Docker has a rootless mode too but it is not the default and has rough edges.</li>
+<li><strong>No daemon.</strong> Each container is a child of the user's process tree, managed by systemd. No single point of failure, no socket to protect.</li>
+<li><strong>Quadlets.</strong> Since Podman 4.4, you describe containers as systemd unit files (<code>~/.config/containers/systemd/vaultwarden.container</code>) and systemd starts, restarts, and depends them like any service. Elegant for people who like systemd; the <code>podlet</code> tool converts Compose files to Quadlets.</li>
+<li><strong>Compose support</strong> via <code>podman compose</code> (wrapping either <code>docker-compose</code> or <code>podman-compose</code>). Works for most stacks; edge cases exist, especially around networking and <code>depends_on</code> health conditions.</li>
+<li><strong>Pods</strong> — groups of containers sharing a network namespace, Kubernetes-style; <code>podman generate kube</code> and <code>podman play kube</code> bridge to Kubernetes YAML.</li>
+</ul>
+<p><strong>Pick Podman if:</strong> you run Fedora/RHEL-family hosts where it is native, you want rootless as the default posture, or you like the systemd integration. <strong>Stick with Docker if:</strong> you want zero friction with every project's documentation, GUI tools (Dockge, Portainer, Watchtower/Diun), and community help. The Docker-compatible surface is good but not perfect, and the self-hosting ecosystem's centre of gravity is firmly Docker.</p>
+<h2 id="kubernetes-when-and-which">Kubernetes: when, and which<a class="headerlink" href="#kubernetes-when-and-which" title="Permanent link">#</a></h2>
+<p>Kubernetes (k8s) is the industry standard for orchestrating containers across many machines: declarative desired-state, self-healing, rolling updates, service discovery, secrets, storage abstraction. It is also enormously more complex than Compose, and for a household's services on one to three machines, that complexity buys very little that Proxmox HA plus Compose does not.</p>
+<p><strong>Run Kubernetes at home if:</strong> you want to learn it (a genuinely good career reason), you already run it at work and want a matching lab, or you have many nodes and want workloads to reschedule automatically when one dies. <strong>Do not run it because</strong> you think it is what "real" infrastructure looks like — Compose is real infrastructure too, and most of the internet's small services run on it.</p>
+<p>Distributions suited to home use:</p>
+<ul>
+<li><strong>k3s</strong> (SUSE/Rancher) — a single-binary, lightweight, fully conformant Kubernetes with SQLite or embedded etcd, Traefik and a local-path storage provisioner included. Runs on a Pi. The most popular home-lab k8s by far.</li>
+<li><strong>Talos Linux</strong> (Sidero) — an immutable, API-only Linux distribution that <em>is</em> a Kubernetes node: no SSH, no shell, configured entirely through <code>talosctl</code> and machine configs. Security-focused and beloved by the GitOps crowd; steeper initial learning but very stable to operate.</li>
+<li><strong>MicroK8s</strong> (Canonical) — snap-packaged, add-ons for common components, easy on Ubuntu.</li>
+<li><strong>kind</strong> / <strong>minikube</strong> — single-node clusters for local development and learning; not for running services.</li>
+<li><strong>Kubeadm on Debian VMs</strong> — the "learn it properly" route, closest to the certification exams.</li>
+</ul>
+<p>The home-lab Kubernetes stack that has emerged as standard: <strong>Talos or k3s</strong> nodes on Proxmox VMs; <strong>Flux</strong> or <strong>Argo CD</strong> for GitOps (the cluster state lives in Git, the controller applies it); <strong>Longhorn</strong> or <strong>democratic-csi</strong> (against a TrueNAS box) or <strong>Rook-Ceph</strong> for persistent storage; <strong>MetalLB</strong> or <strong>kube-vip</strong> for LoadBalancer IPs on a LAN; <strong>Traefik</strong>, <strong>ingress-nginx</strong>, or <strong>Cilium</strong>'s Gateway API for ingress; <strong>cert-manager</strong> for TLS; <strong>External Secrets</strong> or <strong>Sealed Secrets</strong>; <strong>Renovate</strong> to bump chart and image versions via PRs. The "home-operations" community (a GitHub org and Discord) maintains a widely-copied template repository for exactly this. Budget several weekends to get there and expect to learn a great deal. <a href="../27-automation-iac/">Chapter 27</a> touches on the GitOps side.</p>
+<p><strong>Docker Swarm</strong> — Docker's own orchestrator — deserves a mention as the middle path: Compose-file syntax, multi-node scheduling, overlay networks, secrets, rolling updates, a fraction of Kubernetes' complexity. It is in maintenance mode (Docker Inc. has not invested in it for years) but works, and some people happily run three-node Swarms. It is a reasonable choice if you want multi-node without the k8s learning curve, with the caveat that its future is uncertain and the ecosystem around it is thin.</p>
+<h2 id="best-practice-checklist">Best-practice checklist<a class="headerlink" href="#best-practice-checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Docker installed from Docker's repository; <code>daemon.json</code> sets log rotation and a non-conflicting address pool.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> One directory per stack under a single root, in Git; <code>.env</code> and data directories gitignored.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Bind mounts for config and data; bulk data on the big storage mounted at consistent paths.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> SQLite-backed apps have their config on local disk, not NFS/SMB.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Image tags pinned to at least major version; a notifier (Diun) or Renovate in place; no blind <code>latest</code> on anything with a database.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> No ports published on <code>0.0.0.0</code> except the reverse proxy's 80/443 (and things that genuinely need host networking); web services reach the proxy via a shared Docker network.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> The Docker/<code>ufw</code> interaction understood and handled (<code>DOCKER-USER</code> rules or localhost binding).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> <code>PUID</code>/<code>PGID</code> or <code>user:</code> set to a dedicated non-root host user; <code>no-new-privileges: true</code>; memory limits on anything that might leak; <code>privileged: true</code> only where unavoidable and understood.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Healthchecks defined; something watches them (<a href="../12-monitoring/">Chapter 12</a>).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Backups cover <code>/opt/stacks</code> (or equivalent) and every bind-mounted data directory; databases dumped, not just file-copied (<a href="../11-backups/">Chapter 11</a>).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A snapshot or backup is taken before every update of a stateful service.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../04-os-and-hypervisors/">← 04. Operating Systems and Hypervisors</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/05-containers.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#what-a-container-is">What a container is</a></li>
+<li><a href="#docker-engine">Docker Engine</a><ul>
+<li><a href="#the-daemon-configuration">The daemon configuration</a></li>
+</ul>
+</li>
+<li><a href="#docker-compose">Docker Compose</a><ul>
+<li><a href="#anatomy-of-a-compose-file">Anatomy of a Compose file</a></li>
+<li><a href="#users-and-permissions-puidpgid">Users and permissions: PUID/PGID</a></li>
+<li><a href="#layout-on-disk">Layout on disk</a></li>
+<li><a href="#essential-commands">Essential commands</a></li>
+</ul>
+</li>
+<li><a href="#managing-many-stacks-guis-and-tools">Managing many stacks: GUIs and tools</a></li>
+<li><a href="#updates-the-hardest-operational-problem">Updates: the hardest operational problem</a><ul>
+<li><a href="#the-approaches">The approaches</a></li>
+<li><a href="#image-provenance">Image provenance</a></li>
+</ul>
+</li>
+<li><a href="#networking-in-depth">Networking in depth</a><ul>
+<li><a href="#the-default-bridge-and-compose-networks">The default bridge and Compose networks</a></li>
+<li><a href="#the-reverse-proxy-network-pattern">The reverse-proxy network pattern</a></li>
+<li><a href="#network-mode-host">network_mode: host</a></li>
+<li><a href="#network-mode-servicegluetun-the-vpn-sidecar">network_mode: "service:gluetun" (the VPN sidecar)</a></li>
+<li><a href="#macvlan-and-ipvlan">macvlan and ipvlan</a></li>
+<li><a href="#the-docker-and-firewall-problem">The Docker-and-firewall problem</a></li>
+</ul>
+</li>
+<li><a href="#storage-considerations">Storage considerations</a></li>
+<li><a href="#hardware-access">Hardware access</a></li>
+<li><a href="#podman">Podman</a></li>
+<li><a href="#kubernetes-when-and-which">Kubernetes: when, and which</a></li>
+<li><a href="#best-practice-checklist">Best-practice checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
