@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Networking Fundamentals for the Home Lab — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li class="active"><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 03 · ~4,651 words · 21 min read</div>
+    <article class="prose">
+      <h1 id="networking-fundamentals-for-the-home-lab">Networking Fundamentals for the Home Lab<a class="headerlink" href="#networking-fundamentals-for-the-home-lab" title="Permanent link">#</a></h1>
+<p>Networking is the subject that most often separates a home lab that works from one that is <em>understood</em>. You can run services for years on a flat network with an ISP router and never learn a thing about subnets, and many people do. But the moment you want to isolate IoT devices, run your own DNS, reach services by name with valid certificates, or connect from outside without exposing everything, you need the fundamentals. This chapter provides them, then covers the router and firewall platforms worth running.</p>
+<h2 id="the-mental-model">The mental model<a class="headerlink" href="#the-mental-model" title="Permanent link">#</a></h2>
+<p>A home network has, at minimum, these pieces:</p>
+<pre class="mermaid">flowchart LR
+    Internet((Internet)) --- Modem[Modem / ONT]
+    Modem --- Router[Router / Firewall&lt;br/&gt;NAT · DHCP · DNS forwarder]
+    Router --- Switch[Switch]
+    Switch --- AP[Wi-Fi AP]
+    Switch --- Server[Server / NAS]
+    Switch --- PC[Wired devices]
+    AP -.- Phones[Phones, laptops, IoT]</pre>
+<p>The <strong>modem</strong> (or ONT for fibre) converts the ISP's physical medium to Ethernet. The <strong>router</strong> sits between the ISP's network and yours: it gets one public IP address from the ISP, hands out private addresses to your devices, translates between them (NAT), and by default blocks all inbound connections (firewall). It usually also runs DHCP (assigning addresses) and a DNS forwarder. The <strong>switch</strong> connects wired devices at layer 2. <strong>Access points</strong> do the same for Wi-Fi.</p>
+<p>In an ISP-supplied "gateway," all of these are one box. The first upgrade most home labs make is to separate them: a dedicated router/firewall, a managed switch, and one or more access points. This is not required, but it is where control begins.</p>
+<h2 id="ip-addressing">IP addressing<a class="headerlink" href="#ip-addressing" title="Permanent link">#</a></h2>
+<h3 id="private-ranges">Private ranges<a class="headerlink" href="#private-ranges" title="Permanent link">#</a></h3>
+<p>Your internal network uses one of the private IPv4 ranges defined in RFC 1918:</p>
+<table>
+<thead>
+<tr>
+<th>Range</th>
+<th>CIDR</th>
+<th>Addresses</th>
+<th>Typical use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10.0.0.0 – 10.255.255.255</td>
+<td>10.0.0.0/8</td>
+<td>16.7 million</td>
+<td>Large or many-subnet labs; <code>10.0.VLAN.0/24</code> schemes</td>
+</tr>
+<tr>
+<td>172.16.0.0 – 172.31.255.255</td>
+<td>172.16.0.0/12</td>
+<td>1 million</td>
+<td>Less common at home; <strong>Docker's default range</strong></td>
+</tr>
+<tr>
+<td>192.168.0.0 – 192.168.255.255</td>
+<td>192.168.0.0/16</td>
+<td>65,536</td>
+<td>The consumer default: <code>192.168.0.0/24</code> or <code>192.168.1.0/24</code></td>
+</tr>
+</tbody>
+</table>
+<p>Two pieces of practical advice: first, <strong>avoid <code>192.168.0.0/24</code> and <code>192.168.1.0/24</code></strong> for your lab if you can. These are the defaults on nearly every consumer router, which means when you VPN home from a hotel or a friend's house, the remote network will often be the same subnet as yours and routing will break. <code>10.x.y.0/24</code> or <code>192.168.[20-250].0/24</code> avoids most collisions. Second, <strong>be aware of Docker's <code>172.17–172.31.x.x</code> usage</strong> — if your LAN or a VPN uses 172.16.0.0/12, you will eventually hit a conflict. You can change Docker's default address pool in <code>/etc/docker/daemon.json</code>.</p>
+<h3 id="subnets-and-cidr">Subnets and CIDR<a class="headerlink" href="#subnets-and-cidr" title="Permanent link">#</a></h3>
+<p>A <code>/24</code> network (255.255.255.0) has 256 addresses: <code>.0</code> is the network address, <code>.255</code> is broadcast, and <code>.1</code> through <code>.254</code> are usable. That is plenty for a home. Use <code>/24</code> everywhere unless you have a specific reason not to. When you segment into VLANs (below), each VLAN gets its own <code>/24</code>.</p>
+<p>A tidy convention: use the third octet as the VLAN ID. VLAN 10 is <code>10.0.10.0/24</code>, VLAN 20 is <code>10.0.20.0/24</code>. The router's interface on each is <code>.1</code>. Servers get static addresses in <code>.2–.49</code>; DHCP hands out <code>.100–.249</code>. When you see <code>10.0.20.115</code> in a log you instantly know it is a DHCP client on the IoT VLAN. This is arbitrary but worth adopting early.</p>
+<h3 id="static-vs-dhcp-reservations">Static vs DHCP reservations<a class="headerlink" href="#static-vs-dhcp-reservations" title="Permanent link">#</a></h3>
+<p>Servers need stable addresses. Two ways: configure a static IP on the server itself, or configure a <strong>DHCP reservation</strong> on the router that always hands the same IP to that MAC address. Reservations are better for almost everything — one place to look, easy to change, no risk of two machines claiming the same address. The exceptions are the router itself, the DHCP server if it is separate, and your DNS server (which must be reachable before DHCP has done its job — a chicken-and-egg problem if the DNS server is a DHCP client and the DHCP server needs DNS).</p>
+<h2 id="dhcp-and-dns-on-the-lan">DHCP and DNS on the LAN<a class="headerlink" href="#dhcp-and-dns-on-the-lan" title="Permanent link">#</a></h2>
+<p><strong>DHCP</strong> hands each device an IP, a subnet mask, a gateway (the router), and DNS server addresses. The DNS server setting is your lever for network-wide ad-blocking (<a href="../09-dns-adblock/">Chapter 9</a>): point DHCP at your Pi-hole or AdGuard Home and every device on the network uses it automatically.</p>
+<p><strong>Local DNS</strong> lets you refer to machines by name. Two layers:</p>
+<ol>
+<li>
+<p><strong>Hostname resolution</strong> for LAN devices: <code>nas.lan</code>, <code>proxmox.lan</code>. The DHCP server usually registers leases into DNS automatically (dnsmasq, which underlies Pi-hole and most routers, does this). Pick a local domain suffix: <code>.lan</code>, <code>.home.arpa</code> (the RFC 8375 official choice), or <code>.internal</code> (which ICANN reserved in 2024). Avoid <code>.local</code> — it is used by mDNS/Bonjour and causes conflicts.</p>
+</li>
+<li>
+<p><strong>Service names with real TLS</strong>: <code>jellyfin.example.com</code> resolving to your reverse proxy's LAN IP, with a valid Let's Encrypt certificate, even though the service is never exposed to the internet. This uses <strong>split-horizon DNS</strong>: your internal DNS server answers <code>jellyfin.example.com</code> → <code>10.0.10.5</code>, while the public internet either has no record or a different one. You own a real domain, so the certificate is real. <a href="../07-reverse-proxy-tls/">Chapter 7</a> covers the certificate side; <a href="../09-dns-adblock/">Chapter 9</a> covers the DNS side.</p>
+</li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Buy a real domain</p>
+<p>A USD 10/year domain from a registrar with a good API (Cloudflare, Porkbun, Namecheap, deSEC for a free option) is the single most useful purchase for a home lab after the hardware. It unlocks valid TLS certificates for internal services via DNS-01 challenges, makes remote access easier, and makes everything feel finished. You never have to point any public DNS record at your home IP.</p>
+</div>
+<h2 id="nat-port-forwarding-and-why-you-should-mostly-avoid-the-latter">NAT, port forwarding, and why you should mostly avoid the latter<a class="headerlink" href="#nat-port-forwarding-and-why-you-should-mostly-avoid-the-latter" title="Permanent link">#</a></h2>
+<p><strong>NAT (Network Address Translation)</strong> is the mechanism that lets every device on your LAN share one public IP. Outbound connections are rewritten to appear to come from the public IP; return traffic is mapped back. Inbound connections that nobody asked for have nowhere to go, and are dropped. This accidental firewall is the main reason home networks are not constantly compromised.</p>
+<p><strong>Port forwarding</strong> punches a deliberate hole: "inbound TCP 443 on the public IP → 10.0.10.5:443." This is how you expose a service to the internet. Every forwarded port is a service that must be secured, kept updated, and monitored forever. It is a real cost.</p>
+<p>The modern advice, which this guide repeats in several chapters: <strong>most people should forward zero ports.</strong> Use a mesh VPN (Tailscale, NetBird, ZeroTier, or a self-hosted WireGuard) for your own access (<a href="../08-remote-access-vpn/">Chapter 8</a>). If you must expose something publicly — a website, a service for people who will not install a VPN — expose exactly one port (443) to a hardened reverse proxy with authentication in front of it, and nothing else. Never forward SSH, RDP, a NAS web UI, a database, or a management interface.</p>
+<p><strong>UPnP</strong> lets devices ask the router to open ports for them automatically. It is convenient for game consoles and a security liability for everything else — a compromised device can open whatever it likes. Disable it on any network with servers.</p>
+<h3 id="double-nat">Double NAT<a class="headerlink" href="#double-nat" title="Permanent link">#</a></h3>
+<p>If your ISP's gateway does NAT and you put your own router behind it doing NAT again, you have double NAT. It works for outbound traffic and breaks port forwarding, UPnP, and some VPN protocols. Fix it by putting the ISP gateway in <strong>bridge mode</strong> (passes the public IP through to your router) if possible; otherwise, set the ISP gateway's DMZ to your router's WAN IP so all inbound traffic reaches it.</p>
+<h3 id="cgnat">CGNAT<a class="headerlink" href="#cgnat" title="Permanent link">#</a></h3>
+<p><strong>Carrier-grade NAT</strong> is when the ISP itself NATs you: your router's WAN address is in <code>100.64.0.0/10</code> (or sometimes an RFC 1918 range), and the public address you appear from is shared with other customers. You cannot forward ports because you do not own the public IP. Cellular home internet is nearly always CGNAT; many fibre and cable ISPs are moving there as IPv4 addresses run out.</p>
+<p>Detection: compare your router's WAN IP with the address <code>curl ifconfig.me</code> reports from a machine behind it. If they differ (and the router's is in <code>100.64.0.0/10</code> or <code>10.x</code>), you are behind CGNAT.</p>
+<p>It is not the end of the world. Options, in rough order of preference:</p>
+<ol>
+<li><strong>Mesh VPN</strong> (Tailscale/Headscale, NetBird, ZeroTier) — works through CGNAT via NAT traversal and relay servers. Solves personal remote access completely.</li>
+<li><strong>Cloudflare Tunnel</strong> or similar — an outbound connection from your lab to Cloudflare's edge, which then proxies public HTTP(S) traffic to you. No inbound ports needed. Free tier is generous. Trade-off: Cloudflare terminates TLS and sees your traffic; their ToS restricts non-HTML content (video streaming through the tunnel technically violates it).</li>
+<li><strong>A cheap VPS as a relay</strong> — rent a USD 4/month VPS with a public IP, connect your lab to it via WireGuard, and forward ports from the VPS to your lab through the tunnel. Pangolin, the fastest-growing self-hosted option for this pattern, packages it nicely (<a href="../08-remote-access-vpn/">Chapter 8</a>). Full control, small cost, some latency.</li>
+<li><strong>IPv6</strong> — if your ISP provides it, your services have globally routable addresses regardless of IPv4 CGNAT. Clients need IPv6 too, which is not universal.</li>
+<li><strong>Ask the ISP</strong> for a public IPv4. Some provide one free or for USD 2–5/month.</li>
+</ol>
+<h2 id="ipv6">IPv6<a class="headerlink" href="#ipv6" title="Permanent link">#</a></h2>
+<p>IPv6 is the current version of the Internet Protocol. Its 128-bit addresses eliminate scarcity — your ISP will typically delegate a <code>/56</code> or <code>/64</code> prefix to your home, giving every device its own globally routable address. There is no NAT in the usual sense; the firewall is what protects you, not address hiding.</p>
+<p>Practical points for the home lab:</p>
+<ul>
+<li><strong>Enable it on your router</strong> if your ISP supports it. The router requests a prefix via DHCPv6 prefix delegation and advertises it to the LAN via Router Advertisements (RA/SLAAC). Devices self-assign addresses.</li>
+<li><strong>Your firewall rules must cover IPv6.</strong> A default-deny inbound rule on IPv6 is as important as NAT is on IPv4. Every decent router does this by default; verify.</li>
+<li><strong>Prefixes may change</strong> when your connection resets, which is annoying for static addressing. Use ULA (<code>fd00::/8</code>, the IPv6 equivalent of RFC 1918) for internal addressing alongside the global prefix, or use the DNS name rather than the address everywhere.</li>
+<li><strong>Docker</strong> does not enable IPv6 in containers by default; enabling it is a few lines in <code>daemon.json</code> but adds complexity. Most services work fine with IPv4-only inside Docker even when the host has IPv6.</li>
+<li><strong>Testing</strong>: <code>test-ipv6.com</code> from a client tells you whether IPv6 works end to end.</li>
+</ul>
+<p>Many capable self-hosters run IPv4-only internally and enable IPv6 only on the WAN side for outbound. That is a defensible simplification. The reverse — leaning on IPv6 to escape CGNAT for inbound access — is also viable but requires every client network you connect from to have IPv6.</p>
+<h2 id="vlans-and-network-segmentation">VLANs and network segmentation<a class="headerlink" href="#vlans-and-network-segmentation" title="Permanent link">#</a></h2>
+<p>A <strong>VLAN</strong> (Virtual LAN, IEEE 802.1Q) lets one physical switch carry several logically separate networks. Each Ethernet frame is tagged with a VLAN ID (1–4094); switch ports are configured to be members of specific VLANs; the router has a virtual interface on each VLAN and is the only path between them. Traffic between VLANs passes through the router's firewall rules, which is the point.</p>
+<h3 id="why-segment">Why segment<a class="headerlink" href="#why-segment" title="Permanent link">#</a></h3>
+<p>Three motivations, in order of how often they matter at home:</p>
+<ol>
+<li><strong>Untrusted devices.</strong> The USD 15 smart plug from a brand you have never heard of, the smart TV that phones home, the robot vacuum, the doorbell camera. These devices have terrible security, receive updates rarely or never, and should not be able to reach your NAS. Put them on an IoT VLAN that can reach the internet (or not, per device) and nothing internal except perhaps Home Assistant.</li>
+<li><strong>Guests.</strong> Visitors' phones get a guest VLAN with internet access only. Most Wi-Fi APs can map a separate SSID to a VLAN.</li>
+<li><strong>Blast radius.</strong> If a service you expose to the internet is compromised, an attacker on a DMZ VLAN can reach only what the firewall permits — not your hypervisor's management interface or your backup server.</li>
+</ol>
+<h3 id="a-common-layout">A common layout<a class="headerlink" href="#a-common-layout" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>VLAN</th>
+<th>Name</th>
+<th>Subnet</th>
+<th>Contains</th>
+<th>Can reach</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 (default)</td>
+<td>Management</td>
+<td>10.0.1.0/24</td>
+<td>Router, switches, APs, hypervisor management, IPMI</td>
+<td>Everything (but nothing can reach <em>it</em> except from Trusted)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Trusted / LAN</td>
+<td>10.0.10.0/24</td>
+<td>Your PCs, phones, laptops</td>
+<td>Everything</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Servers</td>
+<td>10.0.20.0/24</td>
+<td>NAS, Docker hosts, VMs providing internal services</td>
+<td>Internet; each other; <strong>not</strong> Trusted or Management (initiated)</td>
+</tr>
+<tr>
+<td>30</td>
+<td>IoT</td>
+<td>10.0.30.0/24</td>
+<td>Smart home devices, TVs, printers</td>
+<td>Internet (selectively); Home Assistant on Servers VLAN; nothing else</td>
+</tr>
+<tr>
+<td>40</td>
+<td>Guest</td>
+<td>10.0.40.0/24</td>
+<td>Visitors</td>
+<td>Internet only</td>
+</tr>
+<tr>
+<td>50</td>
+<td>DMZ</td>
+<td>10.0.50.0/24</td>
+<td>Reverse proxy, anything internet-exposed</td>
+<td>Internet; specific backend services on Servers VLAN only</td>
+</tr>
+<tr>
+<td>60</td>
+<td>Cameras</td>
+<td>10.0.60.0/24</td>
+<td>IP cameras</td>
+<td><strong>No internet</strong>; Frigate/NVR on Servers VLAN only</td>
+</tr>
+</tbody>
+</table>
+<p>That is more VLANs than most people need. A useful minimal version is three: Trusted, Servers+Management, IoT+Guest. Start there. Add DMZ when you expose something. Add Cameras when you buy cameras.</p>
+<h3 id="the-mdnsdiscovery-problem">The mDNS/discovery problem<a class="headerlink" href="#the-mdnsdiscovery-problem" title="Permanent link">#</a></h3>
+<p>Many consumer conveniences — Chromecast, AirPlay, Spotify Connect, printer discovery, HomeKit — rely on multicast DNS (mDNS/Bonjour) and SSDP, which do not cross VLAN boundaries. If your phone on Trusted needs to cast to a Chromecast on IoT, you need an <strong>mDNS reflector/repeater</strong> (Avahi in reflector mode, or the built-in option on OPNsense/pfSense/UniFi) to relay discovery packets between the two VLANs, plus firewall rules allowing the actual traffic. This is the single most common frustration with segmentation and it is solvable; plan for it.</p>
+<h3 id="hardware-requirements">Hardware requirements<a class="headerlink" href="#hardware-requirements" title="Permanent link">#</a></h3>
+<p>You need: a <strong>managed switch</strong> that supports 802.1Q tagging; a <strong>router</strong> that can create VLAN interfaces and firewall between them (OPNsense, pfSense, OpenWrt, UniFi gateways, MikroTik, Firewalla, and most prosumer routers can — ISP gateways typically cannot); and <strong>access points</strong> that can broadcast multiple SSIDs mapped to different VLANs (UniFi, Omada, Aruba Instant On, OpenWrt-flashed APs, most business-class APs).</p>
+<p><strong>Trunk vs access ports</strong>: a port carrying multiple tagged VLANs (to the router, another switch, or an AP) is a <em>trunk</em>. A port that puts untagged traffic onto one VLAN (for an end device like a NAS) is an <em>access</em> port. Configure the switch accordingly. The <strong>native/untagged VLAN</strong> on a trunk carries frames without tags; keep it consistent and consider making it something unused to avoid confusion.</p>
+<p><strong>Router-on-a-stick</strong>: with one physical connection from the router to the switch carrying all VLANs as tags, all inter-VLAN traffic traverses that one link twice (in and out). At 1 GbE this can bottleneck NAS traffic between VLANs; a 2.5/10 GbE link to the router, or keeping heavy traffic within one VLAN, avoids it.</p>
+<h3 id="docker-networking-and-vlans">Docker networking and VLANs<a class="headerlink" href="#docker-networking-and-vlans" title="Permanent link">#</a></h3>
+<p>Containers on a Docker host normally sit on a private bridge network inside the host and reach the outside through the host's IP. This is fine and is how most people run. If you want a specific container (say, Home Assistant, which wants to see mDNS and DHCP broadcasts on the IoT VLAN, or a DNS server that needs its own IP) to appear as a first-class device on a specific VLAN, use a <strong>macvlan</strong> or <strong>ipvlan</strong> Docker network bound to a VLAN sub-interface (<code>eth0.30</code>). The container gets its own MAC/IP on that VLAN. The catch: by default the Docker host cannot talk to its own macvlan containers; a small routing workaround exists. <a href="../05-containers/">Chapter 5</a> covers the mechanics.</p>
+<h2 id="firewalls">Firewalls<a class="headerlink" href="#firewalls" title="Permanent link">#</a></h2>
+<p>Every router has a firewall; the question is how much control you have over it. The default consumer posture — allow all outbound, block all unsolicited inbound — is a fine starting point. Segmentation adds inter-VLAN rules. The principles:</p>
+<ul>
+<li><strong>Default deny between VLANs</strong>, then allow specific flows. Rules are processed top-down, first match wins, on most platforms.</li>
+<li><strong>Allow established/related</strong> so return traffic for permitted connections works.</li>
+<li><strong>Think in terms of who initiates.</strong> "IoT can't reach Servers" but "Servers can reach IoT" means Home Assistant can poll a device but the device cannot connect to Home Assistant unprompted. Sometimes you want the reverse; be explicit.</li>
+<li><strong>Log denied traffic</strong> at first; you will discover things you did not know were talking. Then quieten it.</li>
+<li><strong>Aliases/groups</strong> for IPs and ports keep rule sets readable. "Allow IoT → HomeAssistant:8123" not "Allow 10.0.30.0/24 → 10.0.20.14:8123."</li>
+<li><strong>Egress filtering</strong> — blocking outbound traffic — is where you can prevent IoT devices from phoning home, force all DNS through your resolver (block outbound port 53 and 853 except from your DNS server — this also defeats devices with hardcoded <code>8.8.8.8</code>), and block outbound SMTP from anything but your mail server. It is more work and more breakage; do it deliberately.</li>
+</ul>
+<p>Host-based firewalls (<code>ufw</code>, <code>firewalld</code>, <code>nftables</code> directly) on each server add a layer but interact badly with Docker, which manipulates iptables/nftables itself and will happily publish container ports around your ufw rules. See <a href="../05-containers/">Chapter 5</a> and <a href="../13-security/">Chapter 13</a> for the Docker-and-firewall problem.</p>
+<h2 id="router-and-firewall-platforms">Router and firewall platforms<a class="headerlink" href="#router-and-firewall-platforms" title="Permanent link">#</a></h2>
+<p>The ISP gateway works. Everything below is what you replace it with when you want VLANs, real firewall control, VPN termination, and DNS/DHCP you can shape.</p>
+<h3 id="opnsense">OPNsense<a class="headerlink" href="#opnsense" title="Permanent link">#</a></h3>
+<p>A FreeBSD-based firewall distribution forked from pfSense in 2015, with a modern web UI, a friendly release cadence (two major releases a year, frequent point releases), and a plugin system. Runs on any x86 machine with two or more NICs — an N100 mini PC with 2–4 Intel/Realtek 2.5 GbE ports (USD 150–250) is the community standard, and idles at 8–12 W. Features: stateful firewall, VLANs, DHCP (Kea or ISC), Unbound DNS with blocklists, WireGuard and OpenVPN and IPsec, HAProxy and Nginx and Caddy plugins for reverse proxying, CrowdSec and Suricata/Zenarmor for IDS/IPS, dynamic DNS, traffic shaping, and multi-WAN failover.</p>
+<p><strong>Pick it if:</strong> you want the most capable, best-documented, most popular open-source firewall with an active community and no licensing games. This is the guide's default recommendation.</p>
+<p><strong>Watch out for:</strong> FreeBSD has fewer drivers than Linux — Intel and most Realtek NICs work well; exotic Wi-Fi does not (run APs separately). The UI is dense. IDS/IPS on a small box eats CPU.</p>
+<h3 id="pfsense-ce-plus">pfSense CE / Plus<a class="headerlink" href="#pfsense-ce-plus" title="Permanent link">#</a></h3>
+<p>The older sibling. pfSense CE (Community Edition) is open source and functionally similar to OPNsense; pfSense Plus is Netgate's commercial version, free for home use on your own hardware with registration, with a more polished feature set. Netgate's community relations have been strained over the years (the 2021 WireGuard controversy, moves that pushed users towards Plus), which is why much of the community migrated to OPNsense. It remains a mature, capable platform, and Netgate's own appliances (the 1100, 2100, 4200) are decent hardware.</p>
+<p><strong>Pick it if:</strong> you already know it, or you are buying a Netgate appliance.</p>
+<h3 id="openwrt">OpenWrt<a class="headerlink" href="#openwrt" title="Permanent link">#</a></h3>
+<p>A Linux distribution for routers and embedded devices. Runs on hundreds of consumer routers and access points, plus x86 and ARM boards. Its strength is breadth of hardware support including Wi-Fi radios, which the BSD-based firewalls lack. Small footprint, package manager (<code>opkg</code>/<code>apk</code>), LuCI web UI, everything the others have (VLANs, firewall via <code>fw4</code>/nftables, WireGuard, DHCP/DNS via dnsmasq, Adblock, SQM traffic shaping — OpenWrt's <code>cake</code> SQM is the best bufferbloat fix available). Configuration is file-based and scriptable.</p>
+<p><strong>Pick it if:</strong> you want one box to be router, firewall, and Wi-Fi AP; you want to reflash an existing router; or you want a very low-power ARM router (GL.iNet ships OpenWrt-based routers commercially — the Flint 2 / Flint 3 are popular). Also the best choice for turning a cheap consumer AP into a VLAN-aware AP.</p>
+<p><strong>Watch out for:</strong> consumer router hardware is slow; a 2015 router will not route gigabit with SQM. The upgrade process across major versions can require reconfiguration. Documentation is a wiki of varying quality.</p>
+<h3 id="ubiquiti-unifi">Ubiquiti UniFi<a class="headerlink" href="#ubiquiti-unifi" title="Permanent link">#</a></h3>
+<p>A hardware-plus-software ecosystem: gateways (UCG-Ultra, UDM-Pro/SE, UXG), switches, APs, cameras, all managed from one controller UI. The appeal is the integrated experience — VLANs, SSIDs, firewall rules, and device adoption all in one polished dashboard, with an app. The gateways run Linux and are capable; the APs are excellent value for Wi-Fi.</p>
+<p><strong>Pick it if:</strong> you want a coherent ecosystem, prosumer polish, and good Wi-Fi, and are willing to accept Ubiquiti's product decisions (features come and go; the firewall UI is less powerful than OPNsense's; some features push you towards their cloud account, though local-only operation is possible).</p>
+<p><strong>Watch out for:</strong> the gateway is the weakest part of the ecosystem for people who want deep control. A common pattern is <strong>UniFi APs and switches with an OPNsense router</strong> — you get the Wi-Fi and switching polish with a serious firewall. The UniFi Network Application (controller) can be self-hosted in Docker for the APs and switches alone.</p>
+<h3 id="tp-link-omada">TP-Link Omada<a class="headerlink" href="#tp-link-omada" title="Permanent link">#</a></h3>
+<p>UniFi's direct competitor: controller-based, gateways + switches + APs, cheaper, less polished, adequate. The self-hosted controller runs in Docker. The same "APs and switches from Omada, router from OPNsense" hybrid works.</p>
+<h3 id="mikrotik-routeros">MikroTik RouterOS<a class="headerlink" href="#mikrotik-routeros" title="Permanent link">#</a></h3>
+<p>MikroTik makes remarkably capable, remarkably cheap hardware (the hEX, RB5009, CCR series, the CRS switch line) running RouterOS, which exposes essentially every feature of a carrier-grade router through a WinBox/web UI and a CLI. The learning curve is real — RouterOS thinks in terms that assume you know networking — but for the money nothing else comes close, and the community has extensive documentation. RouterOS v7 added WireGuard, container support, and a modern routing stack.</p>
+<p><strong>Pick it if:</strong> you want to learn real networking, you want 10 GbE switching cheaply (the CRS3xx series), or you have specific needs (BGP, MPLS, advanced QoS) that prosumer gear does not meet.</p>
+<p><strong>Watch out for:</strong> the default firewall on a fresh RouterOS install is <em>not</em> secure; you must configure it. Firmware updates have occasionally introduced bugs; the stable channel is stable, the testing channel is not.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>VyOS</strong>: a Linux-based router OS with a Junos-like CLI, popular with network engineers; rolling releases free, LTS builds behind a subscription/contribution as of recent years.</li>
+<li><strong>Firewalla</strong>: a consumer-friendly appliance with a mobile-app-first design; good for people who want segmentation and ad-blocking without a web UI.</li>
+<li><strong>IPFire</strong>, <strong>Sophos XG Home</strong>, <strong>Untangle/Arista NG Firewall</strong>: viable niche options with smaller communities.</li>
+<li><strong>A Linux box with nftables</strong>: entirely possible; Debian with <code>nftables</code>, <code>kea</code>/<code>dnsmasq</code>, and <code>systemd-networkd</code> makes a fine router for someone comfortable with config files. No web UI is the feature and the bug.</li>
+</ul>
+<h3 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>OPNsense</th>
+<th>pfSense</th>
+<th>OpenWrt</th>
+<th>UniFi</th>
+<th>MikroTik</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Base</td>
+<td>FreeBSD</td>
+<td>FreeBSD</td>
+<td>Linux</td>
+<td>Linux</td>
+<td>Linux (RouterOS)</td>
+</tr>
+<tr>
+<td>Licence</td>
+<td>BSD (open)</td>
+<td>CE: Apache; Plus: proprietary</td>
+<td>GPL (open)</td>
+<td>Proprietary</td>
+<td>Proprietary</td>
+</tr>
+<tr>
+<td>Hardware</td>
+<td>Your x86</td>
+<td>Your x86 or Netgate</td>
+<td>Routers/APs/x86/ARM</td>
+<td>Ubiquiti only</td>
+<td>MikroTik only</td>
+</tr>
+<tr>
+<td>Web UI</td>
+<td>Very good</td>
+<td>Good</td>
+<td>Good (LuCI)</td>
+<td>Excellent</td>
+<td>Functional</td>
+</tr>
+<tr>
+<td>VLAN/firewall depth</td>
+<td>Deep</td>
+<td>Deep</td>
+<td>Deep</td>
+<td>Moderate</td>
+<td>Very deep</td>
+</tr>
+<tr>
+<td>Wi-Fi on the router</td>
+<td>No</td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes (gateways with radios)</td>
+<td>Some models</td>
+</tr>
+<tr>
+<td>Learning curve</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Low</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Idle power (typical)</td>
+<td>8–15 W (N100)</td>
+<td>8–15 W</td>
+<td>3–10 W</td>
+<td>5–15 W</td>
+<td>3–20 W</td>
+</tr>
+</tbody>
+</table>
+<h2 id="wi-fi">Wi-Fi<a class="headerlink" href="#wi-fi" title="Permanent link">#</a></h2>
+<p>Wi-Fi is how most devices connect, and it is a separate skill. Brief guidance:</p>
+<ul>
+<li><strong>Separate the AP from the router.</strong> Dedicated APs (UniFi U6/U7 series, TP-Link Omada EAP series, Aruba Instant On, Ruckus Unleashed used, or OpenWrt on a good consumer AP) are better radios in better positions than anything built into a router in a cupboard.</li>
+<li><strong>Multiple SSIDs mapped to VLANs</strong> (Trusted, IoT, Guest) is the standard segmentation approach. Most 2.4 GHz-only IoT devices will be happier on a 2.4 GHz-only IoT SSID.</li>
+<li><strong>Wi-Fi 6 (802.11ax)</strong> is the current sweet spot; Wi-Fi 6E adds the 6 GHz band; Wi-Fi 7 is available and improving. Client support lags; the AP matters less than placement and channel planning.</li>
+<li><strong>Wire everything that can be wired.</strong> Every device on Ethernet is a device not competing for airtime.</li>
+<li><strong>PoE</strong> (802.3af/at) powers APs and cameras over the Ethernet cable; a PoE switch or injector removes the need for a power outlet at the AP's location.</li>
+<li>Mesh systems (Eero, Deco, Orbi, Google/Nest Wifi) are fine for people who do not want VLANs and are limiting for people who do.</li>
+</ul>
+<h2 id="cabling-and-physical-layer">Cabling and physical layer<a class="headerlink" href="#cabling-and-physical-layer" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Cat 6 or Cat 6A</strong>. Cat 6 does 10 GbE to 55 m; Cat 6A to 100 m. Cat 5e does 2.5 GbE fine and 1 GbE always. Do not bother with Cat 7/8 for home.</li>
+<li><strong>Solid-core cable for in-wall runs, stranded for patch cables.</strong> Terminate solid core in keystone jacks/patch panels, not RJ45 plugs.</li>
+<li><strong>Fibre</strong> (single-mode LC with 10G-LR optics, or multi-mode OM3/OM4 with SR optics) for 10 GbE runs longer than a DAC, or for electrical isolation between buildings. Optics are cheap on the used market (FS.com for new).</li>
+<li><strong>Label everything.</strong> Both ends of every cable.</li>
+<li><strong>A patch panel</strong> is not required but makes a rack sane.</li>
+<li>Test long runs with a cable tester; a USD 20 tester catches miswires, and <code>ethtool</code> on Linux shows negotiated speed and errors (<code>ethtool -S eth0</code> — rising <code>rx_crc_errors</code> means a bad cable).</li>
+</ul>
+<h2 id="useful-diagnostics">Useful diagnostics<a class="headerlink" href="#useful-diagnostics" title="Permanent link">#</a></h2>
+<p>Every self-hoster eventually needs these:</p>
+<div class="highlight"><pre><span></span><code>ip<span class="w"> </span>addr<span class="w">                  </span><span class="c1"># interfaces and addresses</span>
+ip<span class="w"> </span>route<span class="w">                 </span><span class="c1"># routing table; &#39;default via&#39; is your gateway</span>
+ip<span class="w"> </span>-6<span class="w"> </span>route<span class="w">              </span><span class="c1"># same for IPv6</span>
+ping<span class="w"> </span>-c4<span class="w"> </span><span class="m">10</span>.0.10.1<span class="w">       </span><span class="c1"># reachability</span>
+ping<span class="w"> </span>-c4<span class="w"> </span><span class="m">1</span>.1.1.1<span class="w">         </span><span class="c1"># internet reachability without DNS</span>
+ping<span class="w"> </span>-c4<span class="w"> </span>one.one.one.one<span class="w"> </span><span class="c1"># DNS + internet</span>
+dig<span class="w"> </span>@10.0.20.5<span class="w"> </span>jellyfin.example.com<span class="w">   </span><span class="c1"># query a specific DNS server</span>
+resolvectl<span class="w"> </span>status<span class="w">        </span><span class="c1"># systemd-resolved&#39;s view of DNS config</span>
+ss<span class="w"> </span>-tulpn<span class="w">                </span><span class="c1"># what is listening on this host</span>
+traceroute<span class="w"> </span><span class="m">1</span>.1.1.1<span class="w"> </span>/<span class="w"> </span>mtr<span class="w"> </span><span class="m">1</span>.1.1.1<span class="w">      </span><span class="c1"># path and per-hop loss</span>
+tcpdump<span class="w"> </span>-i<span class="w"> </span>eth0<span class="w"> </span>port<span class="w"> </span><span class="m">53</span><span class="w">  </span><span class="c1"># watch DNS traffic live</span>
+nmap<span class="w"> </span>-sn<span class="w"> </span><span class="m">10</span>.0.30.0/24<span class="w">    </span><span class="c1"># who is on the IoT VLAN</span>
+ethtool<span class="w"> </span>eth0<span class="w">             </span><span class="c1"># link speed, duplex</span>
+iperf3<span class="w"> </span>-s<span class="w"> </span>/<span class="w"> </span>iperf3<span class="w"> </span>-c<span class="w"> </span>host<span class="w">   </span><span class="c1"># measure actual throughput between two machines</span>
+</code></pre></div>
+<h2 id="networking-checklist">Networking checklist<a class="headerlink" href="#networking-checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Chosen a LAN subnet that is not <code>192.168.0.0/24</code> or <code>192.168.1.0/24</code>.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Servers have DHCP reservations (or documented static IPs); DNS and DHCP servers have static IPs.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Know whether you have a public IPv4, CGNAT, and/or IPv6; remote access strategy chosen accordingly.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> UPnP disabled.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Zero ports forwarded until a specific, justified need exists; when it does, exactly one (443) to a reverse proxy.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A managed switch and a VLAN-capable router/firewall, if segmentation is desired.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> At minimum: IoT/untrusted devices on a separate VLAN from servers and personal devices.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Default-deny inter-VLAN policy with specific allows; IPv6 inbound default-deny verified.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> DNS for the LAN under your control (see <a href="../09-dns-adblock/">Chapter 9</a>).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A real domain registered; local DNS suffix chosen (<code>home.arpa</code>, <code>internal</code>, or <code>lan</code>; not <code>.local</code>).</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Everything labelled; a diagram or table of VLANs, subnets, and IPs saved with your documentation.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../02-hardware/">← 02. Hardware: Choosing What to Run It On</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/03-networking.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#the-mental-model">The mental model</a></li>
+<li><a href="#ip-addressing">IP addressing</a><ul>
+<li><a href="#private-ranges">Private ranges</a></li>
+<li><a href="#subnets-and-cidr">Subnets and CIDR</a></li>
+<li><a href="#static-vs-dhcp-reservations">Static vs DHCP reservations</a></li>
+</ul>
+</li>
+<li><a href="#dhcp-and-dns-on-the-lan">DHCP and DNS on the LAN</a></li>
+<li><a href="#nat-port-forwarding-and-why-you-should-mostly-avoid-the-latter">NAT, port forwarding, and why you should mostly avoid the latter</a><ul>
+<li><a href="#double-nat">Double NAT</a></li>
+<li><a href="#cgnat">CGNAT</a></li>
+</ul>
+</li>
+<li><a href="#ipv6">IPv6</a></li>
+<li><a href="#vlans-and-network-segmentation">VLANs and network segmentation</a><ul>
+<li><a href="#why-segment">Why segment</a></li>
+<li><a href="#a-common-layout">A common layout</a></li>
+<li><a href="#the-mdnsdiscovery-problem">The mDNS/discovery problem</a></li>
+<li><a href="#hardware-requirements">Hardware requirements</a></li>
+<li><a href="#docker-networking-and-vlans">Docker networking and VLANs</a></li>
+</ul>
+</li>
+<li><a href="#firewalls">Firewalls</a></li>
+<li><a href="#router-and-firewall-platforms">Router and firewall platforms</a><ul>
+<li><a href="#opnsense">OPNsense</a></li>
+<li><a href="#pfsense-ce-plus">pfSense CE / Plus</a></li>
+<li><a href="#openwrt">OpenWrt</a></li>
+<li><a href="#ubiquiti-unifi">Ubiquiti UniFi</a></li>
+<li><a href="#tp-link-omada">TP-Link Omada</a></li>
+<li><a href="#mikrotik-routeros">MikroTik RouterOS</a></li>
+<li><a href="#others">Others</a></li>
+<li><a href="#comparison">Comparison</a></li>
+</ul>
+</li>
+<li><a href="#wi-fi">Wi-Fi</a></li>
+<li><a href="#cabling-and-physical-layer">Cabling and physical layer</a></li>
+<li><a href="#useful-diagnostics">Useful diagnostics</a></li>
+<li><a href="#networking-checklist">Networking checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
