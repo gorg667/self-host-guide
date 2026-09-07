@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home Automation — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li class="active"><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 19 · ~3,896 words · 17 min read</div>
+    <article class="prose">
+      <h1 id="home-automation">Home Automation<a class="headerlink" href="#home-automation" title="Permanent link">#</a></h1>
+<p>Home automation is where a home lab stops being about files and starts controlling the physical world: lights that respond to presence, heating that follows the weather forecast, cameras that recognise a person but ignore the cat, a doorbell that announces itself on every speaker, and none of it dependent on a cloud that can be shut down or breached. <strong>Home Assistant</strong> is the centre of gravity — the most active open-source project on GitHub in some years — and this chapter covers it in depth: how to run it, the radio protocols (Zigbee, Z-Wave, Thread/Matter, Wi-Fi, Bluetooth) and the software that bridges them (Zigbee2MQTT, ZHA, Z-Wave JS), MQTT and Mosquitto, ESPHome for DIY devices, cameras and NVR with Frigate and Scrypted, voice assistants, Music Assistant, and the design principles that keep a smart home from becoming a dumb one.</p>
+<h2 id="home-assistant">Home Assistant<a class="headerlink" href="#home-assistant" title="Permanent link">#</a></h2>
+<p>Home Assistant (HA) is an open-source (Apache 2.0) home automation platform, Python-based, developed by Nabu Casa (a company founded by the project's creators, funded by an optional subscription) and thousands of contributors. It integrates with <strong>~3,000 devices and services</strong> — every major smart-home brand, most cloud services, media players, weather, calendars, presence, and your own DIY hardware — and provides automations (visual editor or YAML), scripts, scenes, dashboards (Lovelace, highly customisable), energy monitoring, voice control (local or cloud), a mobile app with presence detection and notifications, and a huge add-on and custom-integration ecosystem (HACS).</p>
+<h3 id="installation-methods">Installation methods<a class="headerlink" href="#installation-methods" title="Permanent link">#</a></h3>
+<p>This matters more than for any other service in the guide, because HA's install method determines which features you get.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>What it is</th>
+<th>Add-ons (Supervisor)</th>
+<th>Backups/updates in UI</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Home Assistant OS (HAOS)</strong></td>
+<td>A dedicated appliance OS (buildroot-based) running HA in Docker with the <strong>Supervisor</strong></td>
+<td><strong>Yes</strong></td>
+<td><strong>Yes</strong></td>
+<td><strong>Most people.</strong> Run as a VM on Proxmox, or on a Pi/Green/Yellow/ODROID</td>
+</tr>
+<tr>
+<td><strong>Home Assistant Container</strong></td>
+<td>HA alone in a Docker container on your existing host</td>
+<td>No</td>
+<td>Backups yes; updates via image</td>
+<td>People who run Mosquitto, Zigbee2MQTT, etc. as their own Compose services anyway</td>
+</tr>
+<tr>
+<td><strong>Home Assistant Supervised</strong></td>
+<td>Supervisor on a Debian host you manage</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Rarely; strict requirements; not recommended</td>
+</tr>
+<tr>
+<td><strong>Home Assistant Core</strong></td>
+<td>Python venv</td>
+<td>No</td>
+<td>No</td>
+<td>Developers</td>
+</tr>
+</tbody>
+</table>
+<p><strong>HAOS as a Proxmox VM</strong> is the community's default (the Proxmox community helper script creates one in a minute): you get the full add-on store (Mosquitto, Zigbee2MQTT, Z-Wave JS UI, ESPHome, Node-RED, Frigate, Music Assistant, Piper/Whisper, Studio Code Server, Samba, Terminal, Tailscale — all one-click), the built-in backup system, OS/Supervisor/Core updates from the UI, and USB passthrough for radios. Give it 2 vCPU, 4 GB RAM, 32 GB disk. Pass through the Zigbee/Z-Wave USB sticks (or, better, use network coordinators — below).</p>
+<p><strong>Container</strong> is right if you already run Docker Compose and prefer to manage MQTT/Zigbee2MQTT/Frigate as your own stacks with your own reverse proxy and backups — HA becomes one more service. You lose the add-on store (irrelevant, since you run those things yourself) and gain uniformity with the rest of your lab. Either is fine; the guide leans HAOS-in-a-VM for households and Container for people who already run everything in Compose.</p>
+<p><strong>Hardware</strong>: HA is light — a Pi 4 works; a Pi 5, an N100, or a VM with 2 cores and 4 GB is comfortable. Nabu Casa sells <strong>Home Assistant Green</strong> (~USD 100, an appliance) and <strong>Home Assistant Yellow</strong> (with a Zigbee/Thread radio built in) for people who want a box. Storage: <strong>not a microSD card</strong> for anything long-term — HA's database (SQLite by default) writes constantly and kills cards; use an SSD (USB or NVMe HAT on a Pi) or a VM disk.</p>
+<h3 id="key-concepts">Key concepts<a class="headerlink" href="#key-concepts" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Integrations</strong> connect to devices/services and create <strong>entities</strong> (a light, a sensor, a switch) grouped under <strong>devices</strong> in <strong>areas</strong>. <strong>Helpers</strong> are virtual entities (toggles, counters, timers, template sensors). <strong>Automations</strong> are trigger → condition → action. <strong>Scripts</strong> are reusable action sequences. <strong>Scenes</strong> are entity-state snapshots. <strong>Blueprints</strong> are shareable automation templates.</li>
+<li><strong>The recorder</strong> stores history in SQLite (fine for most; <strong>MariaDB</strong> or <strong>PostgreSQL</strong> via <code>recorder:</code> for heavy setups); set <code>purge_keep_days</code> and exclude chatty entities. <strong>InfluxDB + Grafana</strong> or <strong>VictoriaMetrics</strong> for long-term history (<a href="../12-monitoring/">Chapter 12</a>). The <strong>Energy dashboard</strong> needs sensors with proper <code>device_class</code> and <code>state_class</code>.</li>
+<li><strong>HACS</strong> (Home Assistant Community Store) installs custom integrations, cards, and themes from GitHub — the ecosystem of things not yet (or never) in core. Essential; read what you install.</li>
+<li><strong>Nabu Casa cloud</strong> (USD 6.50/month) funds development and provides remote access without a VPN, Alexa/Google Assistant integration without manual OAuth setup, and cloud text-to-speech. Optional; everything works without it (remote access via your VPN/proxy, Alexa/Google via a fiddlier manual route). Many self-hosters subscribe simply to fund the project.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="c1"># Home Assistant Container (if not using HAOS)</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">homeassistant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/home-assistant/home-assistant:stable</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">homeassistant</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                 </span><span class="c1"># for full device access; or enumerate devices: explicitly (preferred)</span>
+<span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host</span><span class="w">               </span><span class="c1"># required for discovery (mDNS, SSDP, Bluetooth, HomeKit)</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./config:/config</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/localtime:/etc/localtime:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/dbus:/run/dbus:ro</span><span class="w">       </span><span class="c1"># Bluetooth</span>
+<span class="w">    </span><span class="c1"># devices: [&quot;/dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_...:/dev/ttyUSB0&quot;]</span>
+</code></pre></div>
+<p>Behind a reverse proxy, add to <code>configuration.yaml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">http</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">use_x_forwarded_for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">trusted_proxies</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.20.0.0/14</span><span class="w">      </span><span class="c1"># Docker pool</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0.20.5</span><span class="w">          </span><span class="c1"># proxy host IP if not in Docker</span>
+</code></pre></div>
+<h2 id="radio-protocols-and-coordinators">Radio protocols and coordinators<a class="headerlink" href="#radio-protocols-and-coordinators" title="Permanent link">#</a></h2>
+<p>The devices — bulbs, switches, sensors, plugs, locks, blinds — speak one of a few protocols. Choosing well is the biggest determinant of a reliable smart home.</p>
+<h3 id="zigbee">Zigbee<a class="headerlink" href="#zigbee" title="Permanent link">#</a></h3>
+<p>A low-power mesh protocol (2.4 GHz) used by Philips Hue, IKEA Trådfri, Aqara, Sonoff, Tuya, and hundreds of others. Devices are cheap (USD 5–30), battery sensors last years, and mains-powered devices act as <strong>routers</strong> that extend the mesh. You need a <strong>coordinator</strong> — a USB stick or a network device — and software to run the network:</p>
+<ul>
+<li><strong>Zigbee2MQTT (Z2M)</strong> — the community favourite: a standalone service (add-on or container) that runs the Zigbee network and publishes every device to <strong>MQTT</strong>, from which HA (via MQTT discovery) or anything else consumes them. Supports ~4,000 devices with a database of quirks, exposes every feature, has an excellent web UI (map, OTA firmware updates, device configuration), and decouples the Zigbee network from HA (restart HA without dropping the mesh). <strong>The recommendation.</strong></li>
+<li><strong>ZHA (Zigbee Home Automation)</strong> — HA's built-in integration; simpler (no MQTT), fewer supported devices and exposed features than Z2M, but improving and adequate for mainstream devices. Fine for a small setup; most people outgrow it.</li>
+<li><strong>deCONZ/Phoscon</strong> — the older Dresden Elektronik stack for ConBee sticks; superseded.</li>
+</ul>
+<p><strong>Coordinators</strong>: <strong>Sonoff Zigbee 3.0 USB Dongle Plus</strong> (ZBDongle-P with CC2652P — the budget standard; the ZBDongle-E with EFR32 is also good), <strong>SMLIGHT SLZB-06</strong> family (<strong>network/PoE coordinators</strong> — Ethernet-connected, placed centrally rather than next to the server, USB-free; excellent and now the community's preferred form factor), <strong>Home Assistant Connect ZBT-1</strong> (formerly SkyConnect; Zigbee or Thread), <strong>TubesZB</strong>, <strong>ConBee III</strong>. Avoid: CC2531 sticks (obsolete), and plugging any USB coordinator directly into a server without a <strong>USB extension cable</strong> — USB 3 ports emit 2.4 GHz interference that cripples Zigbee.</p>
+<p><strong>Design rules</strong>: mains-powered routers spread through the house (smart plugs are cheap routers); keep the coordinator away from USB 3 and Wi-Fi APs; choose a Zigbee channel (15, 20, or 25) that avoids your Wi-Fi channels (Zigbee 11–26 overlaps Wi-Fi 1–11); pair devices <em>in place</em>, not next to the coordinator; Aqara devices are fussy about which routers they join through (IKEA and Sonoff routers are known-good).</p>
+<h3 id="z-wave">Z-Wave<a class="headerlink" href="#z-wave" title="Permanent link">#</a></h3>
+<p>A sub-GHz (868/908 MHz) mesh protocol with certified interoperability, less interference (no 2.4 GHz contention), longer range per hop, and higher device prices (USD 30–70). Strong for locks, thermostats, and in-wall switches; weaker for cheap sensors. <strong>Z-Wave JS</strong> (with the <strong>Z-Wave JS UI</strong> add-on/container for the full web interface) is the software; controllers: <strong>Zooz 800 series (ZST39)</strong>, <strong>Aeotec Z-Stick 7/10</strong>, <strong>Home Assistant Connect ZWA-2</strong> (2025). Z-Wave Long Range (ZWLR) on 800-series controllers gives star-topology kilometre range for outdoor devices. <strong>Pick Z-Wave for</strong> locks, garage doors, and critical switches where certified reliability matters; Zigbee for everything else. Many homes run both.</p>
+<h3 id="thread-and-matter">Thread and Matter<a class="headerlink" href="#thread-and-matter" title="Permanent link">#</a></h3>
+<p><strong>Thread</strong> is an IPv6 mesh protocol (also 802.15.4, same radios as Zigbee) designed for the smart home; <strong>Matter</strong> is the application-layer standard on top (running over Thread, Wi-Fi, or Ethernet) that Apple, Google, Amazon, Samsung, and the CSA agreed on in 2022 to end the interoperability wars. In principle: buy a Matter device, commission it with any ecosystem, done — and it works locally with no cloud. In practice, as of 2026: Matter works and HA supports it well (the <strong>Matter Server</strong> add-on and the Connect ZBT-1 or any Thread border router — Apple TV, HomePod, Nest Hub, or HA's own); the device selection is growing but smaller than Zigbee's; multi-admin (sharing a device between HA and Apple Home) works; firmware updates and some device features lag; Thread networks from different vendors historically did not merge (improving with credential sharing). <strong>Buy Matter-over-Thread devices</strong> where available for future-proofing; keep Zigbee for the long tail and the cheap sensors.</p>
+<h3 id="wi-fi">Wi-Fi<a class="headerlink" href="#wi-fi" title="Permanent link">#</a></h3>
+<p>Cheap smart plugs, bulbs, and switches (Tuya, Shelly, Tasmota-flashed devices, Kasa, Meross) use Wi-Fi. Pros: no hub, high bandwidth. Cons: each device is a Wi-Fi client (50 devices strain consumer APs), draws more power (no battery sensors), and <em>many are cloud-dependent by default</em>. Strong preference for <strong>local-control</strong> Wi-Fi devices: <strong>Shelly</strong> (excellent local HTTP/MQTT APIs, no cloud required, quality hardware — the community's favourite Wi-Fi brand), <strong>ESPHome</strong> or <strong>Tasmota</strong>-compatible devices (many Tuya-based devices can be reflashed, though newer Tuya chips resist it — check for "ESP" chips), <strong>Athom</strong> (sells pre-flashed ESPHome/Tasmota devices). Put them all on the IoT VLAN (<a href="../03-networking/">Chapter 3</a>); block internet for those that do not need it.</p>
+<h3 id="bluetooth">Bluetooth<a class="headerlink" href="#bluetooth" title="Permanent link">#</a></h3>
+<p>For BLE sensors (Xiaomi/Aqara temperature, plant sensors, Govee, SwitchBot), HA uses a Bluetooth adapter on the host or <strong>ESPHome Bluetooth proxies</strong> — any ESP32 running ESPHome can relay BLE to HA over Wi-Fi, so USD 5 boards scattered around the house give whole-home BLE coverage. The <strong>Shelly Plus</strong> devices can also act as BLE proxies. This is the right way to do Bluetooth in HA; a single USB adapter on the server is not.</p>
+<h2 id="mqtt-mosquitto">MQTT: Mosquitto<a class="headerlink" href="#mqtt-mosquitto" title="Permanent link">#</a></h2>
+<p><strong>MQTT</strong> is the lightweight pub/sub messaging protocol that glues home automation together: Zigbee2MQTT publishes device states to topics; HA subscribes; Frigate publishes detections; Tasmota/ESPHome devices can speak it; Node-RED flows use it. <strong>Eclipse Mosquitto</strong> is the broker — tiny, reliable, the standard. Run it as the HAOS add-on or a container; enable authentication (<code>allow_anonymous false</code>, a password file), optionally TLS on the LAN; use <strong>MQTT Explorer</strong> (desktop) to inspect topics when debugging. Alternatives (<strong>EMQX</strong>, <strong>NanoMQ</strong>, <strong>HiveMQ CE</strong>) are for scale you do not have.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">mosquitto</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eclipse-mosquitto:2</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mosquitto</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;1883:1883&quot;</span><span class="p p-Indicator">]</span><span class="w">           </span><span class="c1"># LAN/IoT VLAN; add 8883 for TLS</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./config:/mosquitto/config</span><span class="w">   </span><span class="c1"># mosquitto.conf + passwd (mosquitto_passwd -c passwd user)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/mosquitto/data</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./log:/mosquitto/log</span>
+<span class="w">  </span><span class="nt">zigbee2mqtt</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">koenkk/zigbee2mqtt:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zigbee2mqtt</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">mosquitto</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;./z2m:/app/data&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/run/udev:/run/udev:ro&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;127.0.0.1:8080:8080&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> TZ</span><span class="p">:</span><span class="w"> </span><span class="nv">Europe/London</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="c1"># USB coordinator:</span>
+<span class="w">    </span><span class="c1"># devices: [&quot;/dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_XXXX-if00-port0:/dev/ttyACM0&quot;]</span>
+<span class="w">    </span><span class="c1"># Network coordinator (SLZB-06): set serial.port: tcp://10.0.30.50:6638 in configuration.yaml instead</span>
+</code></pre></div>
+<h2 id="esphome-diy-devices">ESPHome: DIY devices<a class="headerlink" href="#esphome-diy-devices" title="Permanent link">#</a></h2>
+<p><strong>ESPHome</strong> turns USD 3–10 ESP8266/ESP32 boards into custom sensors and controllers using a YAML file — no programming: declare the board, the Wi-Fi, and the components (a DHT22 temperature sensor on GPIO4, a relay on GPIO5, a PIR, a display, an LED strip, a BLE proxy, a CO₂ sensor, a power meter…), and ESPHome compiles and flashes firmware that integrates natively with HA (auto-discovery, encrypted API, OTA updates from the dashboard). Run the ESPHome dashboard as an add-on or container; flash the first time over USB (via the browser with Web Serial), thereafter wirelessly.</p>
+<p>Popular projects: multi-sensors (temperature/humidity/lux/motion in one), presence detection with <strong>mmWave radar</strong> (LD2410/LD2450 — detects a still person, unlike PIR; the <strong>Everything Presence</strong> boards by Everything Smart Home are pre-built), air quality (SCD40/SCD41 CO₂, PMS5003 particulates), energy monitoring (clamp CTs, or the <strong>Shelly EM</strong>/<strong>Emporia Vue</strong> reflashed), garage door controllers, irrigation, pool chemistry, e-paper displays, LED matrices, and the <strong>Athom</strong> and <strong>Apollo Automation</strong> pre-flashed hardware lines for people who want ESPHome without soldering. <strong>Tasmota</strong> is the alternative firmware (web UI on the device rather than YAML; MQTT-centric); <strong>WLED</strong> is the specialist for addressable LED strips (excellent, with HA integration). <strong>OpenBeken</strong> for the non-ESP Tuya chips.</p>
+<h2 id="cameras-and-nvr">Cameras and NVR<a class="headerlink" href="#cameras-and-nvr" title="Permanent link">#</a></h2>
+<h3 id="frigate">Frigate<a class="headerlink" href="#frigate" title="Permanent link">#</a></h3>
+<p><strong>Frigate</strong> is the open-source NVR built around <strong>local AI object detection</strong>: it ingests RTSP streams from IP cameras, runs detection (person, car, dog, cat, package, …) on every motion event, records continuously or on events, and publishes rich events to HA via MQTT — so "notify me when a person is in the driveway after 10 pm, but not the neighbour's cat" is a simple automation. Features: 24/7 and event recording with retention rules, zones and masks, object tracking, snapshot and clip export, a review UI with a timeline, <strong>face recognition and licence-plate recognition</strong> (since 0.15/0.16), semantic search over events using CLIP (describe what you're looking for), audio detection (glass breaking, barking, speech), two-way talk on supported cameras, go2rtc built in for restreaming (WebRTC/MSE low-latency live view, and one camera connection shared by everything), a HA integration with cameras/sensors/switches, and <strong>Frigate+</strong> (optional paid custom model training on your own images).</p>
+<p><strong>Hardware for detection</strong>: detection runs on a <strong>detector</strong> — CPU (slow, a few cameras at most), <strong>Google Coral TPU</strong> (USB or M.2/PCIe; the long-time standard at ~100 inferences/second for a few watts; supply and driver friction increased 2023–2025), <strong>OpenVINO on an Intel iGPU</strong> (6th gen+; now the community's pragmatic default — no extra hardware, good performance, and Intel Arc works too), <strong>NVIDIA TensorRT</strong> (a discrete GPU — overkill but fast and also does the semantic-search embeddings), <strong>Rockchip NPU</strong> (RK3588 boards), <strong>Hailo-8</strong> (Pi AI HAT and M.2), <strong>AMD ROCm</strong> and <strong>Apple</strong> (experimental). Video <em>decoding</em> uses the iGPU/GPU via hardware acceleration flags. A Frigate box with 6–8 cameras at 1080p detect streams is comfortable on an N100 with OpenVINO or any Intel 8th-gen+ machine.</p>
+<p><strong>Cameras</strong>: anything with <strong>RTSP</strong> and ideally a low-resolution <strong>substream</strong> (Frigate detects on the substream — 640×360 or 1280×720 — and records the main stream). Community favourites: <strong>Reolink</strong> (many models; use RTSP or the newer http-flv/<code>rtmp</code> paths that go2rtc handles; avoid Wi-Fi-only battery models for continuous NVR), <strong>Amcrest/Dahua</strong> (excellent RTSP, ONVIF, well-documented), <strong>Hikvision</strong> (good hardware; geopolitical and firmware concerns for some), <strong>Annke</strong>, <strong>Empire Tech</strong> (Dahua rebrands), <strong>Ubiquiti UniFi Protect</strong> cameras (work via RTSPS if you run a UniFi console; excellent but ecosystem-locked), <strong>Wyze</strong> (with the <code>wz_mini_hacks</code> or docker-wyze-bridge — hobbyist), <strong>Eufy</strong> (avoid for local NVR), doorbells: <strong>Reolink Video Doorbell PoE</strong>, <strong>Amcrest AD410</strong>, <strong>Ubiquiti G4 Doorbell</strong>. <strong>PoE cameras on a cameras VLAN with no internet access</strong> is the standard, secure setup — cameras are notoriously insecure, and a camera that cannot reach the internet cannot leak.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">frigate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/blakeblackshear/frigate:stable</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frigate</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">shm_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512mb</span><span class="w">                          </span><span class="c1"># scale with camera count/resolution (see docs formula)</span>
+<span class="w">    </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/dev/dri/renderD128:/dev/dri/renderD128</span><span class="w">    </span><span class="c1"># Intel iGPU: hwaccel decode + OpenVINO detector</span>
+<span class="w">      </span><span class="c1"># - /dev/bus/usb:/dev/bus/usb                 # Coral USB</span>
+<span class="w">      </span><span class="c1"># - /dev/apex_0:/dev/apex_0                   # Coral PCIe/M.2</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./config:/config</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/tank/frigate:/media/frigate</span><span class="w">         </span><span class="c1"># recordings (replaceable; plan retention/disk)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tmpfs</span>
+<span class="w">        </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/cache</span>
+<span class="w">        </span><span class="nt">tmpfs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> size</span><span class="p">:</span><span class="w"> </span><span class="nv">1000000000</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/localtime:/etc/localtime:ro</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;127.0.0.1:8971:8971&quot;</span><span class="w">       </span><span class="c1"># authenticated UI (via proxy)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8554:8554&quot;</span><span class="w">                 </span><span class="c1"># RTSP restreams from go2rtc</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8555:8555/tcp&quot;</span><span class="w">             </span><span class="c1"># WebRTC</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8555:8555/udp&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">FRIGATE_RTSP_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${CAM_PASSWORD}</span>
+</code></pre></div>
+<h3 id="scrypted">Scrypted<a class="headerlink" href="#scrypted" title="Permanent link">#</a></h3>
+<p><strong>Scrypted</strong> is a different animal: a <strong>camera integration hub</strong> whose killer feature is bridging any camera into <strong>Apple HomeKit Secure Video</strong> (with hardware-accelerated transcoding and near-zero-latency streams), Google Home, and Alexa, plus NVR (paid "Scrypted NVR" plugin), object detection, and a plugin architecture. If you live in Apple Home and want your Reolink/Amcrest cameras to appear natively with HKSV recording, Scrypted is the way; many people run <strong>Scrypted for HomeKit and Frigate for detection/recording</strong>, fed by the same cameras via go2rtc restreams.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<p><strong>go2rtc</strong> (the streaming Swiss Army knife — bundled in Frigate, also standalone: restream, transcode, WebRTC, two-way audio, HomeKit; by the author of WebRTC Camera for HA), <strong>Viseron</strong>, <strong>Shinobi</strong>, <strong>ZoneMinder</strong> (the ancient NVR; still maintained), <strong>MotionEye</strong> (motion-based, light, dated), <strong>Blue Iris</strong> (Windows, paid, excellent, the traditional choice — many run it in a Windows VM with <strong>CodeProject.AI</strong> for detection), <strong>UniFi Protect</strong> (if you buy the console), <strong>Synology Surveillance Station</strong> (licensed per camera; competent), <strong>Agent DVR</strong>. For most self-hosters, <strong>Frigate</strong> is the answer.</p>
+<h2 id="voice-assistants">Voice assistants<a class="headerlink" href="#voice-assistants" title="Permanent link">#</a></h2>
+<p>HA's <strong>Assist</strong> pipeline provides fully local voice control: <strong>wake word</strong> (<strong>openWakeWord</strong> or <strong>microWakeWord</strong> on the device), <strong>speech-to-text</strong> (<strong>Whisper</strong> via the <code>faster-whisper</code> add-on, or <strong>Speech-to-Phrase</strong> for constrained fast local recognition on small hardware), <strong>intent recognition</strong> (HA's built-in sentence matching, optionally extended by an <strong>LLM</strong> via Ollama/OpenAI for natural conversation — "it's a bit dark in here"), and <strong>text-to-speech</strong> (<strong>Piper</strong>, fast local neural voices). Hardware: the <strong>Home Assistant Voice Preview Edition</strong> (Nabu Casa, ~USD 60, late 2024 — a purpose-built satellite that works well), <strong>ESP32-S3-BOX-3</strong> with ESPHome voice firmware, <strong>Wyoming satellites</strong> on a Raspberry Pi with a ReSpeaker mic array, or an old Android phone with the companion app's Assist. Quality in 2026: good for commands ("turn off the kitchen lights," "set a timer"), improving for conversation with an LLM attached, still behind Alexa/Google for far-field recognition in noisy rooms. Entirely local, no cloud, and improving every release. <strong>Rhasspy</strong> (by the same author, Michael Hansen, now at Nabu Casa) was the predecessor; <strong>Willow</strong> was an alternative that stalled. Alexa/Google can still be <em>bridged</em> to HA (via Nabu Casa cloud or manual skill setup) if you want their microphones with your automations.</p>
+<h2 id="music-assistant">Music Assistant<a class="headerlink" href="#music-assistant" title="Permanent link">#</a></h2>
+<p><strong>Music Assistant</strong> is a music library and streaming server built for HA: it pulls from local files, Jellyfin/Plex/Navidrome/Subsonic, Spotify, Tidal, Qobuz, YouTube Music, Deezer, radio, and podcasts, and plays to nearly anything — Sonos, Chromecast, AirPlay, DLNA, Snapcast, Squeezebox, Bluesound, HA media players, and <strong>ESPHome/Voice PE speakers</strong> — with multi-room sync groups, queue management, and full HA integration (announce, TTS over music, automations). It solves "play <em>this</em> on <em>that</em> speaker" across brands. Runs as an add-on or container.</p>
+<h2 id="node-red-and-automation-tooling">Node-RED and automation tooling<a class="headerlink" href="#node-red-and-automation-tooling" title="Permanent link">#</a></h2>
+<p>HA's built-in automation editor is good and has improved enormously; most people never need more. <strong>Node-RED</strong> (visual flow-based programming, runs as an add-on/container, integrates via the HA WebSocket nodes) remains popular for complex flows with many branches, external API calls, and debugging by watching messages flow. <strong>AppDaemon</strong> and <strong>Pyscript</strong> are for people who prefer Python. <strong>NetDaemon</strong> for C#. <strong>Blueprints</strong> (community-shared automation templates via the HA forum's Blueprint Exchange) cover the common cases — motion-activated lights with luminance and timeout, low-battery notifications, etc.</p>
+<h2 id="homekit-google-alexa-bridging">HomeKit, Google, Alexa bridging<a class="headerlink" href="#homekit-google-alexa-bridging" title="Permanent link">#</a></h2>
+<p>HA's <strong>HomeKit Bridge</strong> integration exposes any HA entities to Apple Home (so Siri controls your Zigbee lights); <strong>Homebridge</strong> is the standalone alternative for people without HA. Google Home and Alexa integration via <strong>Nabu Casa</strong> (one click) or manually (create a developer project — an hour of fiddling that breaks occasionally). <strong>Matter Bridge</strong> (via the Matter Hub add-on, 2024–) exposes HA entities as Matter devices to any Matter controller — the modern route.</p>
+<h2 id="design-principles-for-a-smart-home-that-stays-smart">Design principles for a smart home that stays smart<a class="headerlink" href="#design-principles-for-a-smart-home-that-stays-smart" title="Permanent link">#</a></h2>
+<ol>
+<li><strong>Local control or nothing.</strong> Every device should work with the internet down. Prefer Zigbee/Z-Wave/Thread/local Wi-Fi (Shelly, ESPHome); avoid cloud-only devices; when you must have one, isolate it and plan for its cloud to die.</li>
+<li><strong>Manual override always.</strong> Every light must work from a wall switch when HA is down. Use smart <em>switches/relays</em> (Shelly behind the existing switch, Zigbee in-wall modules) rather than smart <em>bulbs</em> where a household shares the space; smart bulbs plus decoupled switches (Hue dimmer, IKEA remote) where colour matters.</li>
+<li><strong>The IoT VLAN</strong> (<a href="../03-networking/">Chapter 3</a>): everything on it; internet blocked by default; HA allowed to reach it; mDNS reflected for Chromecast/HomeKit discovery.</li>
+<li><strong>Automations should be boring.</strong> Lights on with motion at night, off after timeout. Heating schedule. Notifications for the things that matter (leak sensor, door left open, freezer temperature). Resist the urge to automate everything; a smart home that surprises its occupants gets turned off.</li>
+<li><strong>Name and area everything</strong> on day one. <code>light.kitchen_ceiling</code>, not <code>light.0x00158d0004a2b3c4</code>.</li>
+<li><strong>Back up HA</strong> (its built-in backups to a network share or Nabu Casa cloud; plus the VM via PBS) and <strong>back up the Zigbee/Z-Wave network keys</strong> (Z2M's <code>coordinator_backup.json</code>, Z-Wave JS's NVM backup) — losing them means re-pairing every device.</li>
+<li><strong>Update deliberately.</strong> HA releases monthly (<code>2026.x</code>), each with a "Breaking Changes" section. Read it. Update the HAOS/Supervisor freely; update Core after skimming the notes; snapshot the VM first.</li>
+<li><strong>Presence detection</strong> is the foundation of good automation: the companion app (GPS + Wi-Fi), router-based device tracking (UniFi, OPNsense ARP), BLE room presence (<strong>ESPresense</strong>, <strong>Bermuda</strong>), and mmWave sensors per room. Layer them.</li>
+</ol>
+<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>HAOS in a Proxmox VM</strong> (or on a Pi 5/HA Green for a standalone appliance); Container if your lab is all-Compose.</li>
+<li><strong>Zigbee via Zigbee2MQTT</strong> with an <strong>SLZB-06 network coordinator</strong>; Z-Wave for locks; Matter-over-Thread for new purchases where available; Shelly for Wi-Fi.</li>
+<li><strong>Mosquitto</strong> as the broker.</li>
+<li><strong>ESPHome</strong> for anything custom; <strong>ESPresense/Bluetooth proxies</strong> for BLE.</li>
+<li><strong>Frigate</strong> with OpenVINO on an Intel iGPU (or a Coral) and PoE cameras on an isolated VLAN; <strong>Scrypted</strong> alongside if you want HKSV.</li>
+<li><strong>Assist + Voice PE</strong> for local voice; <strong>Music Assistant</strong> for whole-home audio.</li>
+<li>Read the HA release notes monthly; back up the radio network keys.</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> HA installed (HAOS VM or Container) on SSD storage, not microSD; behind the reverse proxy with <code>trusted_proxies</code> set; mobile app connected via VPN or proxy.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Zigbee coordinator on a USB extension or network-attached; channel chosen to avoid Wi-Fi; routers distributed; Z2M (or ZHA) running; network key backed up.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Mosquitto with authentication; Z2M and Frigate publishing to it.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> All IoT devices on the IoT VLAN; cameras on a no-internet VLAN; HA permitted to reach both; mDNS reflection configured.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Every light has a physical override; automations reviewed for "what if HA is down."</li>
+<li class="task-list-item"><input type="checkbox" disabled/> HA backups scheduled to a network share/PBS; Z2M/Z-Wave JS key backups included.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Frigate detection on hardware (OpenVINO/Coral); retention sized to disk; events feeding HA notifications.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Monthly HA update ritual: snapshot → read breaking changes → update → verify.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../18-notes-productivity/">← 18. Notes, Knowledge, and Personal Productivity</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/19-home-automation.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#home-assistant">Home Assistant</a><ul>
+<li><a href="#installation-methods">Installation methods</a></li>
+<li><a href="#key-concepts">Key concepts</a></li>
+</ul>
+</li>
+<li><a href="#radio-protocols-and-coordinators">Radio protocols and coordinators</a><ul>
+<li><a href="#zigbee">Zigbee</a></li>
+<li><a href="#z-wave">Z-Wave</a></li>
+<li><a href="#thread-and-matter">Thread and Matter</a></li>
+<li><a href="#wi-fi">Wi-Fi</a></li>
+<li><a href="#bluetooth">Bluetooth</a></li>
+</ul>
+</li>
+<li><a href="#mqtt-mosquitto">MQTT: Mosquitto</a></li>
+<li><a href="#esphome-diy-devices">ESPHome: DIY devices</a></li>
+<li><a href="#cameras-and-nvr">Cameras and NVR</a><ul>
+<li><a href="#frigate">Frigate</a></li>
+<li><a href="#scrypted">Scrypted</a></li>
+<li><a href="#others">Others</a></li>
+</ul>
+</li>
+<li><a href="#voice-assistants">Voice assistants</a></li>
+<li><a href="#music-assistant">Music Assistant</a></li>
+<li><a href="#node-red-and-automation-tooling">Node-RED and automation tooling</a></li>
+<li><a href="#homekit-google-alexa-bridging">HomeKit, Google, Alexa bridging</a></li>
+<li><a href="#design-principles-for-a-smart-home-that-stays-smart">Design principles for a smart home that stays smart</a></li>
+<li><a href="#recommendations">Recommendations</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

@@ -115,3 +115,102 @@ services:
     # devices: ["/dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_XXXX-if00-port0:/dev/ttyACM0"]
     # Network coordinator (SLZB-06): set serial.port: tcp://10.0.30.50:6638 in configuration.yaml instead
 ```
+
+## ESPHome: DIY devices
+
+**ESPHome** turns USD 3–10 ESP8266/ESP32 boards into custom sensors and controllers using a YAML file — no programming: declare the board, the Wi-Fi, and the components (a DHT22 temperature sensor on GPIO4, a relay on GPIO5, a PIR, a display, an LED strip, a BLE proxy, a CO₂ sensor, a power meter…), and ESPHome compiles and flashes firmware that integrates natively with HA (auto-discovery, encrypted API, OTA updates from the dashboard). Run the ESPHome dashboard as an add-on or container; flash the first time over USB (via the browser with Web Serial), thereafter wirelessly.
+
+Popular projects: multi-sensors (temperature/humidity/lux/motion in one), presence detection with **mmWave radar** (LD2410/LD2450 — detects a still person, unlike PIR; the **Everything Presence** boards by Everything Smart Home are pre-built), air quality (SCD40/SCD41 CO₂, PMS5003 particulates), energy monitoring (clamp CTs, or the **Shelly EM**/**Emporia Vue** reflashed), garage door controllers, irrigation, pool chemistry, e-paper displays, LED matrices, and the **Athom** and **Apollo Automation** pre-flashed hardware lines for people who want ESPHome without soldering. **Tasmota** is the alternative firmware (web UI on the device rather than YAML; MQTT-centric); **WLED** is the specialist for addressable LED strips (excellent, with HA integration). **OpenBeken** for the non-ESP Tuya chips.
+
+## Cameras and NVR
+
+### Frigate
+
+**Frigate** is the open-source NVR built around **local AI object detection**: it ingests RTSP streams from IP cameras, runs detection (person, car, dog, cat, package, …) on every motion event, records continuously or on events, and publishes rich events to HA via MQTT — so "notify me when a person is in the driveway after 10 pm, but not the neighbour's cat" is a simple automation. Features: 24/7 and event recording with retention rules, zones and masks, object tracking, snapshot and clip export, a review UI with a timeline, **face recognition and licence-plate recognition** (since 0.15/0.16), semantic search over events using CLIP (describe what you're looking for), audio detection (glass breaking, barking, speech), two-way talk on supported cameras, go2rtc built in for restreaming (WebRTC/MSE low-latency live view, and one camera connection shared by everything), a HA integration with cameras/sensors/switches, and **Frigate+** (optional paid custom model training on your own images).
+
+**Hardware for detection**: detection runs on a **detector** — CPU (slow, a few cameras at most), **Google Coral TPU** (USB or M.2/PCIe; the long-time standard at ~100 inferences/second for a few watts; supply and driver friction increased 2023–2025), **OpenVINO on an Intel iGPU** (6th gen+; now the community's pragmatic default — no extra hardware, good performance, and Intel Arc works too), **NVIDIA TensorRT** (a discrete GPU — overkill but fast and also does the semantic-search embeddings), **Rockchip NPU** (RK3588 boards), **Hailo-8** (Pi AI HAT and M.2), **AMD ROCm** and **Apple** (experimental). Video *decoding* uses the iGPU/GPU via hardware acceleration flags. A Frigate box with 6–8 cameras at 1080p detect streams is comfortable on an N100 with OpenVINO or any Intel 8th-gen+ machine.
+
+**Cameras**: anything with **RTSP** and ideally a low-resolution **substream** (Frigate detects on the substream — 640×360 or 1280×720 — and records the main stream). Community favourites: **Reolink** (many models; use RTSP or the newer http-flv/`rtmp` paths that go2rtc handles; avoid Wi-Fi-only battery models for continuous NVR), **Amcrest/Dahua** (excellent RTSP, ONVIF, well-documented), **Hikvision** (good hardware; geopolitical and firmware concerns for some), **Annke**, **Empire Tech** (Dahua rebrands), **Ubiquiti UniFi Protect** cameras (work via RTSPS if you run a UniFi console; excellent but ecosystem-locked), **Wyze** (with the `wz_mini_hacks` or docker-wyze-bridge — hobbyist), **Eufy** (avoid for local NVR), doorbells: **Reolink Video Doorbell PoE**, **Amcrest AD410**, **Ubiquiti G4 Doorbell**. **PoE cameras on a cameras VLAN with no internet access** is the standard, secure setup — cameras are notoriously insecure, and a camera that cannot reach the internet cannot leak.
+
+```yaml
+services:
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    container_name: frigate
+    restart: unless-stopped
+    shm_size: 512mb                          # scale with camera count/resolution (see docs formula)
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128    # Intel iGPU: hwaccel decode + OpenVINO detector
+      # - /dev/bus/usb:/dev/bus/usb                 # Coral USB
+      # - /dev/apex_0:/dev/apex_0                   # Coral PCIe/M.2
+    volumes:
+      - ./config:/config
+      - /mnt/tank/frigate:/media/frigate         # recordings (replaceable; plan retention/disk)
+      - type: tmpfs
+        target: /tmp/cache
+        tmpfs: { size: 1000000000 }
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "127.0.0.1:8971:8971"       # authenticated UI (via proxy)
+      - "8554:8554"                 # RTSP restreams from go2rtc
+      - "8555:8555/tcp"             # WebRTC
+      - "8555:8555/udp"
+    environment:
+      FRIGATE_RTSP_PASSWORD: ${CAM_PASSWORD}
+```
+
+### Scrypted
+
+**Scrypted** is a different animal: a **camera integration hub** whose killer feature is bridging any camera into **Apple HomeKit Secure Video** (with hardware-accelerated transcoding and near-zero-latency streams), Google Home, and Alexa, plus NVR (paid "Scrypted NVR" plugin), object detection, and a plugin architecture. If you live in Apple Home and want your Reolink/Amcrest cameras to appear natively with HKSV recording, Scrypted is the way; many people run **Scrypted for HomeKit and Frigate for detection/recording**, fed by the same cameras via go2rtc restreams.
+
+### Others
+
+**go2rtc** (the streaming Swiss Army knife — bundled in Frigate, also standalone: restream, transcode, WebRTC, two-way audio, HomeKit; by the author of WebRTC Camera for HA), **Viseron**, **Shinobi**, **ZoneMinder** (the ancient NVR; still maintained), **MotionEye** (motion-based, light, dated), **Blue Iris** (Windows, paid, excellent, the traditional choice — many run it in a Windows VM with **CodeProject.AI** for detection), **UniFi Protect** (if you buy the console), **Synology Surveillance Station** (licensed per camera; competent), **Agent DVR**. For most self-hosters, **Frigate** is the answer.
+
+## Voice assistants
+
+HA's **Assist** pipeline provides fully local voice control: **wake word** (**openWakeWord** or **microWakeWord** on the device), **speech-to-text** (**Whisper** via the `faster-whisper` add-on, or **Speech-to-Phrase** for constrained fast local recognition on small hardware), **intent recognition** (HA's built-in sentence matching, optionally extended by an **LLM** via Ollama/OpenAI for natural conversation — "it's a bit dark in here"), and **text-to-speech** (**Piper**, fast local neural voices). Hardware: the **Home Assistant Voice Preview Edition** (Nabu Casa, ~USD 60, late 2024 — a purpose-built satellite that works well), **ESP32-S3-BOX-3** with ESPHome voice firmware, **Wyoming satellites** on a Raspberry Pi with a ReSpeaker mic array, or an old Android phone with the companion app's Assist. Quality in 2026: good for commands ("turn off the kitchen lights," "set a timer"), improving for conversation with an LLM attached, still behind Alexa/Google for far-field recognition in noisy rooms. Entirely local, no cloud, and improving every release. **Rhasspy** (by the same author, Michael Hansen, now at Nabu Casa) was the predecessor; **Willow** was an alternative that stalled. Alexa/Google can still be *bridged* to HA (via Nabu Casa cloud or manual skill setup) if you want their microphones with your automations.
+
+## Music Assistant
+
+**Music Assistant** is a music library and streaming server built for HA: it pulls from local files, Jellyfin/Plex/Navidrome/Subsonic, Spotify, Tidal, Qobuz, YouTube Music, Deezer, radio, and podcasts, and plays to nearly anything — Sonos, Chromecast, AirPlay, DLNA, Snapcast, Squeezebox, Bluesound, HA media players, and **ESPHome/Voice PE speakers** — with multi-room sync groups, queue management, and full HA integration (announce, TTS over music, automations). It solves "play *this* on *that* speaker" across brands. Runs as an add-on or container.
+
+## Node-RED and automation tooling
+
+HA's built-in automation editor is good and has improved enormously; most people never need more. **Node-RED** (visual flow-based programming, runs as an add-on/container, integrates via the HA WebSocket nodes) remains popular for complex flows with many branches, external API calls, and debugging by watching messages flow. **AppDaemon** and **Pyscript** are for people who prefer Python. **NetDaemon** for C#. **Blueprints** (community-shared automation templates via the HA forum's Blueprint Exchange) cover the common cases — motion-activated lights with luminance and timeout, low-battery notifications, etc.
+
+## HomeKit, Google, Alexa bridging
+
+HA's **HomeKit Bridge** integration exposes any HA entities to Apple Home (so Siri controls your Zigbee lights); **Homebridge** is the standalone alternative for people without HA. Google Home and Alexa integration via **Nabu Casa** (one click) or manually (create a developer project — an hour of fiddling that breaks occasionally). **Matter Bridge** (via the Matter Hub add-on, 2024–) exposes HA entities as Matter devices to any Matter controller — the modern route.
+
+## Design principles for a smart home that stays smart
+
+1. **Local control or nothing.** Every device should work with the internet down. Prefer Zigbee/Z-Wave/Thread/local Wi-Fi (Shelly, ESPHome); avoid cloud-only devices; when you must have one, isolate it and plan for its cloud to die.
+2. **Manual override always.** Every light must work from a wall switch when HA is down. Use smart *switches/relays* (Shelly behind the existing switch, Zigbee in-wall modules) rather than smart *bulbs* where a household shares the space; smart bulbs plus decoupled switches (Hue dimmer, IKEA remote) where colour matters.
+3. **The IoT VLAN** ([Chapter 3](03-networking.md)): everything on it; internet blocked by default; HA allowed to reach it; mDNS reflected for Chromecast/HomeKit discovery.
+4. **Automations should be boring.** Lights on with motion at night, off after timeout. Heating schedule. Notifications for the things that matter (leak sensor, door left open, freezer temperature). Resist the urge to automate everything; a smart home that surprises its occupants gets turned off.
+5. **Name and area everything** on day one. `light.kitchen_ceiling`, not `light.0x00158d0004a2b3c4`.
+6. **Back up HA** (its built-in backups to a network share or Nabu Casa cloud; plus the VM via PBS) and **back up the Zigbee/Z-Wave network keys** (Z2M's `coordinator_backup.json`, Z-Wave JS's NVM backup) — losing them means re-pairing every device.
+7. **Update deliberately.** HA releases monthly (`2026.x`), each with a "Breaking Changes" section. Read it. Update the HAOS/Supervisor freely; update Core after skimming the notes; snapshot the VM first.
+8. **Presence detection** is the foundation of good automation: the companion app (GPS + Wi-Fi), router-based device tracking (UniFi, OPNsense ARP), BLE room presence (**ESPresense**, **Bermuda**), and mmWave sensors per room. Layer them.
+
+## Recommendations
+
+- **HAOS in a Proxmox VM** (or on a Pi 5/HA Green for a standalone appliance); Container if your lab is all-Compose.
+- **Zigbee via Zigbee2MQTT** with an **SLZB-06 network coordinator**; Z-Wave for locks; Matter-over-Thread for new purchases where available; Shelly for Wi-Fi.
+- **Mosquitto** as the broker.
+- **ESPHome** for anything custom; **ESPresense/Bluetooth proxies** for BLE.
+- **Frigate** with OpenVINO on an Intel iGPU (or a Coral) and PoE cameras on an isolated VLAN; **Scrypted** alongside if you want HKSV.
+- **Assist + Voice PE** for local voice; **Music Assistant** for whole-home audio.
+- Read the HA release notes monthly; back up the radio network keys.
+
+## Checklist
+
+- [ ] HA installed (HAOS VM or Container) on SSD storage, not microSD; behind the reverse proxy with `trusted_proxies` set; mobile app connected via VPN or proxy.
+- [ ] Zigbee coordinator on a USB extension or network-attached; channel chosen to avoid Wi-Fi; routers distributed; Z2M (or ZHA) running; network key backed up.
+- [ ] Mosquitto with authentication; Z2M and Frigate publishing to it.
+- [ ] All IoT devices on the IoT VLAN; cameras on a no-internet VLAN; HA permitted to reach both; mDNS reflection configured.
+- [ ] Every light has a physical override; automations reviewed for "what if HA is down."
+- [ ] HA backups scheduled to a network share/PBS; Z2M/Z-Wave JS key backups included.
+- [ ] Frigate detection on hardware (OpenVINO/Coral); retention sized to disk; events feeding HA notifications.
+- [ ] Monthly HA update ritual: snapshot → read breaking changes → update → verify.
