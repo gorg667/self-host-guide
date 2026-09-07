@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Passwords, Secrets, and Two-Factor Codes — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li class="active"><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 21 · ~2,438 words · 11 min read</div>
+    <article class="prose">
+      <h1 id="passwords-secrets-and-two-factor-codes">Passwords, Secrets, and Two-Factor Codes<a class="headerlink" href="#passwords-secrets-and-two-factor-codes" title="Permanent link">#</a></h1>
+<p>A password manager is the single most important piece of personal security software, and self-hosting it is one of the most popular first projects — the data is tiny, the value is enormous, and the idea of a company holding every credential you own is uncomfortable to many. This chapter reviews Vaultwarden (the community's overwhelming choice), the official Bitwarden server, Passbolt, Psono, and the file-based KeePass approach; covers TOTP/2FA code management (2FAuth, Ente Auth, Aegis backups); and then turns to <em>machine</em> secrets — the API keys, database passwords, and tokens that a lab accumulates — with Infisical, OpenBao, SOPS, and the pragmatic middle ground.</p>
+<h2 id="first-principles">First principles<a class="headerlink" href="#first-principles" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>The vault is the most irreplaceable and most sensitive data you have.</strong> Back it up with more care than anything else (<a href="../11-backups/">Chapter 11</a>); keep an <em>encrypted export</em> somewhere outside the lab (a USB stick in a safe, a printed emergency sheet for the master password and 2FA recovery codes); and protect the server as if losing it locks you out of everything — because it does.</li>
+<li><strong>Clients cache the vault</strong>, so a server outage does not lock you out immediately — but new devices cannot enrol and changes cannot sync. Availability matters less than integrity.</li>
+<li><strong>Exposure</strong>: the classic dilemma. A password manager needs to sync to your phone wherever you are. The options are a mesh VPN (nothing exposed; sync happens when the VPN is up — Bitwarden clients handle this gracefully) or exposing it behind the reverse proxy with the app's own strong auth (the Bitwarden protocol is well-hardened; Vaultwarden exposed with fail2ban/CrowdSec and admin panel disabled is a common, defensible setup). The guide's preference: <strong>VPN-only, with the mobile client's cached vault covering the gaps.</strong></li>
+<li><strong>MFA on the vault itself</strong> (TOTP, WebAuthn/passkey, Duo, email) is mandatory. Store <em>those</em> recovery codes somewhere that is not the vault.</li>
+</ul>
+<h2 id="password-managers">Password managers<a class="headerlink" href="#password-managers" title="Permanent link">#</a></h2>
+<h3 id="vaultwarden">Vaultwarden<a class="headerlink" href="#vaultwarden" title="Permanent link">#</a></h3>
+<p>An unofficial, <strong>Rust</strong> reimplementation of the Bitwarden server API, compatible with every official Bitwarden client (browser extensions, desktop, iOS, Android, CLI) and providing nearly every feature — including ones Bitwarden puts behind its paid tiers: organisations and collections (shared vaults for the household), <strong>passkey storage</strong>, TOTP authenticator in the vault, emergency access, Send (encrypted text/file sharing), attachments, WebAuthn/YubiKey/Duo 2FA, and an admin panel. Single binary + SQLite (or Postgres/MySQL), ~20–50 MB RAM, one container. It has been the community standard since 2018 (as bitwarden_rs), is actively maintained with a large contributor base, and receives security attention proportional to its popularity. <strong>SSO/OIDC login</strong> landed in 2025 via a long-running fork merged upstream.</p>
+<p><strong>Watch out for:</strong> it is <em>not</em> Bitwarden's code — Bitwarden Inc. neither supports nor audits it; the client apps occasionally ship features before Vaultwarden implements them (usually a week or two of lag, sometimes a broken feature until the next release — pin the version and read release notes); the admin panel must be protected or disabled (<code>ADMIN_TOKEN</code> as an Argon2 hash, and never exposed publicly); disable signups after creating your accounts (<code>SIGNUPS_ALLOWED=false</code>), or restrict by domain; <strong>back up the SQLite database with <code>sqlite3 .backup</code></strong>, not a file copy, plus the <code>attachments/</code> and <code>sends/</code> directories and the <code>rsa_key*</code> files (the JWT signing keys — losing them logs everyone out). Icons are fetched from the internet by default (a privacy leak of which sites you have accounts on) — set <code>ICON_SERVICE=internal</code> or disable.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vaultwarden</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vaultwarden/server:1.34.1</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vaultwarden</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">DOMAIN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://vault.example.com</span>
+<span class="w">      </span><span class="nt">SIGNUPS_ALLOWED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span>
+<span class="w">      </span><span class="nt">INVITATIONS_ALLOWED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">ADMIN_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${VW_ADMIN_TOKEN_ARGON2}</span><span class="w">     </span><span class="c1"># generate with: vaultwarden hash  (or disable admin entirely by omitting)</span>
+<span class="w">      </span><span class="nt">SHOW_PASSWORD_HINT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span>
+<span class="w">      </span><span class="nt">ICON_SERVICE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">internal</span>
+<span class="w">      </span><span class="nt">PUSH_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w">                      </span><span class="c1"># mobile push via Bitwarden&#39;s relay; needs PUSH_INSTALLATION_ID/KEY from bitwarden.com/host</span>
+<span class="w">      </span><span class="nt">PUSH_INSTALLATION_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${VW_PUSH_ID}</span>
+<span class="w">      </span><span class="nt">PUSH_INSTALLATION_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${VW_PUSH_KEY}</span>
+<span class="w">      </span><span class="nt">SMTP_HOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smtp.example.com</span>
+<span class="w">      </span><span class="nt">SMTP_FROM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vault@example.com</span>
+<span class="w">      </span><span class="nt">SMTP_USERNAME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SMTP_USER}</span>
+<span class="w">      </span><span class="nt">SMTP_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SMTP_PASS}</span>
+<span class="w">      </span><span class="nt">LOG_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data/vaultwarden.log</span><span class="w">          </span><span class="c1"># for fail2ban/CrowdSec</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">security_opt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">no-new-privileges</span><span class="p p-Indicator">:</span><span class="nv">true</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p><strong>Verdict:</strong> the recommendation for almost everyone. Tiny, complete, mature, and it unlocks the entire polished Bitwarden client ecosystem for free.</p>
+<h3 id="bitwarden-official-self-hosted">Bitwarden (official self-hosted)<a class="headerlink" href="#bitwarden-official-self-hosted" title="Permanent link">#</a></h3>
+<p>Bitwarden Inc. publishes its full server for self-hosting: the traditional deployment is ~11 containers (web, API, identity, SQL Server, nginx, admin, icons, notifications, events, attachments, MSSQL) at several GB of RAM; the newer <strong>Bitwarden Unified</strong> (beta since 2022, still labelled so) collapses it to one container with SQLite/Postgres/MySQL at ~500 MB. Features match the hosted product exactly; <strong>paid features (organisations beyond the free tier, TOTP, emergency access, etc.) require a licence</strong> — a personal Premium licence (USD 10/year) or a Families plan (USD 40/year) that you apply to the self-hosted instance. Official support and audits.</p>
+<p><strong>Pick it if:</strong> you want Bitwarden's own code and support, are willing to pay for the licence, and do not mind the heavier footprint. For a household, Vaultwarden's feature parity for free makes this a hard sell; for a small business wanting vendor support, it is the right choice.</p>
+<h3 id="passbolt">Passbolt<a class="headerlink" href="#passbolt" title="Permanent link">#</a></h3>
+<p>An open-source password manager <strong>built for teams</strong>: fine-grained sharing by user and group, folders, audit logs, an admin panel, LDAP/SSO (Pro), browser extensions and mobile apps, and — its distinctive design — <strong>OpenPGP-based</strong> end-to-end encryption where each user's private key lives in the browser extension. PHP + MariaDB + a mail relay (email is required for account setup). Community Edition is free and capable; Pro adds SSO, LDAP, and more. It is more "credential sharing for a company" than "personal vault," and its per-item PGP model makes it less convenient than Bitwarden for a household's everyday use. <strong>Pick it if</strong> you manage shared credentials for a team and want strong audit/sharing controls.</p>
+<h3 id="psono">Psono<a class="headerlink" href="#psono" title="Permanent link">#</a></h3>
+<p>An open-source enterprise password manager (Python + Postgres) with client-side encryption, sharing, groups, LDAP/SAML/OIDC (some Enterprise-only), browser extensions, mobile apps, and a "Community Edition" that is fully featured for up to 10 users. Solid, less known, a reasonable alternative to Passbolt for teams.</p>
+<h3 id="keepass-keepassxc-keepassdx-strongbox-sync">KeePass (KeePassXC, KeePassDX, Strongbox) + sync<a class="headerlink" href="#keepass-keepassxc-keepassdx-strongbox-sync" title="Permanent link">#</a></h3>
+<p>The <strong>file-based</strong> approach: a single encrypted <code>.kdbx</code> database file opened by a desktop client (<strong>KeePassXC</strong> — excellent, cross-platform, with browser integration, TOTP, SSH agent, passkeys), an Android client (<strong>KeePassDX</strong>, <strong>Keepass2Android</strong>), or an iOS client (<strong>Strongbox</strong> — polished, paid pro tier; <strong>KeePassium</strong>). There is <em>no server</em>: you sync the file with <strong>Syncthing</strong> (<a href="../17-files-sync-documents/">Chapter 17</a>), Nextcloud/WebDAV, or any file sync. Zero attack surface, zero services to maintain, works fully offline, and the format is an open standard readable by dozens of tools for decades. The costs: sync conflicts if two devices edit simultaneously (KeePassXC merges databases; mobile clients handle it variably), no sharing model beyond "share the file," and no browser autofill as slick as Bitwarden's. <strong>Pick it if</strong> you want the minimum possible infrastructure, you are one person (or a couple with a shared file), and you value offline-first. Many people run KeePassXC <em>and</em> Vaultwarden — the former as a cold backup export of the latter.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<p><strong>Padloc</strong>, <strong>Buttercup</strong>, <strong>Passky</strong>, <strong>Pass</strong> (the Unix command-line manager — GPG-encrypted files in a Git repo; <strong>passforios</strong> and <strong>Android Password Store</strong> as clients; for terminal people), <strong>gopass</strong>, <strong>Proton Pass / 1Password / Dashlane</strong> (hosted; excellent; not self-hostable), <strong>Nextcloud Passwords</strong> (an app inside Nextcloud — decent, but why not Vaultwarden), <strong>Teampass</strong> (old PHP team manager; avoid).</p>
+<h3 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Vaultwarden</th>
+<th>Bitwarden (official)</th>
+<th>Passbolt CE</th>
+<th>KeePassXC + Syncthing</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Server</td>
+<td>1 container, ~30 MB</td>
+<td>11 containers or Unified (~500 MB)</td>
+<td>PHP + MariaDB + SMTP</td>
+<td><strong>None</strong> (file sync)</td>
+</tr>
+<tr>
+<td>Clients</td>
+<td>All official Bitwarden apps</td>
+<td>All official Bitwarden apps</td>
+<td>Extension + mobile</td>
+<td>KeePassXC, KeePassDX, Strongbox, many</td>
+</tr>
+<tr>
+<td>Sharing (household)</td>
+<td><strong>Organisations, free</strong></td>
+<td>Organisations (licence for &gt;2 users)</td>
+<td>Groups, granular</td>
+<td>Share the file</td>
+</tr>
+<tr>
+<td>Passkeys</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Limited</td>
+<td>Yes (KeePassXC)</td>
+</tr>
+<tr>
+<td>TOTP in vault</td>
+<td><strong>Yes, free</strong></td>
+<td>Premium licence</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>2FA on vault</td>
+<td>TOTP, WebAuthn, Duo, email</td>
+<td>Same</td>
+<td>TOTP, YubiKey</td>
+<td>n/a (file is the secret)</td>
+</tr>
+<tr>
+<td>SSO</td>
+<td>OIDC (2025+)</td>
+<td>Enterprise licence</td>
+<td>Pro</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td>Audit / official support</td>
+<td>Community</td>
+<td><strong>Vendor</strong></td>
+<td>Vendor (Pro)</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td>Licence</td>
+<td>AGPL</td>
+<td>AGPL/BSL mix + licence keys</td>
+<td>AGPL / Pro</td>
+<td>GPL</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Households; most people</td>
+<td>Businesses wanting support</td>
+<td>Teams sharing credentials</td>
+<td>Minimalists; offline-first</td>
+</tr>
+</tbody>
+</table>
+<h2 id="two-factor-codes">Two-factor codes<a class="headerlink" href="#two-factor-codes" title="Permanent link">#</a></h2>
+<p>Where do your TOTP seeds live? Options, from most to least convenient:</p>
+<ul>
+<li><strong>In the password manager</strong> (Vaultwarden/Bitwarden's built-in authenticator, KeePassXC). Convenient — one app, autofill of the code. The criticism: it collapses two factors into one (whoever has your vault has both). The counter-argument: for most people the realistic threat is a phished password, not a compromised vault, and vault-with-MFA is still far better than SMS codes. A reasonable compromise: TOTP in the vault for everyday sites; a <em>separate</em> authenticator for the vault itself, your email, and your bank.</li>
+<li><strong>A dedicated authenticator app</strong> with encrypted backups: <strong>Aegis</strong> (Android — open source, encrypted export, the best), <strong>2FAS</strong>, <strong>Ente Auth</strong> (open source, E2EE cross-device sync via Ente's service or your own self-hosted Ente server, Android/iOS/desktop — the best cross-platform choice), <strong>Raivo</strong> (iOS; acquired and enshittified in 2023 — migrate), <strong>Bitwarden Authenticator</strong> (standalone app, separate from the vault). Back the seeds up: an encrypted export stored with your other cold backups.</li>
+<li><strong>A self-hosted TOTP web app</strong>: <strong>2FAuth</strong> (a clean PHP app that stores your seeds server-side with a web UI and PWA, import from Aegis/Google Authenticator/etc.) — useful as a household-shared or "any-device" authenticator; you are trusting your server with the seeds, so VPN-only.</li>
+<li><strong>Hardware keys</strong> (YubiKey, Nitrokey, Google Titan, SoloKeys) for FIDO2/WebAuthn where supported — the strongest factor, phishing-resistant, no seeds to back up (but buy <strong>two</strong> and register both everywhere; a lost single key is a lockout). Also store TOTP seeds on the YubiKey via Yubico Authenticator if you like.</li>
+</ul>
+<h2 id="passkeys">Passkeys<a class="headerlink" href="#passkeys" title="Permanent link">#</a></h2>
+<p>Passkeys (FIDO2 credentials synced across devices) are replacing passwords on major sites. Where they live matters for self-hosters: <strong>Vaultwarden/Bitwarden</strong> store them in the vault (cross-platform, self-hosted, portable), <strong>KeePassXC</strong> too; Apple/Google/Microsoft platform passkeys are synced via their clouds. Storing passkeys in your self-hosted vault keeps them under your control and works on every OS — the recommendation. Your own services should <em>accept</em> passkeys via the IdP (<a href="../10-identity-sso/">Chapter 10</a>).</p>
+<h2 id="machine-secrets">Machine secrets<a class="headerlink" href="#machine-secrets" title="Permanent link">#</a></h2>
+<p>A home lab accumulates hundreds of non-human secrets: database passwords, API tokens for Cloudflare and B2, SMTP credentials, OIDC client secrets, Restic repository keys, Home Assistant tokens. They end up in <code>.env</code> files. That is where most people should leave them — with discipline:</p>
+<h3 id="the-pragmatic-baseline">The pragmatic baseline<a class="headerlink" href="#the-pragmatic-baseline" title="Permanent link">#</a></h3>
+<ul>
+<li>One <code>.env</code> per stack, <code>chmod 600</code>, owned by the deploying user, <code>.gitignore</code>d.</li>
+<li><code>*_FILE</code> variables and Docker secrets where the image supports them (<a href="../13-security/">Chapter 13</a>).</li>
+<li>A copy of every <code>.env</code> in the <strong>password manager</strong> (as a secure note attached to a "Homelab: stackname" entry) — so a lost host does not mean lost credentials, and so the vault's backup covers them.</li>
+<li>Scoped tokens; rotation when anything leaks.</li>
+</ul>
+<h3 id="sops-age-secrets-in-git">SOPS + age: secrets in Git<a class="headerlink" href="#sops-age-secrets-in-git" title="Permanent link">#</a></h3>
+<p><strong>SOPS</strong> (Mozilla, now CNCF) encrypts <em>values</em> in YAML/JSON/<code>.env</code> files while leaving keys readable — you see <code>DB_PASSWORD: ENC[AES256_GCM,...]</code> and can diff the file meaningfully. Encryption keys: <strong>age</strong> (a small modern tool; one keypair per admin/host), GPG, or cloud KMS. Commit encrypted files; decrypt on deploy (<code>sops -d .env.enc &gt; .env</code>, or <code>sops exec-env</code>). Integrates with Ansible (community.sops), Kubernetes (via Flux/Argo), NixOS (sops-nix, agenix), Komodo. <strong>This is how you get a fully reproducible lab in Git <em>including</em> its secrets</strong>, and the recommendation for anyone doing infrastructure-as-code (<a href="../27-automation-iac/">Chapter 27</a>). <code>git-crypt</code> is the older whole-file alternative.</p>
+<h3 id="secrets-managers">Secrets managers<a class="headerlink" href="#secrets-managers" title="Permanent link">#</a></h3>
+<p>For labs that want a <em>service</em> to hold secrets, inject them at runtime, rotate them, and audit access:</p>
+<ul>
+<li><strong>Infisical</strong> — a modern open-source secrets platform (Node + Postgres + Redis): projects/environments, a clean UI, a CLI (<code>infisical run -- docker compose up</code>, which injects secrets as env vars), SDKs, an agent, a Kubernetes operator, secret rotation, PKI/certificates, SSH CA, and audit logs. MIT-licensed core with an enterprise tier. The most approachable full secrets manager and the current community favourite.</li>
+<li><strong>OpenBao</strong> — the Linux Foundation fork of <strong>HashiCorp Vault</strong> after its 2023 licence change (Vault itself is BSL; OpenBao is MPL). The enterprise standard: key/value secrets, dynamic database credentials, PKI, transit encryption, SSH CA, policies, audit. Powerful, complex, a real learning curve; single-node "dev" mode is fine at home. <strong>Pick it if</strong> you want to learn Vault for career reasons.</li>
+<li><strong>Bitwarden Secrets Manager</strong> — a machine-secrets product alongside the password manager; free tier for personal use on the hosted service; Vaultwarden does not implement it.</li>
+<li><strong>Doppler</strong>, <strong>1Password Secrets Automation / Connect</strong> — hosted; excellent; not self-hosted.</li>
+<li><strong>Teller</strong>, <strong>envchain</strong>, <strong>direnv</strong> with encrypted files — lightweight CLI wrappers.</li>
+</ul>
+<p><strong>Recommendation for machine secrets:</strong> <code>.env</code> files with copies in Vaultwarden for Tier 1; <strong>SOPS + age in Git</strong> for anyone with their Compose files versioned (which should be everyone at Tier 2+); <strong>Infisical</strong> if you want a UI-driven manager with runtime injection; <strong>OpenBao</strong> to learn Vault.</p>
+<h2 id="backing-up-the-vault-specifically">Backing up the vault (specifically)<a class="headerlink" href="#backing-up-the-vault-specifically" title="Permanent link">#</a></h2>
+<ul>
+<li>Nightly <code>sqlite3 /data/db.sqlite3 ".backup '/data/backups/db-$(date +%F).sqlite3'"</code> (Vaultwarden), plus <code>attachments/</code>, <code>sends/</code>, <code>rsa_key*</code>, and <code>config.json</code>, into the normal encrypted off-site backup.</li>
+<li>Monthly <strong>encrypted JSON export</strong> from a Bitwarden client (Settings → Export → password-protected) saved to cold storage. This is the format-independent recovery: it can be imported into <em>any</em> Bitwarden server, or into KeePassXC.</li>
+<li>A <strong>printed emergency sheet</strong>: master password (or a hint only you understand), 2FA recovery codes for the vault, the location of the export and its password. In a safe, a bank box, or with a trusted person. Bitwarden's <strong>emergency access</strong> feature (Vaultwarden supports it) lets a trusted contact request access after a waiting period — configure it for your partner.</li>
+<li><strong>Test</strong>: restore the SQLite backup into a scratch Vaultwarden and log in. Import the JSON export into KeePassXC and open it. Once a year.</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Vaultwarden (or chosen manager) deployed; signups disabled; admin token hashed or admin disabled; icons internal.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Every household member enrolled; shared credentials in an organisation collection; emergency access configured for partners.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> MFA on every vault account with recovery codes stored <em>outside</em> the vault; passkeys stored in the vault.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Access via VPN (or exposed with CrowdSec/fail2ban reading its log, rate limits, and no admin panel); push notifications configured if desired.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Vault DB backed up via <code>sqlite3 .backup</code> nightly + keys + attachments; monthly encrypted export in cold storage; printed emergency sheet exists; annual restore test.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> TOTP strategy decided (vault vs separate authenticator); authenticator seeds backed up encrypted; two hardware keys registered where FIDO2 is supported.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Machine secrets: <code>.env</code> files <code>600</code> and gitignored with copies in the vault; SOPS+age for Git-managed configs; scoped tokens; rotation on leak.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../20-communication/">← 20. Communication: Chat, Video Calls, and Email</a><a class="next" href="../22-dev-git-automation/">22. Developer Tools, Git Hosting, and Automation →</a></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/21-passwords-secrets.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#first-principles">First principles</a></li>
+<li><a href="#password-managers">Password managers</a><ul>
+<li><a href="#vaultwarden">Vaultwarden</a></li>
+<li><a href="#bitwarden-official-self-hosted">Bitwarden (official self-hosted)</a></li>
+<li><a href="#passbolt">Passbolt</a></li>
+<li><a href="#psono">Psono</a></li>
+<li><a href="#keepass-keepassxc-keepassdx-strongbox-sync">KeePass (KeePassXC, KeePassDX, Strongbox) + sync</a></li>
+<li><a href="#others">Others</a></li>
+<li><a href="#comparison">Comparison</a></li>
+</ul>
+</li>
+<li><a href="#two-factor-codes">Two-factor codes</a></li>
+<li><a href="#passkeys">Passkeys</a></li>
+<li><a href="#machine-secrets">Machine secrets</a><ul>
+<li><a href="#the-pragmatic-baseline">The pragmatic baseline</a></li>
+<li><a href="#sops-age-secrets-in-git">SOPS + age: secrets in Git</a></li>
+<li><a href="#secrets-managers">Secrets managers</a></li>
+</ul>
+</li>
+<li><a href="#backing-up-the-vault-specifically">Backing up the vault (specifically)</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>

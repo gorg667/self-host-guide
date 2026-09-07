@@ -2,7 +2,7 @@
 
 > A comprehensive, opinionated, in-depth guide to services worth self-hosting — and everything around them.
 
-*Generated 2026-09-07 from the chapter sources in `guide/`. 21 chapters, ~77,447 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
+*Generated 2026-09-07 from the chapter sources in `guide/`. 23 chapters, ~82,566 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
 
 
 ## Table of contents
@@ -37,6 +37,8 @@
 - [18. Notes, Knowledge, and Personal Productivity](#notes-knowledge-and-personal-productivity)
 - [19. Home Automation](#home-automation)
 - [20. Communication: Chat, Video Calls, and Email](#communication-chat-video-calls-and-email)
+- [21. Passwords, Secrets, and Two-Factor Codes](#passwords-secrets-and-two-factor-codes)
+- [22. Developer Tools, Git Hosting, and Automation](#developer-tools-git-hosting-and-automation)
 
 ---
 
@@ -1322,7 +1324,7 @@ Line by line, the decisions that matter:
 
 - **`image` tag.** `latest` is convenient and dangerous: you have no idea what version you are running and `docker compose pull` may bring a breaking change at 3 am. Pin to at least a major version (`postgres:16`) and ideally a specific version, then update deliberately. See the Updates section.
 - **`restart: unless-stopped`** brings the container back after a crash or a host reboot, but respects a manual `docker stop`. `always` ignores the manual stop. `on-failure` is for one-shot jobs.
-- **`environment` and `.env`.** Compose reads `${VAR}` from a `.env` file next to the Compose file. Secrets go there, and `.env` goes in `.gitignore`. For anything more serious, Docker secrets or an external secrets manager ([Chapter 21](21-passwords-secrets.md)).
+- **`environment` and `.env`.** Compose reads `${VAR}` from a `.env` file next to the Compose file. Secrets go there, and `.env` goes in `.gitignore`. For anything more serious, Docker secrets or an external secrets manager ([Chapter 21](#passwords-secrets-and-two-factor-codes)).
 - **Bind mounts vs named volumes.** `./data:/data` is a bind mount: the data is in a directory you can see, back up with any tool, and move to another host by copying. `vaultwarden_data:/data` (declared under a top-level `volumes:`) is a named volume: Docker manages it under `/var/lib/docker/volumes`, it survives `docker compose down`, and it is slightly faster on some filesystems. **For self-hosting, bind mounts win** for almost everything because backups and migrations are simpler. The exception is database data on macOS/Windows Docker Desktop (irrelevant for a Linux server) and cases where a project's docs insist.
 - **Ports.** `"8080:80"` publishes on *all* host interfaces — including the internet-facing one if the host is exposed — and, critically, **bypasses `ufw`/`firewalld`** because Docker inserts its own iptables rules ahead of them. `"127.0.0.1:8080:80"` binds to localhost only, so only a reverse proxy on the same host can reach it. Better still: put the container and the reverse proxy on the same Docker network and publish *no* ports at all — the proxy reaches the container by service name on the internal network. See the Firewall section below.
 - **Networks.** A dedicated `proxy` network that the reverse proxy and every web-facing service join, plus per-stack default networks for internal traffic (a service and its database). Containers on the same network resolve each other by service name; containers on different networks cannot talk at all.
@@ -1390,7 +1392,7 @@ Compose files and SSH are enough. Many people want a web UI; these are the good 
 
 **Portainer** — the long-standing full-featured container management UI: stacks, containers, images, volumes, networks, users and RBAC, multiple environments (remote Docker hosts, Swarm, Kubernetes). Business Edition is paid; Community Edition is free and sufficient. Its "stacks" store Compose content in its own database unless you point it at Git, which is a lock-in irritation. Heavier than Dockge but more capable, especially for managing several hosts.
 
-**Komodo** — a newer Rust-based platform for managing Compose stacks across many servers with Git-backed configuration, builds, and alerting. Popular with people who outgrew Portainer and want GitOps-ish workflows without Kubernetes. See [Chapter 22](22-dev-git-automation.md).
+**Komodo** — a newer Rust-based platform for managing Compose stacks across many servers with Git-backed configuration, builds, and alerting. Popular with people who outgrew Portainer and want GitOps-ish workflows without Kubernetes. See [Chapter 22](#developer-tools-git-hosting-and-automation).
 
 **Yacht**, **Arcane**, **Dockhand**, **Lazydocker** (a terminal UI — excellent) — alternatives worth a look.
 
@@ -2743,7 +2745,7 @@ A full IdP for OIDC/SAML, oauth2-proxy providing forward-auth for the proxy. **F
 - **Group claims.** Map IdP groups to app roles (Immich admin, Grafana Admin/Editor, Gitea admin, Proxmox PVEAdmin) via the `groups` claim where the app supports it, so permissions follow the person.
 - **Local admin fallback.** Keep one local admin account on each important app (and on the proxy/IdP hosts) that does not depend on the IdP — when Authelia is down, you still need to get into Proxmox.
 - **Backup the IdP database and secrets first.** Losing the IdP's signing keys or user database locks everyone out of everything. It is the highest-value small backup in the lab ([Chapter 11](#backups-the-chapter-that-matters-most)).
-- **MFA enrolment and recovery.** Register at least two authenticators per user (phone passkey + a hardware key, or TOTP + WebAuthn) and store recovery codes in the password manager ([Chapter 21](21-passwords-secrets.md)).
+- **MFA enrolment and recovery.** Register at least two authenticators per user (phone passkey + a hardware key, or TOTP + WebAuthn) and store recovery codes in the password manager ([Chapter 21](#passwords-secrets-and-two-factor-codes)).
 - **Trusted networks.** Authelia's `networks` and Authentik's policies can relax to one-factor (or bypass) for the LAN/VPN and require two-factor from anywhere else. Convenient; understand that a compromised LAN device then gets the relaxed policy.
 - **Rate limiting and lockout.** Enable the IdP's brute-force protection (Authelia `regulation`, Authentik's default policies) and put CrowdSec/fail2ban on the login endpoint ([Chapter 13](#security-for-the-home-lab)).
 
@@ -2839,7 +2841,7 @@ Tools that automate this: **docker-db-backup** (tiredofit — dumps Postgres/Mar
 
 ### Containers and configuration
 
-`/opt/stacks` (or wherever your Compose files live) plus every bind-mounted config directory. Small, precious, changes often. Keep it in **Git** as well — that is a backup with history and a diff of every change. `.env` files with secrets: encrypted in the backup (all the tools below encrypt) and *not* in the Git repo unless encrypted with **SOPS**/**age** or **git-crypt** ([Chapter 21](21-passwords-secrets.md)).
+`/opt/stacks` (or wherever your Compose files live) plus every bind-mounted config directory. Small, precious, changes often. Keep it in **Git** as well — that is a backup with history and a diff of every change. `.env` files with secrets: encrypted in the backup (all the tools below encrypt) and *not* in the Git repo unless encrypted with **SOPS**/**age** or **git-crypt** ([Chapter 21](#passwords-secrets-and-two-factor-codes)).
 
 ### Virtual machines and LXCs
 
@@ -3455,7 +3457,7 @@ Passwords, API tokens, database credentials, and encryption keys end up in `.env
 - **`.env` files, `chmod 600`, gitignored.** The baseline. Compose reads them; they never enter the repository.
 - **Docker secrets** (`secrets:` in Compose, files mounted at `/run/secrets/name`) for images that support `*_FILE` environment variables (Postgres, MariaDB, Authelia, Vaultwarden, Nextcloud, Immich, Gitea, and many more do). Keeps secrets out of `docker inspect` output and the process environment.
 - **Encrypted in Git** with **SOPS** (+ **age** or a GPG key): the file is committed encrypted, decrypted on deploy. This is how you get a fully reproducible, Git-backed lab that includes its secrets. Works with Compose via a small wrapper or via Komodo/Ansible integrations.
-- **A secrets manager** for larger labs: **Infisical**, **OpenBao** (the open-source fork of HashiCorp Vault after its licence change), **Bitwarden Secrets Manager**, or Vaultwarden used as a poor man's store via the CLI. Overkill for Tier 1; sensible for Tier 3 or anyone doing serious IaC. See [Chapter 21](21-passwords-secrets.md).
+- **A secrets manager** for larger labs: **Infisical**, **OpenBao** (the open-source fork of HashiCorp Vault after its licence change), **Bitwarden Secrets Manager**, or Vaultwarden used as a poor man's store via the CLI. Overkill for Tier 1; sensible for Tier 3 or anyone doing serious IaC. See [Chapter 21](#passwords-secrets-and-two-factor-codes).
 - **Rotate what leaks.** If a token appears in a log, a screenshot, or a public repo, it is compromised — regenerate it, do not just delete the post.
 - **Scoped tokens.** The Cloudflare token for DNS-01 needs *only* DNS edit on *one* zone. The B2 key for backups needs *write, not delete*. The Docker socket proxy exposes *read-only container listing*. Least privilege everywhere it is free.
 - **Shell history**: `export HISTIGNORE="*PASSWORD*:*TOKEN*:*SECRET*"` or prefix sensitive commands with a space (with `HISTCONTROL=ignorespace`).
@@ -4241,7 +4243,7 @@ A Go-based enterprise file platform with a polished UI, workspaces, fine-grained
 
 **Syncthing** is a different thing entirely and one of the best pieces of software in self-hosting. It synchronises folders **directly between your devices** — laptop, desktop, phone, NAS — with no central server required, over an encrypted protocol, using a global discovery and relay network (which you can self-host) to find peers behind NAT. Every device holds a full copy. Conflicts produce `.sync-conflict` files rather than silent overwrites. **File versioning** (trash-can, simple, staggered, external) on any device keeps old copies. Send-only, receive-only, and send-receive folder modes; ignore patterns; per-folder rescan intervals with inotify; bandwidth limits; a web UI per device; Android app (the official one was discontinued from the Play Store in late 2024 — **Syncthing-Fork** on F-Droid/Play is the maintained one); iOS via **Möbius Sync** (third-party, paid).
 
-**Where it fits:** keeping a documents folder identical on three computers; pushing phone photos to the NAS (as a Syncthing folder that Immich then watches as an external library, or that PhotoPrism imports); syncing an **Obsidian** or **KeePassXC** database across devices ([Chapter 18](#notes-knowledge-and-personal-productivity), [Chapter 21](21-passwords-secrets.md)); replicating a folder to a friend's machine as a poor man's off-site copy (with versioning on their end). Include the NAS as an always-on peer so devices that are never online simultaneously still converge.
+**Where it fits:** keeping a documents folder identical on three computers; pushing phone photos to the NAS (as a Syncthing folder that Immich then watches as an external library, or that PhotoPrism imports); syncing an **Obsidian** or **KeePassXC** database across devices ([Chapter 18](#notes-knowledge-and-personal-productivity), [Chapter 21](#passwords-secrets-and-two-factor-codes)); replicating a folder to a friend's machine as a poor man's off-site copy (with versioning on their end). Include the NAS as an always-on peer so devices that are never online simultaneously still converge.
 
 **Where it does not:** it is *sync*, not *backup* — a deletion (or ransomware encryption) propagates everywhere; versioning mitigates but does not replace [Chapter 11](#backups-the-chapter-that-matters-most). No web-based file access or sharing links (it moves files; it does not serve them). No selective sync on mobile beyond folder granularity. Many small files or huge trees are fine; very large single files that change constantly (VM images, databases) are not a good fit.
 
@@ -4354,7 +4356,7 @@ This is the most crowded and most personal category in self-hosting. Notes apps 
 - **Obsidian LiveSync** (community plugin) — real-time sync through a self-hosted **CouchDB** (a single container) with end-to-end encryption, conflict resolution, and mobile support. The most popular self-hosted route; works well once configured; the setup wizard has improved.
 - **Syncthing** ([Chapter 17](#files-sync-and-documents)) — sync the vault folder between devices. Simple, no plugin, works with any app that reads the folder; conflicts are handled as `.sync-conflict` files; iOS requires Möbius Sync and does not run in the background reliably.
 - **Nextcloud/WebDAV** via the **Remotely Save** plugin (also supports S3, Dropbox, OneDrive, WebDAV) — periodic sync rather than real-time.
-- **Git** via the **Obsidian Git** plugin — commits and pushes on a timer to your Gitea/Forgejo ([Chapter 22](22-dev-git-automation.md)); gives full history; clunky on mobile.
+- **Git** via the **Obsidian Git** plugin — commits and pushes on a timer to your Gitea/Forgejo ([Chapter 22](#developer-tools-git-hosting-and-automation)); gives full history; clunky on mobile.
 - **Obsidian Sync** (official, paid, E2EE) — not self-hosted but excellent, and a legitimate choice for people who want zero maintenance.
 
 **Pick Obsidian if** you want the richest personal knowledge tool, accept a closed editor over open files, and are happy to run CouchDB or Syncthing. The plain-Markdown-on-disk model is the anti-lock-in guarantee that makes the closed client acceptable to many self-hosters.
@@ -4867,5 +4869,311 @@ For most households: **a paid provider with your own domain** (Fastmail/Proton/M
 - [ ] Email: honest decision made — provider with own domain, relay hybrid, or full self-host on a VPS; if self-hosting, the checklist above completed and 10/10 on mail-tester.
 - [ ] All communication services behind the reverse proxy with valid certificates; SMTP/IMAP ports protected by fail2ban/CrowdSec.
 - [ ] Mail store, chat database, and media in nightly backups; DKIM and Matrix signing keys in the secrets backup.
+
+---
+
+# Passwords, Secrets, and Two-Factor Codes
+
+A password manager is the single most important piece of personal security software, and self-hosting it is one of the most popular first projects — the data is tiny, the value is enormous, and the idea of a company holding every credential you own is uncomfortable to many. This chapter reviews Vaultwarden (the community's overwhelming choice), the official Bitwarden server, Passbolt, Psono, and the file-based KeePass approach; covers TOTP/2FA code management (2FAuth, Ente Auth, Aegis backups); and then turns to *machine* secrets — the API keys, database passwords, and tokens that a lab accumulates — with Infisical, OpenBao, SOPS, and the pragmatic middle ground.
+
+## First principles
+
+- **The vault is the most irreplaceable and most sensitive data you have.** Back it up with more care than anything else ([Chapter 11](#backups-the-chapter-that-matters-most)); keep an *encrypted export* somewhere outside the lab (a USB stick in a safe, a printed emergency sheet for the master password and 2FA recovery codes); and protect the server as if losing it locks you out of everything — because it does.
+- **Clients cache the vault**, so a server outage does not lock you out immediately — but new devices cannot enrol and changes cannot sync. Availability matters less than integrity.
+- **Exposure**: the classic dilemma. A password manager needs to sync to your phone wherever you are. The options are a mesh VPN (nothing exposed; sync happens when the VPN is up — Bitwarden clients handle this gracefully) or exposing it behind the reverse proxy with the app's own strong auth (the Bitwarden protocol is well-hardened; Vaultwarden exposed with fail2ban/CrowdSec and admin panel disabled is a common, defensible setup). The guide's preference: **VPN-only, with the mobile client's cached vault covering the gaps.**
+- **MFA on the vault itself** (TOTP, WebAuthn/passkey, Duo, email) is mandatory. Store *those* recovery codes somewhere that is not the vault.
+
+## Password managers
+
+### Vaultwarden
+
+An unofficial, **Rust** reimplementation of the Bitwarden server API, compatible with every official Bitwarden client (browser extensions, desktop, iOS, Android, CLI) and providing nearly every feature — including ones Bitwarden puts behind its paid tiers: organisations and collections (shared vaults for the household), **passkey storage**, TOTP authenticator in the vault, emergency access, Send (encrypted text/file sharing), attachments, WebAuthn/YubiKey/Duo 2FA, and an admin panel. Single binary + SQLite (or Postgres/MySQL), ~20–50 MB RAM, one container. It has been the community standard since 2018 (as bitwarden_rs), is actively maintained with a large contributor base, and receives security attention proportional to its popularity. **SSO/OIDC login** landed in 2025 via a long-running fork merged upstream.
+
+**Watch out for:** it is *not* Bitwarden's code — Bitwarden Inc. neither supports nor audits it; the client apps occasionally ship features before Vaultwarden implements them (usually a week or two of lag, sometimes a broken feature until the next release — pin the version and read release notes); the admin panel must be protected or disabled (`ADMIN_TOKEN` as an Argon2 hash, and never exposed publicly); disable signups after creating your accounts (`SIGNUPS_ALLOWED=false`), or restrict by domain; **back up the SQLite database with `sqlite3 .backup`**, not a file copy, plus the `attachments/` and `sends/` directories and the `rsa_key*` files (the JWT signing keys — losing them logs everyone out). Icons are fetched from the internet by default (a privacy leak of which sites you have accounts on) — set `ICON_SERVICE=internal` or disable.
+
+```yaml
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.34.1
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      DOMAIN: https://vault.example.com
+      SIGNUPS_ALLOWED: "false"
+      INVITATIONS_ALLOWED: "true"
+      ADMIN_TOKEN: ${VW_ADMIN_TOKEN_ARGON2}     # generate with: vaultwarden hash  (or disable admin entirely by omitting)
+      SHOW_PASSWORD_HINT: "false"
+      ICON_SERVICE: internal
+      PUSH_ENABLED: "true"                      # mobile push via Bitwarden's relay; needs PUSH_INSTALLATION_ID/KEY from bitwarden.com/host
+      PUSH_INSTALLATION_ID: ${VW_PUSH_ID}
+      PUSH_INSTALLATION_KEY: ${VW_PUSH_KEY}
+      SMTP_HOST: smtp.example.com
+      SMTP_FROM: vault@example.com
+      SMTP_USERNAME: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASS}
+      LOG_FILE: /data/vaultwarden.log          # for fail2ban/CrowdSec
+    volumes:
+      - ./data:/data
+    networks: [proxy]
+    security_opt: [no-new-privileges:true]
+```
+
+**Verdict:** the recommendation for almost everyone. Tiny, complete, mature, and it unlocks the entire polished Bitwarden client ecosystem for free.
+
+### Bitwarden (official self-hosted)
+
+Bitwarden Inc. publishes its full server for self-hosting: the traditional deployment is ~11 containers (web, API, identity, SQL Server, nginx, admin, icons, notifications, events, attachments, MSSQL) at several GB of RAM; the newer **Bitwarden Unified** (beta since 2022, still labelled so) collapses it to one container with SQLite/Postgres/MySQL at ~500 MB. Features match the hosted product exactly; **paid features (organisations beyond the free tier, TOTP, emergency access, etc.) require a licence** — a personal Premium licence (USD 10/year) or a Families plan (USD 40/year) that you apply to the self-hosted instance. Official support and audits.
+
+**Pick it if:** you want Bitwarden's own code and support, are willing to pay for the licence, and do not mind the heavier footprint. For a household, Vaultwarden's feature parity for free makes this a hard sell; for a small business wanting vendor support, it is the right choice.
+
+### Passbolt
+
+An open-source password manager **built for teams**: fine-grained sharing by user and group, folders, audit logs, an admin panel, LDAP/SSO (Pro), browser extensions and mobile apps, and — its distinctive design — **OpenPGP-based** end-to-end encryption where each user's private key lives in the browser extension. PHP + MariaDB + a mail relay (email is required for account setup). Community Edition is free and capable; Pro adds SSO, LDAP, and more. It is more "credential sharing for a company" than "personal vault," and its per-item PGP model makes it less convenient than Bitwarden for a household's everyday use. **Pick it if** you manage shared credentials for a team and want strong audit/sharing controls.
+
+### Psono
+
+An open-source enterprise password manager (Python + Postgres) with client-side encryption, sharing, groups, LDAP/SAML/OIDC (some Enterprise-only), browser extensions, mobile apps, and a "Community Edition" that is fully featured for up to 10 users. Solid, less known, a reasonable alternative to Passbolt for teams.
+
+### KeePass (KeePassXC, KeePassDX, Strongbox) + sync
+
+The **file-based** approach: a single encrypted `.kdbx` database file opened by a desktop client (**KeePassXC** — excellent, cross-platform, with browser integration, TOTP, SSH agent, passkeys), an Android client (**KeePassDX**, **Keepass2Android**), or an iOS client (**Strongbox** — polished, paid pro tier; **KeePassium**). There is *no server*: you sync the file with **Syncthing** ([Chapter 17](#files-sync-and-documents)), Nextcloud/WebDAV, or any file sync. Zero attack surface, zero services to maintain, works fully offline, and the format is an open standard readable by dozens of tools for decades. The costs: sync conflicts if two devices edit simultaneously (KeePassXC merges databases; mobile clients handle it variably), no sharing model beyond "share the file," and no browser autofill as slick as Bitwarden's. **Pick it if** you want the minimum possible infrastructure, you are one person (or a couple with a shared file), and you value offline-first. Many people run KeePassXC *and* Vaultwarden — the former as a cold backup export of the latter.
+
+### Others
+
+**Padloc**, **Buttercup**, **Passky**, **Pass** (the Unix command-line manager — GPG-encrypted files in a Git repo; **passforios** and **Android Password Store** as clients; for terminal people), **gopass**, **Proton Pass / 1Password / Dashlane** (hosted; excellent; not self-hostable), **Nextcloud Passwords** (an app inside Nextcloud — decent, but why not Vaultwarden), **Teampass** (old PHP team manager; avoid).
+
+### Comparison
+
+| | Vaultwarden | Bitwarden (official) | Passbolt CE | KeePassXC + Syncthing |
+|---|---|---|---|---|
+| Server | 1 container, ~30 MB | 11 containers or Unified (~500 MB) | PHP + MariaDB + SMTP | **None** (file sync) |
+| Clients | All official Bitwarden apps | All official Bitwarden apps | Extension + mobile | KeePassXC, KeePassDX, Strongbox, many |
+| Sharing (household) | **Organisations, free** | Organisations (licence for >2 users) | Groups, granular | Share the file |
+| Passkeys | Yes | Yes | Limited | Yes (KeePassXC) |
+| TOTP in vault | **Yes, free** | Premium licence | Yes | Yes |
+| 2FA on vault | TOTP, WebAuthn, Duo, email | Same | TOTP, YubiKey | n/a (file is the secret) |
+| SSO | OIDC (2025+) | Enterprise licence | Pro | n/a |
+| Audit / official support | Community | **Vendor** | Vendor (Pro) | n/a |
+| Licence | AGPL | AGPL/BSL mix + licence keys | AGPL / Pro | GPL |
+| Best for | Households; most people | Businesses wanting support | Teams sharing credentials | Minimalists; offline-first |
+
+## Two-factor codes
+
+Where do your TOTP seeds live? Options, from most to least convenient:
+
+- **In the password manager** (Vaultwarden/Bitwarden's built-in authenticator, KeePassXC). Convenient — one app, autofill of the code. The criticism: it collapses two factors into one (whoever has your vault has both). The counter-argument: for most people the realistic threat is a phished password, not a compromised vault, and vault-with-MFA is still far better than SMS codes. A reasonable compromise: TOTP in the vault for everyday sites; a *separate* authenticator for the vault itself, your email, and your bank.
+- **A dedicated authenticator app** with encrypted backups: **Aegis** (Android — open source, encrypted export, the best), **2FAS**, **Ente Auth** (open source, E2EE cross-device sync via Ente's service or your own self-hosted Ente server, Android/iOS/desktop — the best cross-platform choice), **Raivo** (iOS; acquired and enshittified in 2023 — migrate), **Bitwarden Authenticator** (standalone app, separate from the vault). Back the seeds up: an encrypted export stored with your other cold backups.
+- **A self-hosted TOTP web app**: **2FAuth** (a clean PHP app that stores your seeds server-side with a web UI and PWA, import from Aegis/Google Authenticator/etc.) — useful as a household-shared or "any-device" authenticator; you are trusting your server with the seeds, so VPN-only.
+- **Hardware keys** (YubiKey, Nitrokey, Google Titan, SoloKeys) for FIDO2/WebAuthn where supported — the strongest factor, phishing-resistant, no seeds to back up (but buy **two** and register both everywhere; a lost single key is a lockout). Also store TOTP seeds on the YubiKey via Yubico Authenticator if you like.
+
+## Passkeys
+
+Passkeys (FIDO2 credentials synced across devices) are replacing passwords on major sites. Where they live matters for self-hosters: **Vaultwarden/Bitwarden** store them in the vault (cross-platform, self-hosted, portable), **KeePassXC** too; Apple/Google/Microsoft platform passkeys are synced via their clouds. Storing passkeys in your self-hosted vault keeps them under your control and works on every OS — the recommendation. Your own services should *accept* passkeys via the IdP ([Chapter 10](#identity-and-single-sign-on)).
+
+## Machine secrets
+
+A home lab accumulates hundreds of non-human secrets: database passwords, API tokens for Cloudflare and B2, SMTP credentials, OIDC client secrets, Restic repository keys, Home Assistant tokens. They end up in `.env` files. That is where most people should leave them — with discipline:
+
+### The pragmatic baseline
+
+- One `.env` per stack, `chmod 600`, owned by the deploying user, `.gitignore`d.
+- `*_FILE` variables and Docker secrets where the image supports them ([Chapter 13](#security-for-the-home-lab)).
+- A copy of every `.env` in the **password manager** (as a secure note attached to a "Homelab: stackname" entry) — so a lost host does not mean lost credentials, and so the vault's backup covers them.
+- Scoped tokens; rotation when anything leaks.
+
+### SOPS + age: secrets in Git
+
+**SOPS** (Mozilla, now CNCF) encrypts *values* in YAML/JSON/`.env` files while leaving keys readable — you see `DB_PASSWORD: ENC[AES256_GCM,...]` and can diff the file meaningfully. Encryption keys: **age** (a small modern tool; one keypair per admin/host), GPG, or cloud KMS. Commit encrypted files; decrypt on deploy (`sops -d .env.enc > .env`, or `sops exec-env`). Integrates with Ansible (community.sops), Kubernetes (via Flux/Argo), NixOS (sops-nix, agenix), Komodo. **This is how you get a fully reproducible lab in Git *including* its secrets**, and the recommendation for anyone doing infrastructure-as-code ([Chapter 27](27-automation-iac.md)). `git-crypt` is the older whole-file alternative.
+
+### Secrets managers
+
+For labs that want a *service* to hold secrets, inject them at runtime, rotate them, and audit access:
+
+- **Infisical** — a modern open-source secrets platform (Node + Postgres + Redis): projects/environments, a clean UI, a CLI (`infisical run -- docker compose up`, which injects secrets as env vars), SDKs, an agent, a Kubernetes operator, secret rotation, PKI/certificates, SSH CA, and audit logs. MIT-licensed core with an enterprise tier. The most approachable full secrets manager and the current community favourite.
+- **OpenBao** — the Linux Foundation fork of **HashiCorp Vault** after its 2023 licence change (Vault itself is BSL; OpenBao is MPL). The enterprise standard: key/value secrets, dynamic database credentials, PKI, transit encryption, SSH CA, policies, audit. Powerful, complex, a real learning curve; single-node "dev" mode is fine at home. **Pick it if** you want to learn Vault for career reasons.
+- **Bitwarden Secrets Manager** — a machine-secrets product alongside the password manager; free tier for personal use on the hosted service; Vaultwarden does not implement it.
+- **Doppler**, **1Password Secrets Automation / Connect** — hosted; excellent; not self-hosted.
+- **Teller**, **envchain**, **direnv** with encrypted files — lightweight CLI wrappers.
+
+**Recommendation for machine secrets:** `.env` files with copies in Vaultwarden for Tier 1; **SOPS + age in Git** for anyone with their Compose files versioned (which should be everyone at Tier 2+); **Infisical** if you want a UI-driven manager with runtime injection; **OpenBao** to learn Vault.
+
+## Backing up the vault (specifically)
+
+- Nightly `sqlite3 /data/db.sqlite3 ".backup '/data/backups/db-$(date +%F).sqlite3'"` (Vaultwarden), plus `attachments/`, `sends/`, `rsa_key*`, and `config.json`, into the normal encrypted off-site backup.
+- Monthly **encrypted JSON export** from a Bitwarden client (Settings → Export → password-protected) saved to cold storage. This is the format-independent recovery: it can be imported into *any* Bitwarden server, or into KeePassXC.
+- A **printed emergency sheet**: master password (or a hint only you understand), 2FA recovery codes for the vault, the location of the export and its password. In a safe, a bank box, or with a trusted person. Bitwarden's **emergency access** feature (Vaultwarden supports it) lets a trusted contact request access after a waiting period — configure it for your partner.
+- **Test**: restore the SQLite backup into a scratch Vaultwarden and log in. Import the JSON export into KeePassXC and open it. Once a year.
+
+## Checklist
+
+- [ ] Vaultwarden (or chosen manager) deployed; signups disabled; admin token hashed or admin disabled; icons internal.
+- [ ] Every household member enrolled; shared credentials in an organisation collection; emergency access configured for partners.
+- [ ] MFA on every vault account with recovery codes stored *outside* the vault; passkeys stored in the vault.
+- [ ] Access via VPN (or exposed with CrowdSec/fail2ban reading its log, rate limits, and no admin panel); push notifications configured if desired.
+- [ ] Vault DB backed up via `sqlite3 .backup` nightly + keys + attachments; monthly encrypted export in cold storage; printed emergency sheet exists; annual restore test.
+- [ ] TOTP strategy decided (vault vs separate authenticator); authenticator seeds backed up encrypted; two hardware keys registered where FIDO2 is supported.
+- [ ] Machine secrets: `.env` files `600` and gitignored with copies in the vault; SOPS+age for Git-managed configs; scoped tokens; rotation on leak.
+
+---
+
+# Developer Tools, Git Hosting, and Automation
+
+A home lab is also a development environment: a place to keep your code, run CI, host container images, spin up a browser-based IDE, manage the containers themselves, and glue services together with workflow automation. This chapter covers Git hosting (Gitea, Forgejo, GitLab, OneDev, Gogs), CI/CD (Gitea/Forgejo Actions, Woodpecker, Drone, Jenkins), container registries (Harbor, the Distribution registry, Zot, Gitea's built-in), remote development (code-server, Coder, Gitpod's successors, JupyterHub), container and stack management UIs (Portainer, Dockge, Komodo, Arcane), workflow automation (n8n, Windmill, Activepieces, Node-RED, Huginn), and the grab-bag of developer utilities (IT-Tools, Cyberchef, pastebins, URL shorteners) that earn a place on every lab.
+
+## Git hosting
+
+### Gitea and Forgejo
+
+**Gitea** is a lightweight, single-binary Go Git server with a GitHub-like UI: repositories, issues, pull requests, wikis, projects/kanban, organisations and teams, webhooks, **Gitea Actions** (a GitHub Actions-compatible CI runner — most GitHub workflow files run unchanged), a **package registry** (Docker/OCI, npm, PyPI, Maven, NuGet, Cargo, Helm, Debian/RPM, generic, and more), OIDC/LDAP login, SSH and HTTPS access, mirroring (pull and push), and migration from GitHub/GitLab/Bitbucket. ~100–300 MB RAM with SQLite; Postgres/MySQL for larger installs.
+
+**Forgejo** is the **community fork** of Gitea, created in late 2022 by Codeberg e.V. and contributors after Gitea's maintainers formed a for-profit company (Gitea Ltd.) and took ownership of the domain and trademark. Forgejo is a **hard fork** since 2024 (no longer tracking Gitea commit-for-commit), governed by a non-profit, with a focus on **federation** (ActivityPub/ForgeFed — in progress), a stricter release process, and a commitment to remaining copyleft (it moved to GPLv3+ for new contributions). Feature-wise the two remain very close; Forgejo powers **Codeberg**, the largest non-profit Git host. Forgejo Actions is compatible with Gitea Actions and GitHub Actions syntax.
+
+**Pick Forgejo if** governance and community ownership matter to you (the guide's lean). **Pick Gitea if** you want the larger commercial ecosystem and slightly faster feature velocity. Either is the right Git server for a home lab; migration between them is straightforward for now, harder as they diverge.
+
+```yaml
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:11
+    container_name: forgejo
+    restart: unless-stopped
+    environment:
+      USER_UID: "1000"
+      USER_GID: "1000"
+      FORGEJO__server__ROOT_URL: https://git.example.com/
+      FORGEJO__server__SSH_DOMAIN: git.example.com
+      FORGEJO__server__SSH_PORT: "2222"
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__actions__ENABLED: "true"
+    volumes:
+      - ./data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "2222:22"                      # SSH for git; publish on the host; or use an SSH passthrough
+    networks: [proxy, default]
+  runner:
+    image: code.forgejo.org/forgejo/runner:6
+    container_name: forgejo-runner
+    restart: unless-stopped
+    depends_on: [forgejo]
+    volumes:
+      - ./runner:/data
+      - /var/run/docker.sock:/var/run/docker.sock   # runner needs Docker to run job containers (DinD alternative exists)
+    command: forgejo-runner daemon
+    networks: [default]
+    # register once: docker compose exec runner forgejo-runner register --instance https://git.example.com --token <token from Site Administration → Actions → Runners>
+```
+
+### GitLab
+
+The **full DevOps platform**: everything Gitea does plus a far deeper CI/CD system (pipelines, environments, review apps, auto-DevOps), a container registry, package registries, security scanning (some Premium/Ultimate), Kubernetes integration, wikis, issue boards, epics (paid), and an enormous feature surface. **GitLab CE** (Community Edition, MIT) is free and self-hostable via the Omnibus package or a Docker image; **it wants 4–8 GB of RAM** and a few cores at idle, starts slowly, and its monthly releases need attention. If you use GitLab at work and want to mirror it at home, or you want the most powerful CI available, run it; for a household's personal projects, it is a battleship where a dinghy would do.
+
+### OneDev
+
+A single-container Java Git server with a distinctive feature set: **CI/CD with a visual pipeline editor** (no YAML required, though YAML is available), code search with symbol navigation, issue tracking with custom fields and boards, code review, package registry, Kanban, and SSO. Around 500 MB–1 GB RAM. Quietly excellent, especially for people who dislike YAML-driven CI; a much smaller community than Gitea/Forgejo.
+
+### Gogs, Soft Serve, Gitolite, and the tiny ones
+
+**Gogs** is the project Gitea forked from in 2016; still maintained by one developer, minimal, fine for a personal server with no CI. **Soft Serve** (Charm) is a **TUI-first** Git server over SSH — beautiful, minimal, no web UI. **Gitolite** is pure access control over SSH for people who want *only* Git with authorised keys. **cgit**/**gitweb**/**Klaus** are read-only web viewers over bare repositories. Bare repos on a server with SSH (`git init --bare`) and no software at all is a perfectly valid personal Git host — many people run exactly that plus Forgejo for the projects that want issues.
+
+### Comparison
+
+| | Forgejo / Gitea | GitLab CE | OneDev | Bare repos over SSH |
+|---|---|---|---|---|
+| RAM | ~150–300 MB | **4–8 GB** | ~700 MB | ~0 |
+| CI | Actions (GitHub-syntax) | **GitLab CI (deepest)** | Visual + YAML | External |
+| Package/container registry | **Yes (many formats)** | Yes | Yes | No |
+| Issues / PRs / wiki | Yes | Yes (richer) | Yes | No |
+| SSO | OIDC/LDAP | OIDC/LDAP/SAML | OIDC/LDAP | n/a |
+| Mirroring GitHub repos | **Yes (pull mirror)** | Yes | Yes | Manual |
+| Governance | Non-profit (Forgejo) / company (Gitea) | Company | One developer | n/a |
+| Best for | Most home labs | GitLab-at-work people; heavy CI | YAML-averse CI fans | Minimalists |
+
+**Use case: mirror your GitHub.** Whatever you choose, set up pull mirrors of every GitHub/GitLab repository you care about (yours and the open-source projects you depend on). A code-hosting outage or an account suspension then costs you nothing, and your lab's Compose files, dotfiles, and documentation have a home you own.
+
+## CI/CD
+
+- **Forgejo Actions / Gitea Actions** — built into the Git server; register a runner (one container with Docker access), write `.forgejo/workflows/*.yml` in GitHub Actions syntax, and most GitHub marketplace actions work (fetched from GitHub, or mirror them). **The default** if you run Forgejo/Gitea: nothing extra to operate.
+- **Woodpecker CI** — a lightweight, container-native CI (a community fork of Drone before Drone went proprietary): pipelines as YAML, each step a container, plugins, multi-server agents, integrates with Gitea/Forgejo/GitLab/GitHub. Simple and pleasant; the choice if you want CI *separate* from the forge or dislike the Actions model.
+- **Drone** — the original; the OSS edition has limits and the project was acquired by Harness; Woodpecker is its spiritual continuation.
+- **Jenkins** — the ancient, infinitely pluggable Java CI. Runs anything, looks like 2010, requires babysitting. Run it to learn it for work; not for joy.
+- **GitLab CI** — the deepest and most polished, if you run GitLab.
+- **Concourse**, **Buildbot**, **Argo Workflows** and **Tekton** (Kubernetes-native) — niche at home.
+
+Typical home-lab CI jobs: build and push your custom Docker images to your registry on a schedule; lint and validate Compose files and Ansible playbooks on every commit; run Renovate; build a static site (Hugo/Astro) and deploy it; run backups or scripts with a visible log. It is also a fine place to learn CI for professional purposes.
+
+## Container registries
+
+You need one when you build your own images, mirror upstream images to escape Docker Hub rate limits, or want a pull-through cache so twenty containers pulling `postgres:17` hit the internet once.
+
+- **Forgejo/Gitea's built-in registry** — already there; `docker push git.example.com/user/image:tag`. Sufficient for most.
+- **Distribution (the CNCF `registry:2`/`registry:3` image)** — the reference registry: tiny, no UI, supports **pull-through cache mode** (`proxy.remoteurl: https://registry-1.docker.io`) — point Docker's `registry-mirrors` at it and every Hub pull is cached locally. Pair with a UI (**Joxit's docker-registry-ui**) if you want to browse.
+- **Harbor** — the enterprise registry: projects, RBAC, vulnerability scanning (Trivy built in), image signing (Cosign/Notation), replication between registries, proxy cache projects, retention policies, OIDC, and a full UI. Several containers, ~2 GB RAM. **Pick it if** you want scanning and a proper UI — it is excellent, and heavy.
+- **Zot** — a minimal OCI-native registry (CNCF) with optional UI, scanning, and sync; lighter than Harbor.
+- **Nexus Repository OSS** and **Artifactory OSS** — universal artefact repositories (Maven, npm, Docker, apt…); Nexus OSS is heavy but useful if you need many formats in one place.
+- **Spegel** (Kubernetes P2P image cache), **Kraken** — cluster-scale only.
+
+## Remote development
+
+- **code-server** (Coder's open-source VS Code in the browser) — run VS Code on your server, open it in any browser (an iPad, a Chromebook, a locked-down work laptop), with extensions from Open VSX, terminals on the server, and your projects where the compute and data are. One container per user/workspace. Put it behind forward-auth ([Chapter 10](#identity-and-single-sign-on)) — it is a shell on your server.
+- **VS Code Remote-SSH / Tunnels** — no server software: VS Code on your laptop connects over SSH (or Microsoft's tunnel service) to the box and runs its server component there. For most individuals this is *better* than code-server (native client, all extensions) and needs only SSH. **Remote Tunnels** work through Microsoft's relay without any port forwarding.
+- **Coder** — the platform version: workspaces defined with Terraform templates (Docker, Kubernetes, VMs), per-user provisioning, OIDC, dotfiles, multiple IDEs (VS Code, JetBrains Gateway, Jupyter, terminal). For a team or someone who wants disposable dev environments on demand; heavier than code-server.
+- **DevPod** (client-side, spins up devcontainers on any backend including your Docker host), **Gitpod** (went hosted-only; its self-hosted successor is **Gitpod Flex**/**Ona** — enterprise), **Eclipse Che** (Kubernetes, heavy), **JupyterHub/JupyterLab** (notebooks; multi-user via JupyterHub; the data-science standard), **Theia**, **Zed**/**Neovim** over SSH with **tmux** (the terminal purist's answer, and a very good one).
+- **Devcontainers** (`.devcontainer/devcontainer.json`) in your repos let VS Code — local or remote — build the exact toolchain in a container; combine with Remote-SSH to your Docker host for reproducible environments without polluting anything.
+
+## Managing Docker itself
+
+Introduced in [Chapter 5](#containers-docker-compose-podman-and-kubernetes); the fuller picture:
+
+- **Dockge** — Compose-file-centric, one host (or an agent per host in newer versions), edits the YAML on disk, converts `docker run` to Compose, streams logs, tiny. **The recommendation for a single Docker host** for people who want a UI without abstraction.
+- **Portainer CE** — the full manager: containers, images, volumes, networks, stacks, users/teams/RBAC, multiple environments (Docker, Swarm, Kubernetes, remote agents), templates, GitOps stack deployment from a repo. Heavier; stores stack YAML in its own DB unless Git-backed; the Business Edition nags. **The recommendation for several hosts** or when RBAC for other people matters.
+- **Komodo** — a Rust platform for managing servers, stacks, builds, and deployments across many hosts, with Git-backed resource definitions (everything is a TOML "resource" that can be synced from a repo), periphery agents per host, alerting, and a fast UI. The GitOps-flavoured successor many people move to from Portainer once they have three or more hosts and want configuration in Git. **Watch this one**; it has matured quickly.
+- **Arcane**, **Dockhand**, **Yacht**, **Dweebui**, **Cosmos** (a whole platform — [Chapter 4](#operating-systems-and-hypervisors)), **Lazydocker** (terminal), **ctop** (terminal `top` for containers), **dive** (inspect image layers), **Watchtower/Diun** (updates — [Chapter 5](#containers-docker-compose-podman-and-kubernetes)), **What's Up Docker (WUD)** (update notifications with a UI and trigger actions).
+- **Ansible**, **Terraform/OpenTofu**, **NixOS** — the code-first alternatives to any UI ([Chapter 27](27-automation-iac.md)).
+
+## Workflow automation
+
+The "if this then that" layer: connect APIs, react to webhooks, schedule jobs, transform data, glue services that were never meant to talk.
+
+- **n8n** — the most popular self-hosted automation platform: a visual node-based editor, 400+ integrations, HTTP/webhook/cron triggers, JavaScript/Python code nodes, AI/LLM nodes (agents, vector stores, Ollama/OpenAI), sub-workflows, error handling, credentials management, and a huge template library. Node + SQLite/Postgres, ~500 MB. **Licence: Sustainable Use Licence** (source-available, free for internal/personal use, restrictions on offering it as a service) — not OSI open source; fine for a home lab. **The recommendation** for most people.
+- **Activepieces** — an MIT-licensed, Zapier-like alternative with a friendlier no-code UI, hundreds of "pieces" (integrations), AI steps, and a TypeScript framework for custom pieces. Lighter on power users' features than n8n; genuinely open source. **The recommendation if licensing purity matters** or for non-developers.
+- **Windmill** — a developer-oriented platform: write scripts in Python/TypeScript/Go/Bash/SQL, compose them into flows with a visual editor, auto-generate UIs and forms, schedule, and get observability — "internal tools + workflows + jobs" in one. AGPL core. Excellent for people who would rather write a function than drag nodes.
+- **Node-RED** — the IoT/home-automation flow tool ([Chapter 19](#home-automation)); also fine for general webhook glue; weaker on SaaS integrations.
+- **Huginn** (the Ruby veteran — "agents" that watch and act; still maintained, dated UI), **Automatisch**, **Trigger.dev** (developer background jobs), **Kestra** (data-orchestration-flavoured), **Apache Airflow / Prefect / Dagster** (data pipelines — heavy, for people who do data engineering), **Cronicle** (a cron replacement with a UI and multi-server support — the answer to "I want to see my cron jobs"), **Healthchecks** for making sure they ran ([Chapter 12](#monitoring-logging-and-alerting)), **Ofelia** (cron for Docker containers via labels).
+
+Typical lab automations: "when Sonarr imports an episode, post to the family Matrix room"; "every night, dump databases and ping Healthchecks"; "when a GitHub release appears for X, open an issue in Forgejo"; "when the doorbell rings, snapshot Frigate and send to ntfy"; "parse incoming invoices from email into Paperless and Firefly III"; "summarise my RSS unread with a local LLM each morning."
+
+## Utilities every lab ends up with
+
+- **IT-Tools** — a single static page with ~100 developer utilities: base64, JWT decoder, hash generators, UUID, cron parser, chmod calculator, Docker run → Compose converter, colour picker, QR codes, regex tester… Zero backend. Replaces a dozen ad-laden websites.
+- **CyberChef** — GCHQ's "cyber Swiss Army knife" for data transformation and analysis; also a static page.
+- **Pastebins**: **PrivateBin** (zero-knowledge, E2EE, burn-after-reading — the standard), **Microbin**, **Opengist** (Gist clone with Git backing), **Hastebin**, **Wastebin**, **rustypaste**.
+- **URL shorteners**: **Shlink** (full-featured with analytics and API), **Kutt**, **YOURLS** (the PHP classic), **Dub** (self-hostable, marketing-oriented), **Chhoto URL** (tiny).
+- **Diagramming**: **Excalidraw** (self-hostable whiteboard, wonderful), **draw.io/diagrams.net** (self-hosted container), **Kroki** (text-to-diagram server for Mermaid/PlantUML/Graphviz/D2), **PlantUML server**, **tldraw**.
+- **Speed/latency**: **LibreSpeed** (a self-hosted speed test — measure LAN and VPN throughput to your server, not to the internet), **OpenSpeedTest**.
+- **API/HTTP**: **Hoppscotch** (a Postman alternative; self-hostable), **Bruno** (local-first client, no server), **Webhook.site** alternatives (**webhook-tester**, **Requestbin** clones), **Mockoon**.
+- **Docs and static sites**: **Hugo**, **Astro**, **MkDocs Material**, **Docusaurus** built by CI and served by Caddy/Nginx ([Chapter 25](25-misc-apps.md)).
+- **Databases and admin tools**: [Chapter 26](26-databases-backing-services.md).
+
+## Recommendations
+
+- **Git:** Forgejo (or Gitea) with Actions enabled and a runner; pull-mirror everything you depend on from GitHub.
+- **CI:** Forgejo Actions; Woodpecker if you want it separate.
+- **Registry:** Forgejo's built-in for your images + a `registry:2` pull-through cache for Docker Hub.
+- **Remote dev:** VS Code Remote-SSH/Tunnels first; code-server behind forward-auth for browser-only devices; Coder for a team.
+- **Docker UI:** Dockge (one host), Komodo or Portainer (several).
+- **Automation:** n8n (or Activepieces for pure open source; Windmill for code-first); Cronicle for visible scheduled jobs; Healthchecks to prove they ran.
+- **Utilities:** IT-Tools, PrivateBin, Excalidraw, LibreSpeed — all trivial to run and used weekly.
+
+## Checklist
+
+- [ ] Forgejo/Gitea running; registration disabled; SSH on a non-22 host port or via passthrough; OIDC login; backups of `data/` (`forgejo dump` produces a consistent archive).
+- [ ] Pull mirrors of your GitHub repos and critical upstream projects.
+- [ ] A CI runner registered with Docker access; at least one workflow (lint your Compose files) running.
+- [ ] Pull-through registry cache configured in `daemon.json` (`registry-mirrors`) on every Docker host.
+- [ ] code-server (if used) behind forward-auth or VPN-only — it is a shell.
+- [ ] Docker management UI (Dockge/Komodo/Portainer) restricted to LAN/VPN with auth; socket access via a proxy where possible.
+- [ ] n8n/Activepieces/Windmill credentials stored in its encrypted credential store; its database backed up (workflows are precious).
+- [ ] Every scheduled automation reports to Healthchecks/Uptime Kuma.
 
 ---
