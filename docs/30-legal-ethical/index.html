@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legal and Ethical Considerations — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div><div class="part"><div class="part-title">Part III — Application services</div><ul><li><a href="../14-dashboards/"><span class="num">14</span> Dashboards and Start Pages</a></li><li><a href="../15-media/"><span class="num">15</span> Media: Streaming, Libraries, and Automation</a></li><li><a href="../16-photos/"><span class="num">16</span> Photos: Replacing Google Photos and iCloud</a></li><li><a href="../17-files-sync-documents/"><span class="num">17</span> Files, Sync, and Documents</a></li><li><a href="../18-notes-productivity/"><span class="num">18</span> Notes, Knowledge, and Personal Productivity</a></li><li><a href="../19-home-automation/"><span class="num">19</span> Home Automation</a></li><li><a href="../20-communication/"><span class="num">20</span> Communication: Chat, Video Calls, and Email</a></li><li><a href="../21-passwords-secrets/"><span class="num">21</span> Passwords, Secrets, and Two-Factor Codes</a></li><li><a href="../22-dev-git-automation/"><span class="num">22</span> Developer Tools, Git Hosting, and Automation</a></li><li><a href="../23-ai-llm/"><span class="num">23</span> Local AI: LLMs, Image Generation, Speech, and Search</a></li><li><a href="../24-gaming/"><span class="num">24</span> Gaming: Game Servers, Retro Libraries, and Streaming</a></li><li><a href="../25-misc-apps/"><span class="num">25</span> The Long Tail: Household, Finance, Web, and Utility Apps</a></li><li><a href="../26-databases-backing-services/"><span class="num">26</span> Databases and Backing Services</a></li></ul></div><div class="part"><div class="part-title">Part IV — Operations &amp; reference</div><ul><li><a href="../27-automation-iac/"><span class="num">27</span> Infrastructure as Code and Automation</a></li><li><a href="../28-maintenance-operations/"><span class="num">28</span> Maintenance and Operations</a></li><li><a href="../29-power-cost-environment/"><span class="num">29</span> Power, Cost, and the Physical Environment</a></li><li class="active"><a href="../30-legal-ethical/"><span class="num">30</span> Legal and Ethical Considerations</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 30 · ~2,974 words · 13 min read</div>
+    <article class="prose">
+      <h1 id="legal-and-ethical-considerations">Legal and Ethical Considerations<a class="headerlink" href="#legal-and-ethical-considerations" title="Permanent link">#</a></h1>
+<p>Self-hosting sits at the intersection of several bodies of law and a few ethical questions that the community discusses less than it should. None of this is legal advice — laws differ by country and change — but a self-hoster ought to understand the landscape: what open-source licences actually permit and why the "source-available" trend matters; the copyright realities of media libraries, ripping, and the automation tooling; what your ISP's terms say about servers; what you take on when you hold other people's data (GDPR and its cousins, even for a family); the law around recording cameras and voice assistants; the ethics of privacy front-ends and scraping; and how to think about sustainability and e-waste. The aim is informed choices, not fear.</p>
+<h2 id="software-licences-what-you-are-actually-allowed-to-do">Software licences: what you are actually allowed to do<a class="headerlink" href="#software-licences-what-you-are-actually-allowed-to-do" title="Permanent link">#</a></h2>
+<p>Nearly everything in this guide is free to download and run at home. The licence differences matter when you <em>redistribute</em>, <em>modify</em>, <em>offer as a service</em>, or care about the project's long-term openness.</p>
+<h3 id="the-families">The families<a class="headerlink" href="#the-families" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Examples</th>
+<th>You may…</th>
+<th>Obligations</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Permissive</strong> (MIT, BSD, Apache 2.0)</td>
+<td>Immich (MIT), Vaultwarden (AGPL — see below), Caddy (Apache), Traefik (MIT), Homepage (GPL)</td>
+<td>Use, modify, redistribute, sell, keep changes private</td>
+<td>Keep the copyright notice; Apache adds patent grant and NOTICE</td>
+<td>Maximum freedom; a company can take it closed</td>
+</tr>
+<tr>
+<td><strong>Weak copyleft</strong> (LGPL, MPL 2.0)</td>
+<td>OpenTofu, Kanidm (MPL)</td>
+<td>Use freely; modify</td>
+<td>Share changes <em>to the licensed files</em>; can link into proprietary code</td>
+<td>Middle ground</td>
+</tr>
+<tr>
+<td><strong>Strong copyleft</strong> (GPLv2/v3)</td>
+<td>Linux, Jellyfin, Home Assistant (Apache actually), Pi-hole (EUPL), Proxmox (AGPL)</td>
+<td>Use, modify, redistribute</td>
+<td>Distributed modifications must be GPL too, with source</td>
+<td>Running it privately triggers nothing; distributing does</td>
+</tr>
+<tr>
+<td><strong>Network copyleft</strong> (AGPLv3)</td>
+<td>Nextcloud, Vaultwarden, Grafana, Synapse, Paperless-ngx, MinIO, Plausible, Docmost</td>
+<td>Use, modify</td>
+<td>Also: if you <em>offer the modified software over a network</em>, you must provide source to users</td>
+<td>Running an unmodified copy for your household: no obligations. Modifying and hosting for the public: share the changes</td>
+</tr>
+<tr>
+<td><strong>Source-available / "fair" licences</strong> (BSL/BUSL, SSPL, Elastic Licence, Sustainable Use Licence, Fair Source, FSL)</td>
+<td>HashiCorp Terraform/Vault (BSL), MongoDB/Redis 7.4 (SSPL), n8n (SUL), ZeroTier (BSL), Outline (BSL), Sentry (FSL), Plausible's hosted features, Gitea Enterprise</td>
+<td>Usually: use internally, self-host, modify</td>
+<td>Usually: <strong>may not offer as a competing hosted service</strong>; sometimes non-commercial only; BSL converts to open source after N years</td>
+<td><strong>Not open source</strong> by the OSI definition; fine for home use; the concern is the project's direction</td>
+</tr>
+<tr>
+<td><strong>Freeware / proprietary with free tier</strong></td>
+<td>Plex, Emby, Unraid, Portainer BE, Bitwarden server (mixed), Synology DSM</td>
+<td>Use per the EULA</td>
+<td>Whatever the EULA says; features may be paywalled or removed</td>
+<td>You are a customer, not a participant</td>
+</tr>
+</tbody>
+</table>
+<h3 id="why-the-source-available-trend-matters">Why the source-available trend matters<a class="headerlink" href="#why-the-source-available-trend-matters" title="Permanent link">#</a></h3>
+<p>Since roughly 2018, a steady procession of formerly open-source projects — MongoDB, Elastic, Redis, HashiCorp's suite, Sentry, Akka, CockroachDB, and many smaller ones — moved to licences that prohibit cloud providers from selling them as a service. For a home user <em>nothing changes</em>: you may still run them. Three things do change:</p>
+<ol>
+<li><strong>Community forks appear</strong> (OpenTofu, OpenBao, Valkey, OpenSearch) and the ecosystem splits; you must choose which side to follow, and packagers (Debian, Fedora) generally follow the open fork.</li>
+<li><strong>The project's incentives change</strong>: development effort follows the paid tier; the community edition may lose features over time (Rocket.Chat, Mattermost, Portainer, MinIO's console, Plausible's features, GitLab's tiers are all examples of features migrating upward). "Open-core" is a spectrum, and where a project sits on it tends to drift in one direction.</li>
+<li><strong>"Free for personal use" is a contract, not a right.</strong> The permission can be narrowed (Docker Desktop's 2021 licence change, ZeroTier's tier reduction, Plex's 2025 remote-streaming paywall). Open-source licences are irrevocable for the version you have; EULAs are not.</li>
+</ol>
+<p>Practical guidance: prefer OSI-approved licences for infrastructure you depend on long-term (proxy, DNS, backups, identity, storage); accept source-available for applications where the community edition is generous and an exit exists (your data in open formats); note the licence in your service inventory; and when a project relicenses, do not panic — evaluate the fork and the actual restrictions rather than reacting to the headline. This guide notes licences for that reason.</p>
+<h3 id="copyleft-and-your-own-modifications">Copyleft and your own modifications<a class="headerlink" href="#copyleft-and-your-own-modifications" title="Permanent link">#</a></h3>
+<p>If you patch Jellyfin and run it for your family, you owe nobody anything. If you patch Nextcloud (AGPL) and run it for a club of fifty people, those users are entitled to your modified source. If you build a product on an MIT component, you owe attribution. If you fork a GPL project and publish it, it must stay GPL. These are the rules; they are simple for home use and matter the moment "home" becomes "public."</p>
+<h2 id="copyright-and-media">Copyright and media<a class="headerlink" href="#copyright-and-media" title="Permanent link">#</a></h2>
+<p>The media chapter (<a href="../15-media/">Chapter 15</a>) is neutral about content; this section is not neutral about the law.</p>
+<ul>
+<li><strong>Ripping discs you own</strong> for personal use is legal in some jurisdictions (many EU countries have a private-copy exception, often funded by a levy on blank media), illegal-but-unenforced in others (the US DMCA prohibits circumventing DRM — CSS on DVDs, AACS on Blu-rays — even for personal backup; the UK briefly legalised then re-criminalised format-shifting in 2015). Almost nobody has been prosecuted for ripping their own discs; it remains technically unlawful in the US and UK.</li>
+<li><strong>Downloading copyrighted works you have not paid for</strong> is infringement everywhere. <strong>Uploading</strong> (which BitTorrent does by design while you download) is the act rights-holders actually pursue — via ISP notices, "speculative invoicing" letters (Germany's <em>Abmahnung</em> industry is the most aggressive; the US and UK have waves of it), and occasionally lawsuits. A commercial VPN (<a href="../15-media/">Chapter 15</a>) hides your IP from the swarm; it does not make the act legal. Usenet is one-directional (no uploading) and less pursued, but equally infringing for copyrighted content.</li>
+<li><strong>The *arr tools, Jellyfin, Plex, qBittorrent, SABnzbd</strong> are legal software. They are also the standard pipeline for infringement, and the community's polite fiction that everyone is "downloading Linux ISOs" is exactly that. This guide describes the tools; you are responsible for what you feed them.</li>
+<li><strong>Legitimate sources</strong> exist and are growing: your own rips (where legal), DRM-free purchases (GOG for games; Bandcamp, Qobuz, HDtracks, 7digital for music; Humble Bundle, Standard Ebooks, Project Gutenberg, Tor.com's free stories for books; Vimeo On Demand and some indie studios for video), public domain (Internet Archive, Prelinger, Wikimedia Commons), Creative Commons (Blender Foundation films, Jamendo, Free Music Archive), YouTube downloads of your <em>own</em> channel or CC-licensed content, recording OTA broadcasts (legal for personal time-shifting in most countries — an HDHomeRun tuner and Jellyfin's DVR), and podcasts. A legitimate library is entirely possible.</li>
+<li><strong>ROMs</strong>: dumping cartridges/discs you own with a dumper (Retrode, Sanni cart reader, a disc drive) is the legal route in jurisdictions with a private-copy exception; downloading a ROM of a game you own is <em>not</em> legalised by owning the cartridge in most jurisdictions (the "24-hour rule" is an internet myth). Emulators themselves are legal (Sony v. Connectix, Sony v. Bleem); Nintendo's aggressive 2024–2025 actions against Yuzu, Ryujinx, and ROM sites changed the landscape for current-generation emulation. Homebrew and public-domain ROMs are unambiguously fine.</li>
+<li><strong>Sharing your library</strong>: giving your family Jellyfin accounts is the personal-use grey zone most people are comfortable in; giving fifty strangers access is distribution and a different legal category (and a different Plex ToS category — Plex's terms prohibit it).</li>
+</ul>
+<p>Be honest with yourself about what you are doing, understand your jurisdiction's actual exposure (an ISP notice is the realistic worst case for most personal downloaders in most countries; a EUR 1,000 <em>Abmahnung</em> is the realistic worst case in Germany), and make your choices as an adult.</p>
+<h2 id="your-isps-terms">Your ISP's terms<a class="headerlink" href="#your-isps-terms" title="Permanent link">#</a></h2>
+<p>Most residential ISP terms of service contain a clause prohibiting "servers" or "commercial use" and reserving the right to block ports. In practice:</p>
+<ul>
+<li><strong>Enforcement against personal home labs is almost unheard of.</strong> ISPs care about bandwidth abuse, spam, and legal complaints. A Jellyfin server for your family or a Vaultwarden instance generates none of these.</li>
+<li><strong>Port 25 outbound is blocked</strong> by most residential ISPs specifically to stop spam; inbound 25 often too. This is the one "server" they actively prevent (<a href="../20-communication/">Chapter 20</a>).</li>
+<li><strong>CGNAT</strong> (<a href="../03-networking/">Chapter 3</a>) is increasingly common and makes the question moot for inbound.</li>
+<li><strong>Data caps</strong> are a real constraint for off-site backups and remote streaming; read yours.</li>
+<li><strong>Business tiers</strong> cost more, typically permit servers explicitly, and often include a static IP and better support. Worth it for anyone hosting for others or running anything commercial.</li>
+<li>Read the ToS once. Know what you agreed to. Then do what everyone does.</li>
+</ul>
+<h2 id="holding-other-peoples-data">Holding other people's data<a class="headerlink" href="#holding-other-peoples-data" title="Permanent link">#</a></h2>
+<p>The moment your Immich has your partner's photos, your Nextcloud has your parents' documents, or your Vaultwarden has a friend's vault, you are — in the eyes of privacy law — processing personal data.</p>
+<ul>
+<li><strong>GDPR (EU/UK) has a "household exemption"</strong> (Article 2(2)(c)): processing "by a natural person in the course of a purely personal or household activity" is outside its scope. A family's photos on a family server is the archetype. The exemption narrows as you extend to friends, a club, or the public — a sports club's member database on your server is not a household activity, and GDPR's obligations (lawful basis, security, breach notification, data-subject rights) apply, with you as controller. The US has no general equivalent; state laws (CCPA etc.) apply to businesses above thresholds and rarely to individuals. Other jurisdictions vary (Brazil's LGPD, Canada's PIPEDA — mostly commercial).</li>
+<li><strong>Regardless of law</strong>, the ethical position is simple: people who trust you with their data deserve the security in <a href="../13-security/">Chapter 13</a>, the backups in <a href="../11-backups/">Chapter 11</a>, honesty about the risks, an exit (their data exportable), and to be told if something goes wrong. Write it down for them if they are not family (<a href="../28-maintenance-operations/">Chapter 28</a>).</li>
+<li><strong>Special categories</strong> — health data (Baby Buddy, Wger, Fasten Health), financial data (Firefly, Actual), location (Dawarich, OwnTracks), children's data — carry heightened expectations everywhere. Keep them VPN-only, encrypted at rest, and backed up encrypted.</li>
+<li><strong>Data you scrape or archive</strong> (ArchiveBox, Karakeep, Tube Archivist, Invidious) about <em>other</em> people — public posts, videos, comments — is theirs. Private archives for personal use are the norm; republishing is where problems start.</li>
+</ul>
+<h2 id="cameras-microphones-and-recording">Cameras, microphones, and recording<a class="headerlink" href="#cameras-microphones-and-recording" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Cameras</strong> (<a href="../19-home-automation/">Chapter 19</a>): recording your own property is legal everywhere; recording <em>beyond</em> it — the street, a neighbour's garden, a shared hallway — is regulated in many countries (the UK ICO's guidance on domestic CCTV; Germany's strict rules against filming public space and neighbours; Austria, France, and others similar; US states vary on audio). Use Frigate's <strong>masks</strong> to exclude the neighbour's windows and the pavement; <strong>audio recording</strong> is more restricted than video in many jurisdictions (US "one-party consent" states vs "all-party"; illegal for many public spaces in Europe) — consider disabling camera microphones. Signage may be required for shared areas. Tenancy agreements and homeowner associations may have rules.</li>
+<li><strong>Voice assistants</strong> (HA Assist, Whisper): local processing avoids the cloud-recording concerns entirely, which is the point. Guests should know there are microphones; a hardware mute is a courtesy.</li>
+<li><strong>Presence and location tracking</strong> of household members (phone GPS, BLE, Wi-Fi tracking) is a consent conversation, not a technical one. Tracking a partner or teenager without their knowledge is a serious matter regardless of legality.</li>
+<li><strong>Doorbell cameras</strong> face the street by design and are the most contested category; check local guidance and angle them at your doorstep.</li>
+</ul>
+<h2 id="privacy-front-ends-scraping-and-terms-of-service">Privacy front-ends, scraping, and terms of service<a class="headerlink" href="#privacy-front-ends-scraping-and-terms-of-service" title="Permanent link">#</a></h2>
+<p>Invidious, Piped, Redlib, SearXNG, RSS-Bridge, yt-dlp, and their kin access services in ways their terms of service prohibit (YouTube's ToS forbids access "through any automated means"; Reddit's API terms changed in 2023 specifically to kill third-party clients). This is a <strong>contract</strong> issue, not a criminal one, in almost all jurisdictions; the realistic consequence is your IP being blocked or an account banned, not legal action against an individual. Public instances of these tools shift the burden to the operator and are where the cease-and-desist letters (Invidious received one from YouTube in 2023) land. Run private instances for yourself; do not run public ones unless you understand the exposure. Ethically: these tools remove ads that fund creators — many users mitigate by supporting creators directly (Patreon, memberships, buying merch), which is a reasonable position.</p>
+<h2 id="running-public-services">Running public services<a class="headerlink" href="#running-public-services" title="Permanent link">#</a></h2>
+<p>If you expose anything to the public — a Mastodon instance, a Matrix server with open registration, a Lemmy community, a public SearXNG or Invidious, a forum — you become a <strong>service operator</strong> with obligations that scale with your user count: content moderation (illegal content — CSAM in particular — on federated platforms is a real and serious operator burden; the EU's DSA and the UK's Online Safety Act 2023 impose duties on services above thresholds and in some cases below), abuse handling, uptime expectations, data-protection duties, and potentially registration requirements. <strong>Single-user or closed-registration</strong> instances avoid nearly all of this. Open a service to the public only with intent, a moderation plan, and an understanding of the local law; the fediverse's operator communities (Mastodon's admin guides, the IFTAS resources) are the place to learn.</p>
+<h2 id="domains-accounts-and-continuity">Domains, accounts, and continuity<a class="headerlink" href="#domains-accounts-and-continuity" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Your domain is the root of trust</strong> for everything (TLS, email, identity). Register it for multiple years, enable auto-renew with a working payment method, lock it (registrar lock, transfer lock), enable 2FA on the registrar and DNS provider, use a recovery email that does not depend on the domain itself, and record the details in the "if I'm not here" document (<a href="../28-maintenance-operations/">Chapter 28</a>). Expired domains are snapped up in hours; the consequences for a household's email and services are severe.</li>
+<li><strong>Trademark</strong>: do not register a domain that infringes a brand (<code>plexforfriends.com</code>); it can be taken from you via UDRP.</li>
+<li><strong>Free-tier dependencies</strong> (Tailscale, Cloudflare, ntfy.sh, Healthchecks.io, Let's Encrypt) are gifts with terms; have a plan if any change.</li>
+</ul>
+<h2 id="sustainability-and-e-waste">Sustainability and e-waste<a class="headerlink" href="#sustainability-and-e-waste" title="Permanent link">#</a></h2>
+<p>Self-hosting's environmental story is mixed. Reusing a decommissioned corporate mini PC for a decade is excellent (embodied carbon already spent; 10 W idle). Running a 2014 dual-Xeon at 200 W idle to host a Pi-hole is not — its electricity over a year exceeds the embodied carbon of a new N100 box several times over. Rules of thumb:</p>
+<ul>
+<li><strong>Idle watts dominate</strong> over hardware lifetime; <a href="../29-power-cost-environment/">Chapter 29</a>'s tuning is the environmental lever as well as the financial one.</li>
+<li><strong>Reuse over new</strong> where power is comparable; <strong>new efficient over old power-hungry</strong> where it is not.</li>
+<li><strong>Buy drives for the data you have</strong>, not the data you imagine; spin down what you can.</li>
+<li><strong>Dispose properly</strong>: WEEE recycling in the EU/UK; e-waste programmes elsewhere; <strong>wipe drives</strong> first (<code>shred</code>, <code>blkdiscard</code>/secure erase for SSDs, or physical destruction for anything that held the vault or the photos) — a sold or recycled drive with recoverable data is a real breach.</li>
+<li><strong>Right-size the lab.</strong> The greenest service is the one you did not run.</li>
+</ul>
+<h2 id="ethics-in-brief">Ethics in brief<a class="headerlink" href="#ethics-in-brief" title="Permanent link">#</a></h2>
+<p>A few positions this guide takes, stated plainly so you can disagree:</p>
+<ul>
+<li><strong>Privacy is a legitimate reason to self-host</strong>, and so is learning, and so is fun. You do not owe anyone a justification.</li>
+<li><strong>Owning your data means owning the responsibility for it</strong> — to yourself and to the people whose data you hold. Backups and security are ethical obligations, not just technical ones.</li>
+<li><strong>Support the projects you depend on.</strong> Open-source maintainers are frequently unpaid; the tools in this guide represent thousands of person-years of volunteer work. Star repos, file good bug reports, write documentation, translate, and — where you can — donate (GitHub Sponsors, Open Collective, Liberapay, direct). A household that saves USD 300/year in subscriptions can afford USD 30 to the five projects that made it possible. Nabu Casa's subscription funds Home Assistant; FUTO funds Immich; Codeberg runs Forgejo on donations.</li>
+<li><strong>Be honest about legality.</strong> Pretending the media pipeline is for Linux ISOs helps nobody. Make informed choices.</li>
+<li><strong>Be a good network citizen.</strong> Rate-limit your scrapers, do not run open resolvers or relays, do not expose things that will be used to attack others, respond to abuse reports if you run public services.</li>
+<li><strong>Help the next person.</strong> The community's generosity is why this guide could be written. Answer a question on r/selfhosted; document your setup; share what broke and how you fixed it.</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> The licence of every service in the inventory noted; infrastructure dependencies preferably OSI-open; source-available and freeware understood as contracts that can change.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Media library provenance understood; jurisdiction's actual exposure known; VPN/Usenet choices made deliberately; legitimate sources used where they exist.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> ISP ToS read once; port 25 and data cap constraints known.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> If hosting for anyone beyond the household: expectations set, data exportable, security and backups at the level their trust deserves; GDPR-style obligations considered for groups/clubs.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Cameras masked to your own property; audio recording decision made; household members and guests aware of microphones; tracking consensual.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Privacy front-ends and scrapers run privately, rate-limited, and with the understanding that they violate ToS.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> No public-registration services without a moderation plan and awareness of applicable law.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Domain: multi-year, auto-renew, locked, 2FA, off-domain recovery email, recorded in the emergency document.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Old drives wiped before disposal; hardware choices consider idle power as an environmental cost.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A budget — however small — for donating to the projects you rely on.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../29-power-cost-environment/">← 29. Power, Cost, and the Physical Environment</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/30-legal-ethical.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#software-licences-what-you-are-actually-allowed-to-do">Software licences: what you are actually allowed to do</a><ul>
+<li><a href="#the-families">The families</a></li>
+<li><a href="#why-the-source-available-trend-matters">Why the source-available trend matters</a></li>
+<li><a href="#copyleft-and-your-own-modifications">Copyleft and your own modifications</a></li>
+</ul>
+</li>
+<li><a href="#copyright-and-media">Copyright and media</a></li>
+<li><a href="#your-isps-terms">Your ISP's terms</a></li>
+<li><a href="#holding-other-peoples-data">Holding other people's data</a></li>
+<li><a href="#cameras-microphones-and-recording">Cameras, microphones, and recording</a></li>
+<li><a href="#privacy-front-ends-scraping-and-terms-of-service">Privacy front-ends, scraping, and terms of service</a></li>
+<li><a href="#running-public-services">Running public services</a></li>
+<li><a href="#domains-accounts-and-continuity">Domains, accounts, and continuity</a></li>
+<li><a href="#sustainability-and-e-waste">Sustainability and e-waste</a></li>
+<li><a href="#ethics-in-brief">Ethics in brief</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
