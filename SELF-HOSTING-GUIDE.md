@@ -2,7 +2,7 @@
 
 > A comprehensive, opinionated, in-depth guide to services worth self-hosting — and everything around them.
 
-*Generated 2026-09-07 from the chapter sources in `guide/`. 13 chapters, ~52,171 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
+*Generated 2026-09-07 from the chapter sources in `guide/`. 14 chapters, ~55,634 words. Web version: see `docs/` or the repository README. Source: https://github.com/gorg667/self-host-guide*
 
 
 ## Table of contents
@@ -26,6 +26,7 @@
 - [10. Identity and Single Sign-On](#identity-and-single-sign-on)
 - [11. Backups: The Chapter That Matters Most](#backups-the-chapter-that-matters-most)
 - [12. Monitoring, Logging, and Alerting](#monitoring-logging-and-alerting)
+- [13. Security for the Home Lab](#security-for-the-home-lab)
 
 ---
 
@@ -41,7 +42,7 @@ The reasons people give tend to fall into a handful of clusters. You will probab
 
 ### Privacy and data ownership
 
-When your photos live on someone else's servers, they are subject to that company's terms of service, its scanning policies, its data-retention practices, its acquisitions, and its bankruptcies. When they live on a disk you own, behind encryption you control, none of that applies. This is the most commonly cited reason and it is a good one, but be honest about what you are buying: privacy from *third parties*, not security in any absolute sense. A misconfigured self-hosted service exposed to the internet is a far bigger privacy risk than a competently run cloud service. [Chapter 13](13-security.md) exists for exactly this reason.
+When your photos live on someone else's servers, they are subject to that company's terms of service, its scanning policies, its data-retention practices, its acquisitions, and its bankruptcies. When they live on a disk you own, behind encryption you control, none of that applies. This is the most commonly cited reason and it is a good one, but be honest about what you are buying: privacy from *third parties*, not security in any absolute sense. A misconfigured self-hosted service exposed to the internet is a far bigger privacy risk than a competently run cloud service. [Chapter 13](#security-for-the-home-lab) exists for exactly this reason.
 
 ### Cost
 
@@ -115,7 +116,7 @@ Your future self, six months from now, will not remember why port 8096 is forwar
 
 ### Security is a process, not a product
 
-No single tool makes you secure. A reasonable posture for a home lab is: don't expose things to the internet unless you must; when you must, put them behind a reverse proxy with TLS and preferably authentication; keep software updated; segment your network so that a compromised IoT device cannot reach your NAS; and have backups that a ransomware event cannot reach. [Chapter 13](13-security.md) expands on each of these.
+No single tool makes you secure. A reasonable posture for a home lab is: don't expose things to the internet unless you must; when you must, put them behind a reverse proxy with TLS and preferably authentication; keep software updated; segment your network so that a compromised IoT device cannot reach your NAS; and have backups that a ransomware event cannot reach. [Chapter 13](#security-for-the-home-lab) expands on each of these.
 
 ## How the guide is structured
 
@@ -350,7 +351,7 @@ Then design storage and backups ([Chapter 6](#storage-filesystems-redundancy-and
 
 ### What happens if this is compromised?
 
-Think about what an attacker who got onto your network — via an exposed service, a phishing email on a family laptop, or a cheap IoT device with a backdoor — could reach. If the answer is "everything, because it's all on one flat network with default passwords," then network segmentation and a proper authentication layer should be early priorities rather than afterthoughts. [Chapter 3](#networking-fundamentals-for-the-home-lab) covers VLANs; [Chapter 13](13-security.md) covers the rest.
+Think about what an attacker who got onto your network — via an exposed service, a phishing email on a family laptop, or a cheap IoT device with a backdoor — could reach. If the answer is "everything, because it's all on one flat network with default passwords," then network segmentation and a proper authentication layer should be early priorities rather than afterthoughts. [Chapter 3](#networking-fundamentals-for-the-home-lab) covers VLANs; [Chapter 13](#security-for-the-home-lab) covers the rest.
 
 A useful mental framing: **exposure is a cost you pay for convenience.** Every service exposed to the internet is a continuous liability. A mesh VPN gives you nearly the same convenience with a fraction of the exposure. Choose exposure deliberately, for services that genuinely need it (a public website, a service used by people who cannot install a VPN client), and put the rest behind the VPN.
 
@@ -855,7 +856,7 @@ Every router has a firewall; the question is how much control you have over it. 
 - **Aliases/groups** for IPs and ports keep rule sets readable. "Allow IoT → HomeAssistant:8123" not "Allow 10.0.30.0/24 → 10.0.20.14:8123."
 - **Egress filtering** — blocking outbound traffic — is where you can prevent IoT devices from phoning home, force all DNS through your resolver (block outbound port 53 and 853 except from your DNS server — this also defeats devices with hardcoded `8.8.8.8`), and block outbound SMTP from anything but your mail server. It is more work and more breakage; do it deliberately.
 
-Host-based firewalls (`ufw`, `firewalld`, `nftables` directly) on each server add a layer but interact badly with Docker, which manipulates iptables/nftables itself and will happily publish container ports around your ufw rules. See [Chapter 5](#containers-docker-compose-podman-and-kubernetes) and [Chapter 13](13-security.md) for the Docker-and-firewall problem.
+Host-based firewalls (`ufw`, `firewalld`, `nftables` directly) on each server add a layer but interact badly with Docker, which manipulates iptables/nftables itself and will happily publish container ports around your ufw rules. See [Chapter 5](#containers-docker-compose-podman-and-kubernetes) and [Chapter 13](#security-for-the-home-lab) for the Docker-and-firewall problem.
 
 ## Router and firewall platforms
 
@@ -1230,7 +1231,7 @@ This has three consequences that matter to self-hosters:
 2. **Reproducibility.** The image is the same bytes on your machine as on the developer's. "Works on my machine" mostly stops being a thing.
 3. **Disposability.** The container's own filesystem is ephemeral by design. Anything you want to keep — configuration, databases, uploaded files — must live in a **volume** or **bind mount** outside the container. Once you internalise this, upgrading becomes "pull new image, recreate container, data untouched," and disaster recovery becomes "restore the volumes, run `docker compose up`."
 
-Containers are not virtual machines. They share the host kernel, so a kernel exploit from inside a container is a host compromise; a container running as root that is given the Docker socket or `--privileged` *is* root on the host. Treat them as a packaging and isolation convenience, not a security boundary — then harden accordingly ([Chapter 13](13-security.md)).
+Containers are not virtual machines. They share the host kernel, so a kernel exploit from inside a container is a host compromise; a container running as root that is given the Docker socket or `--privileged` *is* root on the host. Treat them as a packaging and isolation convenience, not a security boundary — then harden accordingly ([Chapter 13](#security-for-the-home-lab)).
 
 ## Docker Engine
 
@@ -1316,7 +1317,7 @@ Line by line, the decisions that matter:
 - **Ports.** `"8080:80"` publishes on *all* host interfaces — including the internet-facing one if the host is exposed — and, critically, **bypasses `ufw`/`firewalld`** because Docker inserts its own iptables rules ahead of them. `"127.0.0.1:8080:80"` binds to localhost only, so only a reverse proxy on the same host can reach it. Better still: put the container and the reverse proxy on the same Docker network and publish *no* ports at all — the proxy reaches the container by service name on the internal network. See the Firewall section below.
 - **Networks.** A dedicated `proxy` network that the reverse proxy and every web-facing service join, plus per-stack default networks for internal traffic (a service and its database). Containers on the same network resolve each other by service name; containers on different networks cannot talk at all.
 - **Healthcheck.** Lets Docker (and Uptime Kuma, and Compose's `depends_on: condition: service_healthy`) know whether the service is actually working, not merely running.
-- **`no-new-privileges`** and **memory limits** are cheap hardening. More in [Chapter 13](13-security.md).
+- **`no-new-privileges`** and **memory limits** are cheap hardening. More in [Chapter 13](#security-for-the-home-lab).
 
 ### Users and permissions: PUID/PGID
 
@@ -2079,7 +2080,7 @@ The proxy is the one thing that faces the network, so it deserves care.
 
 **IP allow-lists** for admin interfaces: the Traefik dashboard, NPM's admin, Proxmox, the NAS UI — LAN and VPN ranges only, enforced at the proxy.
 
-**Rate limiting** on login endpoints; **CrowdSec** (a collaborative IPS with bouncers for Traefik, Caddy, Nginx, and the firewall — [Chapter 13](13-security.md)) or **fail2ban** reading proxy logs.
+**Rate limiting** on login endpoints; **CrowdSec** (a collaborative IPS with bouncers for Traefik, Caddy, Nginx, and the firewall — [Chapter 13](#security-for-the-home-lab)) or **fail2ban** reading proxy logs.
 
 **Real client IPs.** Behind Cloudflare or another upstream proxy, the connecting IP is theirs; configure trusted proxies so `X-Forwarded-For` is honoured only from those ranges, or your rate limits and bans hit Cloudflare instead of the attacker.
 
@@ -2276,7 +2277,7 @@ The manual version of Pangolin, which many people ran for years: a VPS with Wire
 2. **Do you have a public IP and want zero third parties, even for coordination?** → Plain WireGuard on your router or via wg-easy, one UDP port forwarded, DDNS. Add a mesh later if you want peer-to-peer between remote devices.
 
 3. **Do you need to expose a few HTTP services to the public or to people who will not install anything?**
-   - Public IP, comfortable managing exposure → forward 443 to your reverse proxy with forward-auth, CrowdSec, and everything in [Chapter 13](13-security.md).
+   - Public IP, comfortable managing exposure → forward 443 to your reverse proxy with forward-auth, CrowdSec, and everything in [Chapter 13](#security-for-the-home-lab).
    - CGNAT, or you refuse inbound exposure → Pangolin on a VPS (full control), or Cloudflare Tunnel + Access (zero cost, accept their terms and TLS termination).
 
 4. **Do you need to expose non-HTTP services** (game servers, SSH, Minecraft, a mail server)? → Public IP: forward the specific port with the strongest auth the service supports. CGNAT: Pangolin raw TCP/UDP resources, a VPS with WireGuard + DNAT, or Playit.gg for game servers ([Chapter 24](24-gaming.md)).
@@ -2734,7 +2735,7 @@ A full IdP for OIDC/SAML, oauth2-proxy providing forward-auth for the proxy. **F
 - **Backup the IdP database and secrets first.** Losing the IdP's signing keys or user database locks everyone out of everything. It is the highest-value small backup in the lab ([Chapter 11](#backups-the-chapter-that-matters-most)).
 - **MFA enrolment and recovery.** Register at least two authenticators per user (phone passkey + a hardware key, or TOTP + WebAuthn) and store recovery codes in the password manager ([Chapter 21](21-passwords-secrets.md)).
 - **Trusted networks.** Authelia's `networks` and Authentik's policies can relax to one-factor (or bypass) for the LAN/VPN and require two-factor from anywhere else. Convenient; understand that a compromised LAN device then gets the relaxed policy.
-- **Rate limiting and lockout.** Enable the IdP's brute-force protection (Authelia `regulation`, Authentik's default policies) and put CrowdSec/fail2ban on the login endpoint ([Chapter 13](13-security.md)).
+- **Rate limiting and lockout.** Enable the IdP's brute-force protection (Authelia `regulation`, Authentik's default policies) and put CrowdSec/fail2ban on the login endpoint ([Chapter 13](#security-for-the-home-lab)).
 
 ## Recommendations
 
@@ -3244,7 +3245,7 @@ A concrete starting set, ordered by value:
 8. **Certificate expiring within 14 days** — Uptime Kuma/Gatus built in; catches a broken ACME renewal before it becomes an outage.
 9. **Host unreachable** — from the *external* monitor (a Pi, a VPS, or a hosted check): ping and one HTTPS check.
 10. **UPS on battery / low battery** — NUT `upsmon` notifications ([Chapter 29](29-power-cost-environment.md)).
-11. **Unusual login** — SSH login notifications (a PAM hook posting to ntfy), IdP admin logins, CrowdSec decisions ([Chapter 13](13-security.md)).
+11. **Unusual login** — SSH login notifications (a PAM hook posting to ntfy), IdP admin logins, CrowdSec decisions ([Chapter 13](#security-for-the-home-lab)).
 12. **Temperature** — CPU over 85 °C sustained, drives over 45 °C.
 13. **Available updates** — Diun/Watchtower notifications for images; `apt` unattended-upgrades mail; Proxmox update notifications. Low priority topic.
 
@@ -3270,5 +3271,229 @@ Notice what is not on the list: CPU %, RAM %, network throughput, load average. 
 - [ ] Docker log rotation configured; a log viewer (Dozzle) available.
 - [ ] Alerts reviewed monthly: anything ignored twice is deleted or re-tuned.
 - [ ] Monitoring configuration (Gatus YAML, Prometheus rules, Kuma data dir) is in backups.
+
+---
+
+# Security for the Home Lab
+
+Security is not a product you install; it is a set of habits and a handful of decisions made in the right order. The good news is that a home lab's threat model is far simpler than an enterprise's, and the highest-value defences are cheap: expose little, segment the network, keep things updated, use strong authentication, and have backups an attacker cannot reach. This chapter builds a realistic threat model, then works through the layers — host hardening, SSH, firewalls and Docker, the reverse proxy edge, intrusion prevention with CrowdSec and fail2ban, container hardening, secrets, updates, and detection — and ends with a prioritised checklist.
+
+## Threat model: who is actually attacking you
+
+Be honest about the adversaries, because defending against the wrong one wastes effort.
+
+**Automated scanners and bots.** The overwhelming majority of hostile traffic. Within minutes of opening a port, scanners find it; within hours, bots try default credentials and known exploits against whatever they fingerprint. They are indiscriminate and relentless, and they are entirely defeated by: not exposing services, strong unique passwords, MFA, and prompt patching. This is the adversary you *must* beat, and it is beatable.
+
+**Opportunistic ransomware.** Malware that arrives via a phishing email on a family laptop or a compromised download, then spreads across the LAN looking for SMB shares to encrypt and backups to delete. Defeated by: network segmentation, SMB shares that require authentication and are not writable by every device, versioned/immutable/offline backups ([Chapter 11](#backups-the-chapter-that-matters-most)), and least privilege.
+
+**Compromised IoT devices.** The cheap camera or plug with a known backdoor, enrolled in a botnet, scanning your LAN from the inside. Defeated by: an IoT VLAN with no access to anything internal ([Chapter 3](#networking-fundamentals-for-the-home-lab)).
+
+**Supply-chain incidents.** A popular Docker image or npm package is compromised upstream. Rare, real (the 2024 xz backdoor; periodic malicious images on Docker Hub). Mitigated by: pulling from official/project sources, pinning versions, not running as root, not granting the Docker socket, egress filtering, and noticing anomalies.
+
+**Targeted attackers.** Someone who wants *your* data specifically. For nearly all home labs this adversary does not exist, and the defences that stop bots and ransomware raise the bar high enough that a targeted attacker would need real effort. If you are a journalist, activist, or hold genuinely sensitive data, the general advice here is a floor, not a ceiling.
+
+**You.** Accidental `rm -rf`, a misconfigured firewall rule that exposes a database, an `.env` file committed to a public repo, a port published on `0.0.0.0` on a VPS. Statistically the most likely cause of a security incident in a home lab. Defeated by: backups, review, and the habits below.
+
+## The order of operations
+
+If you do nothing else, do these, in this order:
+
+1. **Expose nothing.** Use a mesh VPN for your own access ([Chapter 8](#remote-access-and-vpns)). Zero forwarded ports is the strongest posture there is.
+2. **Segment.** IoT and guests on their own VLANs, unable to reach servers ([Chapter 3](#networking-fundamentals-for-the-home-lab)).
+3. **Update.** Unattended security updates on hosts; a notification-and-review cadence for containers ([Chapter 5](#containers-docker-compose-podman-and-kubernetes)).
+4. **Authenticate strongly.** Unique passwords from a manager; MFA/passkeys on everything that supports it; an IdP in front of everything that does not ([Chapter 10](#identity-and-single-sign-on)).
+5. **Back up immutably.** A copy an attacker on your network cannot delete ([Chapter 11](#backups-the-chapter-that-matters-most)).
+6. **Then** harden hosts, containers, and the edge, and add detection — the rest of this chapter.
+
+A lab with steps 1–5 done and nothing else is more secure than most small businesses.
+
+## Host hardening
+
+### SSH
+
+SSH is how you administer everything; it deserves care even on the LAN.
+
+- **Keys, not passwords.** `ssh-keygen -t ed25519`; copy the public key; then in `/etc/ssh/sshd_config` (or a drop-in in `/etc/ssh/sshd_config.d/`): `PasswordAuthentication no`, `KbdInteractiveAuthentication no`, `PermitRootLogin no` (or `prohibit-password` if you must SSH as root, as on Proxmox), `PubkeyAuthentication yes`. Reload sshd. Test from a second terminal *before* closing the first.
+- **Protect the private key** with a passphrase; use `ssh-agent` or a hardware key (YubiKey with `ed25519-sk`/FIDO2 keys are supported natively by OpenSSH 8.2+ and are the gold standard).
+- **Never expose SSH to the internet.** Reach it via the VPN. If you absolutely must, use key-only auth, a non-standard port (which only reduces log noise, not risk), and fail2ban/CrowdSec. **Tailscale SSH** or an SSH certificate authority (step-ca, Smallstep) removes key sprawl for larger labs.
+- `AllowUsers youruser` or `AllowGroups ssh-users` to whitelist accounts. `MaxAuthTries 3`. `ClientAliveInterval 300`.
+- **SSH login notifications**: a tiny PAM hook or `sshrc` script posting to ntfy on every successful login is one of the highest-value detections available and takes five minutes.
+
+### Users and sudo
+
+One personal account per human, in the `sudo` group; root login disabled; `sudo` with a password (or with `NOPASSWD` only for specific automation commands). Docker group membership is root-equivalent — anyone in `docker` can mount the host filesystem into a container. Know that, and either accept it for your own account or use rootless Docker/Podman.
+
+### Unattended updates
+
+```bash
+apt install unattended-upgrades apt-listchanges
+dpkg-reconfigure -plow unattended-upgrades   # enable
+# /etc/apt/apt.conf.d/50unattended-upgrades: security origin enabled by default on Debian/Ubuntu
+# Consider: Unattended-Upgrade::Automatic-Reboot "true"; with Automatic-Reboot-Time "04:00";
+# and Unattended-Upgrade::Mail or a script to ntfy for the report
+```
+
+Security updates for the host OS, automatically, nightly. This is non-negotiable for anything reachable from beyond the LAN and strongly advised for everything else. Reboots for kernel updates can be automated (with `needrestart` or the reboot option) or done on a weekly schedule; **livepatch**/**kpatch** avoid them on Ubuntu Pro (free for personal use on up to five machines) and RHEL-family.
+
+### Minimal attack surface
+
+Install only what you use; `ss -tulpn` to see what is listening and ask why for each entry. Disable or remove Avahi, CUPS, rpcbind, and anything else that came with a "server" tasksel and that you do not need. A Docker host should listen on 22 (LAN/VPN only), 80/443 (the proxy), and nothing else on the LAN interface.
+
+### Filesystem and kernel
+
+Full-disk encryption (LUKS) on the OS drive protects against physical theft — worth it on a laptop, debatable on a server in your house that must reboot unattended (requires a TPM2 auto-unlock setup — `systemd-cryptenroll` — or network unlock via **Tang/Clevis** or **dropbear-initramfs** for SSH-unlock at boot). ZFS native encryption on data datasets with a key loaded at boot from a file on the encrypted root is a common compromise. **AppArmor** (Debian/Ubuntu) is on by default and Docker uses it; leave it. **SELinux** (Fedora/RHEL) likewise; do not set it to permissive to fix a problem — fix the label. Kernel hardening via `sysctl` (disable IP forwarding where not needed, `kernel.kptr_restrict=2`, `net.ipv4.conf.all.rp_filter=1`) is low-effort; **Lynis** audits a host and tells you what to tighten.
+
+## Firewalls
+
+### Network firewall
+
+The router/firewall ([Chapter 3](#networking-fundamentals-for-the-home-lab)) is the primary control: default-deny inbound from the internet, default-deny between VLANs with explicit allows, egress rules for IoT. Review the rule set twice a year and delete rules whose purpose you cannot remember.
+
+### Host firewall
+
+A host firewall on each server is defence in depth: if a VLAN rule is wrong or a device on the server VLAN is compromised, the host still refuses connections to ports that should not be reachable. `ufw` (Ubuntu/Debian), `firewalld` (Fedora/RHEL), or `nftables` directly.
+
+```bash
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow from 10.0.10.0/24 to any port 22 proto tcp     # SSH from trusted VLAN only
+ufw allow from 100.64.0.0/10 to any port 22 proto tcp    # ...and from the tailnet
+ufw allow 80,443/tcp                                     # the reverse proxy
+ufw enable
+```
+
+**And then the Docker problem** ([Chapter 5](#containers-docker-compose-podman-and-kubernetes)): Docker's published ports bypass `ufw`. On a LAN-only host behind a router with no forwards this is a nuisance; on a VPS it is a critical exposure. The fixes: publish container ports on `127.0.0.1` only (or not at all — use the proxy network), *or* install `ufw-docker` which adds the right rules to the `DOCKER-USER` chain, *or* add `DOCKER-USER` rules by hand:
+
+```bash
+# Drop anything to Docker containers that did not come from the LAN or the tailnet
+iptables -I DOCKER-USER -i eth0 ! -s 10.0.0.0/8 -m conntrack --ctstate NEW -j DROP
+iptables -I DOCKER-USER -i eth0 -s 100.64.0.0/10 -j RETURN
+```
+
+Verify from another machine with `nmap -p- <host>`: only the ports you intend should answer. Do this after every new stack.
+
+## The edge: exposed services
+
+If you forward 443 to a reverse proxy, that proxy and everything behind it are on the internet. The layered defences, from outermost in:
+
+1. **Geo-blocking** at the firewall or proxy for countries you will never log in from. Crude, effective against the bulk of scanner traffic. OPNsense (GeoIP aliases), Traefik/Caddy/Nginx plugins, CrowdSec's geo scenarios, Cloudflare's WAF rules if fronted by Cloudflare.
+2. **CrowdSec or fail2ban** (below) watching the proxy's access logs and banning IPs that probe, brute-force, or hit known exploit paths.
+3. **Rate limiting** at the proxy on login endpoints.
+4. **Authentication before the app** — forward-auth to the IdP with MFA for anything that is not deliberately public ([Chapter 10](#identity-and-single-sign-on)). The app's own login page is the *second* line, not the first.
+5. **A separate proxy entrypoint or instance for public hosts** so that forwarding 443 exposes only the hostnames you intend, not all forty internal ones.
+6. **Security headers, TLS 1.2+, HSTS**, a catch-all default host returning 404 ([Chapter 7](#reverse-proxies-and-tls-certificates)).
+7. **A Web Application Firewall** — **ModSecurity with the OWASP Core Rule Set** (via BunkerWeb, or the SWAG mod, or Nginx directly) or **Coraza** (Caddy plugin, Traefik plugin) — blocks known attack patterns (SQL injection, path traversal) generically. Adds false positives and CPU; worthwhile for a public site, optional for a proxy that only fronts authenticated services.
+8. **The app itself** kept updated, with its own MFA on, admin accounts renamed from defaults, and registration disabled.
+
+**Or**: do not forward 443 at all. Cloudflare Tunnel with Access, or Pangolin with its built-in auth ([Chapter 8](#remote-access-and-vpns)), moves the edge to a relay and gives you an identity wall before traffic even reaches your network. For most households that need to expose one or two things to non-technical friends, this is the better model.
+
+## CrowdSec and fail2ban
+
+### fail2ban
+
+The classic: watches log files, matches regexes ("Failed password for"), and after N matches in T seconds adds a firewall rule banning the source IP for a duration. Jails exist for sshd, Nginx, Postfix, Dovecot, Vaultwarden, Nextcloud, and hundreds more; writing a filter for a new log format is a regex. Simple, effective against brute force, no external dependencies. Limitations: purely reactive and local (it learns nothing from other people's attackers), and Docker's log locations and iptables chains need configuration (`chain = DOCKER-USER`, log paths bind-mounted in).
+
+### CrowdSec
+
+A modern successor: a local **agent** parses logs (via "collections" — pre-built parsers and scenarios for sshd, Nginx, Traefik, Caddy, HAProxy, Vaultwarden, Nextcloud, Jellyfin, Home Assistant, OPNsense, and many more) and detects behaviours (brute force, scanning, HTTP probing for `/wp-admin` and `.env`, credential stuffing, CVE exploitation attempts); **bouncers** enforce decisions at the firewall (iptables/nftables, OPNsense plugin), the proxy (Traefik plugin, Caddy module, Nginx module, Cloudflare WAF), or the application. Crucially, the agent optionally **shares** signals with the CrowdSec community and receives a **community blocklist** of IPs currently attacking other CrowdSec users — so you preemptively block the botnet that has not yet reached you. A local API, a web console (hosted, optional), `cscli` for management, Prometheus metrics. Free for the community edition; the company sells premium blocklists and enterprise features.
+
+**Recommendation:** CrowdSec for anything exposed to the internet — the community blocklist is a real advantage. The Traefik/Caddy bouncer plugins are the cleanest integration: the proxy asks CrowdSec's local API "is this IP banned?" on each request and returns 403 before the request reaches any app. fail2ban remains fine for SSH on a host that is not exposed, or when you want zero external dependencies.
+
+```yaml
+# crowdsec/compose.yaml (agent reading Traefik logs; bouncer is a Traefik plugin)
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: crowdsec
+    restart: unless-stopped
+    environment:
+      COLLECTIONS: "crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/base-http-scenarios crowdsecurity/sshd"
+      GID: "1000"
+    volumes:
+      - ./config:/etc/crowdsec
+      - ./data:/var/lib/crowdsec/data
+      - /opt/stacks/traefik/logs:/var/log/traefik:ro
+      - /var/log/auth.log:/var/log/auth.log:ro
+    networks: [proxy]
+# then: docker exec crowdsec cscli bouncers add traefik-bouncer   -> key for the Traefik plugin
+# and:  docker exec crowdsec cscli decisions list                 -> who is banned right now
+```
+
+Honeypot-style additions: **endlessh** (a tarpit that holds SSH scanners in a slow banner for hours on port 22 while your real SSH is elsewhere) and **CrowdSec's own "honeypot" scenarios**. Fun, low value, harmless.
+
+## Container hardening
+
+Containers are not a security boundary by default; they can be made a reasonable one.
+
+- **Don't run as root inside the container.** `user: "1000:1000"` where the image allows it; `PUID/PGID` for LinuxServer images; images that drop privileges themselves. A root process in a container that escapes is root on the host.
+- **`security_opt: [no-new-privileges:true]`** on every service. Prevents setuid escalation inside the container. Almost never breaks anything.
+- **Drop capabilities.** `cap_drop: [ALL]` then `cap_add` only what is needed (most web apps need none; `NET_BIND_SERVICE` if binding <1024 as non-root; `NET_ADMIN` for VPN containers). Start with `cap_drop: [ALL]` and add back until it works.
+- **Read-only root filesystem** where the app tolerates it: `read_only: true` plus `tmpfs: [/tmp, /run]`. Many Go/Rust single-binary apps work this way; most PHP/Python apps do not without effort.
+- **Never mount the Docker socket into an internet-facing container.** The socket is root on the host. For tools that need it (Traefik, Portainer, Watchtower/Diun, Dozzle, Uptime Kuma's Docker monitor, Homepage's Docker widget), use a **socket proxy** (`tecnativa/docker-socket-proxy` or `wollomatic/socket-proxy`) that exposes only the read-only API endpoints each tool needs. Or run those tools with `--group-add` and a read-only socket mount, accepting the reduced protection.
+- **`privileged: true` is a last resort.** Home Assistant, Frigate with certain hardware, and a few others ask for it. Prefer specific `devices:` and `cap_add:` entries; if you must, isolate that container (own network, no socket, minimal mounts).
+- **Resource limits** (`mem_limit`, `cpus`, `pids_limit`) so a compromised or buggy container cannot starve the host.
+- **Isolated networks.** A database should be on a network that only its application can reach; nothing else. The `proxy` network carries only web-facing containers.
+- **Egress control.** Containers can reach the internet by default. For things that should not need to (databases, internal tools), `internal: true` on their network, or firewall rules in `DOCKER-USER`. Cuts off data exfiltration and C2 callbacks from a compromised image.
+- **Image hygiene.** Official/project images; pinned tags; `docker scout` / **Trivy** / **Grype** to scan images for known CVEs (Trivy in a cron job with ntfy output is a fine weekly habit); Renovate for controlled updates ([Chapter 27](27-automation-iac.md)).
+- **Rootless Docker or Podman** for the strongest default posture, at the cost of some friction ([Chapter 5](#containers-docker-compose-podman-and-kubernetes)).
+- **gVisor (`runsc`)** as an alternative runtime adds a user-space kernel between container and host — real isolation for an untrusted workload (a public-facing app, a code-execution sandbox) with a performance cost. Niche at home; good to know exists.
+
+## Secrets
+
+Passwords, API tokens, database credentials, and encryption keys end up in `.env` files, Compose files, and shell history. Handling them well:
+
+- **`.env` files, `chmod 600`, gitignored.** The baseline. Compose reads them; they never enter the repository.
+- **Docker secrets** (`secrets:` in Compose, files mounted at `/run/secrets/name`) for images that support `*_FILE` environment variables (Postgres, MariaDB, Authelia, Vaultwarden, Nextcloud, Immich, Gitea, and many more do). Keeps secrets out of `docker inspect` output and the process environment.
+- **Encrypted in Git** with **SOPS** (+ **age** or a GPG key): the file is committed encrypted, decrypted on deploy. This is how you get a fully reproducible, Git-backed lab that includes its secrets. Works with Compose via a small wrapper or via Komodo/Ansible integrations.
+- **A secrets manager** for larger labs: **Infisical**, **OpenBao** (the open-source fork of HashiCorp Vault after its licence change), **Bitwarden Secrets Manager**, or Vaultwarden used as a poor man's store via the CLI. Overkill for Tier 1; sensible for Tier 3 or anyone doing serious IaC. See [Chapter 21](21-passwords-secrets.md).
+- **Rotate what leaks.** If a token appears in a log, a screenshot, or a public repo, it is compromised — regenerate it, do not just delete the post.
+- **Scoped tokens.** The Cloudflare token for DNS-01 needs *only* DNS edit on *one* zone. The B2 key for backups needs *write, not delete*. The Docker socket proxy exposes *read-only container listing*. Least privilege everywhere it is free.
+- **Shell history**: `export HISTIGNORE="*PASSWORD*:*TOKEN*:*SECRET*"` or prefix sensitive commands with a space (with `HISTCONTROL=ignorespace`).
+
+## Detection and response
+
+Prevention fails eventually. Knowing quickly is the difference between an incident and a disaster.
+
+- **Login notifications** (SSH, IdP admin, Proxmox, NAS UI) to your phone. Cheap and high-signal.
+- **CrowdSec decisions** and fail2ban bans posted to ntfy — you see attack volume and the occasional surprise.
+- **File integrity monitoring**: **AIDE** or **Wazuh**'s syscheck watch for unexpected changes to system binaries and configs. **Wazuh** (the open-source SIEM/XDR — agents on each host, a central manager, OpenSearch dashboards; heavy at ~4–8 GB RAM for the server) is the "I want to learn enterprise security tooling" option and genuinely useful for a Tier 3 lab. **Security Onion** and **Suricata/Zeek** on a SPAN port for network IDS are the network-side equivalents; Suricata/Zenarmor run natively on OPNsense.
+- **Netflow/traffic visibility**: OPNsense's insight, **ntopng**, or **Zenarmor** show which device talks to which country — an IoT device suddenly chatting with a new host is how botnets get noticed.
+- **Vulnerability scanning**: Trivy/Grype on images; **OpenVAS/Greenbone** against hosts for the ambitious; `nmap` from outside your network monthly to confirm nothing new is exposed (`nmap -Pn -p- your.public.ip` from a VPS or a phone on cellular).
+- **Canary tokens** (canarytokens.org, or self-hosted **Thinkst OpenCanary**): a fake `passwords.xlsx` on your SMB share that alerts when opened; a fake AWS key in a file. If anyone touches them, you know someone is inside.
+- **Have a plan.** Written down: how to cut the internet (pull the WAN cable), how to shut down the lab, where the offline backups are, how to rotate every credential, who to tell. The time to write it is now, not during.
+
+## Security checklist
+
+Prioritised. Do the first block before anything else.
+
+**Foundation**
+- [ ] No ports forwarded unless a specific service must be public; own access via mesh VPN.
+- [ ] IoT/guest/cameras on VLANs that cannot reach servers or personal devices.
+- [ ] Unattended security updates on every host; container update notifications reviewed weekly.
+- [ ] Unique passwords in a manager; MFA/passkeys on every admin interface and every app that supports it; IdP forward-auth on the rest.
+- [ ] Backups: off-site, encrypted, with an immutable or offline copy; restore tested.
+
+**Hosts**
+- [ ] SSH: keys only, root disabled, LAN/VPN only; login notifications to ntfy.
+- [ ] Host firewall default-deny; Docker's `DOCKER-USER` chain handled; `nmap` verification from another machine.
+- [ ] Nothing listening that you cannot explain (`ss -tulpn`).
+- [ ] Lynis run once; obvious findings fixed.
+
+**Containers**
+- [ ] Non-root users, `no-new-privileges`, dropped capabilities, resource limits.
+- [ ] No Docker socket in web-facing containers; socket proxy for tools that need it.
+- [ ] Databases on isolated networks with no published ports; `internal: true` where egress is unneeded.
+- [ ] Images from official/project sources, pinned; weekly Trivy scan.
+
+**Edge (if anything is exposed)**
+- [ ] Reverse proxy with TLS, HSTS, security headers, default 404 host; separate entrypoint for public hosts.
+- [ ] CrowdSec (or fail2ban) with bouncer at the proxy; rate limits on logins; geo-block if appropriate.
+- [ ] Forward-auth/MFA in front of anything not deliberately public.
+- [ ] Or: Cloudflare Tunnel + Access / Pangolin instead of forwarding at all.
+
+**Secrets and detection**
+- [ ] `.env` files `600` and gitignored, or SOPS-encrypted in Git; scoped tokens.
+- [ ] CrowdSec/fail2ban events and admin logins visible on your phone.
+- [ ] Monthly external `nmap`; an incident plan written down.
 
 ---

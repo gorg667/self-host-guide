@@ -161,3 +161,61 @@ Containers are not a security boundary by default; they can be made a reasonable
 - **Image hygiene.** Official/project images; pinned tags; `docker scout` / **Trivy** / **Grype** to scan images for known CVEs (Trivy in a cron job with ntfy output is a fine weekly habit); Renovate for controlled updates ([Chapter 27](27-automation-iac.md)).
 - **Rootless Docker or Podman** for the strongest default posture, at the cost of some friction ([Chapter 5](05-containers.md)).
 - **gVisor (`runsc`)** as an alternative runtime adds a user-space kernel between container and host — real isolation for an untrusted workload (a public-facing app, a code-execution sandbox) with a performance cost. Niche at home; good to know exists.
+
+## Secrets
+
+Passwords, API tokens, database credentials, and encryption keys end up in `.env` files, Compose files, and shell history. Handling them well:
+
+- **`.env` files, `chmod 600`, gitignored.** The baseline. Compose reads them; they never enter the repository.
+- **Docker secrets** (`secrets:` in Compose, files mounted at `/run/secrets/name`) for images that support `*_FILE` environment variables (Postgres, MariaDB, Authelia, Vaultwarden, Nextcloud, Immich, Gitea, and many more do). Keeps secrets out of `docker inspect` output and the process environment.
+- **Encrypted in Git** with **SOPS** (+ **age** or a GPG key): the file is committed encrypted, decrypted on deploy. This is how you get a fully reproducible, Git-backed lab that includes its secrets. Works with Compose via a small wrapper or via Komodo/Ansible integrations.
+- **A secrets manager** for larger labs: **Infisical**, **OpenBao** (the open-source fork of HashiCorp Vault after its licence change), **Bitwarden Secrets Manager**, or Vaultwarden used as a poor man's store via the CLI. Overkill for Tier 1; sensible for Tier 3 or anyone doing serious IaC. See [Chapter 21](21-passwords-secrets.md).
+- **Rotate what leaks.** If a token appears in a log, a screenshot, or a public repo, it is compromised — regenerate it, do not just delete the post.
+- **Scoped tokens.** The Cloudflare token for DNS-01 needs *only* DNS edit on *one* zone. The B2 key for backups needs *write, not delete*. The Docker socket proxy exposes *read-only container listing*. Least privilege everywhere it is free.
+- **Shell history**: `export HISTIGNORE="*PASSWORD*:*TOKEN*:*SECRET*"` or prefix sensitive commands with a space (with `HISTCONTROL=ignorespace`).
+
+## Detection and response
+
+Prevention fails eventually. Knowing quickly is the difference between an incident and a disaster.
+
+- **Login notifications** (SSH, IdP admin, Proxmox, NAS UI) to your phone. Cheap and high-signal.
+- **CrowdSec decisions** and fail2ban bans posted to ntfy — you see attack volume and the occasional surprise.
+- **File integrity monitoring**: **AIDE** or **Wazuh**'s syscheck watch for unexpected changes to system binaries and configs. **Wazuh** (the open-source SIEM/XDR — agents on each host, a central manager, OpenSearch dashboards; heavy at ~4–8 GB RAM for the server) is the "I want to learn enterprise security tooling" option and genuinely useful for a Tier 3 lab. **Security Onion** and **Suricata/Zeek** on a SPAN port for network IDS are the network-side equivalents; Suricata/Zenarmor run natively on OPNsense.
+- **Netflow/traffic visibility**: OPNsense's insight, **ntopng**, or **Zenarmor** show which device talks to which country — an IoT device suddenly chatting with a new host is how botnets get noticed.
+- **Vulnerability scanning**: Trivy/Grype on images; **OpenVAS/Greenbone** against hosts for the ambitious; `nmap` from outside your network monthly to confirm nothing new is exposed (`nmap -Pn -p- your.public.ip` from a VPS or a phone on cellular).
+- **Canary tokens** (canarytokens.org, or self-hosted **Thinkst OpenCanary**): a fake `passwords.xlsx` on your SMB share that alerts when opened; a fake AWS key in a file. If anyone touches them, you know someone is inside.
+- **Have a plan.** Written down: how to cut the internet (pull the WAN cable), how to shut down the lab, where the offline backups are, how to rotate every credential, who to tell. The time to write it is now, not during.
+
+## Security checklist
+
+Prioritised. Do the first block before anything else.
+
+**Foundation**
+- [ ] No ports forwarded unless a specific service must be public; own access via mesh VPN.
+- [ ] IoT/guest/cameras on VLANs that cannot reach servers or personal devices.
+- [ ] Unattended security updates on every host; container update notifications reviewed weekly.
+- [ ] Unique passwords in a manager; MFA/passkeys on every admin interface and every app that supports it; IdP forward-auth on the rest.
+- [ ] Backups: off-site, encrypted, with an immutable or offline copy; restore tested.
+
+**Hosts**
+- [ ] SSH: keys only, root disabled, LAN/VPN only; login notifications to ntfy.
+- [ ] Host firewall default-deny; Docker's `DOCKER-USER` chain handled; `nmap` verification from another machine.
+- [ ] Nothing listening that you cannot explain (`ss -tulpn`).
+- [ ] Lynis run once; obvious findings fixed.
+
+**Containers**
+- [ ] Non-root users, `no-new-privileges`, dropped capabilities, resource limits.
+- [ ] No Docker socket in web-facing containers; socket proxy for tools that need it.
+- [ ] Databases on isolated networks with no published ports; `internal: true` where egress is unneeded.
+- [ ] Images from official/project sources, pinned; weekly Trivy scan.
+
+**Edge (if anything is exposed)**
+- [ ] Reverse proxy with TLS, HSTS, security headers, default 404 host; separate entrypoint for public hosts.
+- [ ] CrowdSec (or fail2ban) with bouncer at the proxy; rate limits on logins; geo-block if appropriate.
+- [ ] Forward-auth/MFA in front of anything not deliberately public.
+- [ ] Or: Cloudflare Tunnel + Access / Pangolin instead of forwarding at all.
+
+**Secrets and detection**
+- [ ] `.env` files `600` and gitignored, or SOPS-encrypted in Git; scoped tokens.
+- [ ] CrowdSec/fail2ban events and admin logins visible on your phone.
+- [ ] Monthly external `nmap`; an incident plan written down.

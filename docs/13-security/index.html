@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security for the Home Lab — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li><li><a href="../09-dns-adblock/"><span class="num">09</span> DNS and Network-Wide Ad Blocking</a></li><li><a href="../10-identity-sso/"><span class="num">10</span> Identity and Single Sign-On</a></li><li><a href="../11-backups/"><span class="num">11</span> Backups: The Chapter That Matters Most</a></li><li><a href="../12-monitoring/"><span class="num">12</span> Monitoring, Logging, and Alerting</a></li><li class="active"><a href="../13-security/"><span class="num">13</span> Security for the Home Lab</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 13 · ~3,463 words · 15 min read</div>
+    <article class="prose">
+      <h1 id="security-for-the-home-lab">Security for the Home Lab<a class="headerlink" href="#security-for-the-home-lab" title="Permanent link">#</a></h1>
+<p>Security is not a product you install; it is a set of habits and a handful of decisions made in the right order. The good news is that a home lab's threat model is far simpler than an enterprise's, and the highest-value defences are cheap: expose little, segment the network, keep things updated, use strong authentication, and have backups an attacker cannot reach. This chapter builds a realistic threat model, then works through the layers — host hardening, SSH, firewalls and Docker, the reverse proxy edge, intrusion prevention with CrowdSec and fail2ban, container hardening, secrets, updates, and detection — and ends with a prioritised checklist.</p>
+<h2 id="threat-model-who-is-actually-attacking-you">Threat model: who is actually attacking you<a class="headerlink" href="#threat-model-who-is-actually-attacking-you" title="Permanent link">#</a></h2>
+<p>Be honest about the adversaries, because defending against the wrong one wastes effort.</p>
+<p><strong>Automated scanners and bots.</strong> The overwhelming majority of hostile traffic. Within minutes of opening a port, scanners find it; within hours, bots try default credentials and known exploits against whatever they fingerprint. They are indiscriminate and relentless, and they are entirely defeated by: not exposing services, strong unique passwords, MFA, and prompt patching. This is the adversary you <em>must</em> beat, and it is beatable.</p>
+<p><strong>Opportunistic ransomware.</strong> Malware that arrives via a phishing email on a family laptop or a compromised download, then spreads across the LAN looking for SMB shares to encrypt and backups to delete. Defeated by: network segmentation, SMB shares that require authentication and are not writable by every device, versioned/immutable/offline backups (<a href="../11-backups/">Chapter 11</a>), and least privilege.</p>
+<p><strong>Compromised IoT devices.</strong> The cheap camera or plug with a known backdoor, enrolled in a botnet, scanning your LAN from the inside. Defeated by: an IoT VLAN with no access to anything internal (<a href="../03-networking/">Chapter 3</a>).</p>
+<p><strong>Supply-chain incidents.</strong> A popular Docker image or npm package is compromised upstream. Rare, real (the 2024 xz backdoor; periodic malicious images on Docker Hub). Mitigated by: pulling from official/project sources, pinning versions, not running as root, not granting the Docker socket, egress filtering, and noticing anomalies.</p>
+<p><strong>Targeted attackers.</strong> Someone who wants <em>your</em> data specifically. For nearly all home labs this adversary does not exist, and the defences that stop bots and ransomware raise the bar high enough that a targeted attacker would need real effort. If you are a journalist, activist, or hold genuinely sensitive data, the general advice here is a floor, not a ceiling.</p>
+<p><strong>You.</strong> Accidental <code>rm -rf</code>, a misconfigured firewall rule that exposes a database, an <code>.env</code> file committed to a public repo, a port published on <code>0.0.0.0</code> on a VPS. Statistically the most likely cause of a security incident in a home lab. Defeated by: backups, review, and the habits below.</p>
+<h2 id="the-order-of-operations">The order of operations<a class="headerlink" href="#the-order-of-operations" title="Permanent link">#</a></h2>
+<p>If you do nothing else, do these, in this order:</p>
+<ol>
+<li><strong>Expose nothing.</strong> Use a mesh VPN for your own access (<a href="../08-remote-access-vpn/">Chapter 8</a>). Zero forwarded ports is the strongest posture there is.</li>
+<li><strong>Segment.</strong> IoT and guests on their own VLANs, unable to reach servers (<a href="../03-networking/">Chapter 3</a>).</li>
+<li><strong>Update.</strong> Unattended security updates on hosts; a notification-and-review cadence for containers (<a href="../05-containers/">Chapter 5</a>).</li>
+<li><strong>Authenticate strongly.</strong> Unique passwords from a manager; MFA/passkeys on everything that supports it; an IdP in front of everything that does not (<a href="../10-identity-sso/">Chapter 10</a>).</li>
+<li><strong>Back up immutably.</strong> A copy an attacker on your network cannot delete (<a href="../11-backups/">Chapter 11</a>).</li>
+<li><strong>Then</strong> harden hosts, containers, and the edge, and add detection — the rest of this chapter.</li>
+</ol>
+<p>A lab with steps 1–5 done and nothing else is more secure than most small businesses.</p>
+<h2 id="host-hardening">Host hardening<a class="headerlink" href="#host-hardening" title="Permanent link">#</a></h2>
+<h3 id="ssh">SSH<a class="headerlink" href="#ssh" title="Permanent link">#</a></h3>
+<p>SSH is how you administer everything; it deserves care even on the LAN.</p>
+<ul>
+<li><strong>Keys, not passwords.</strong> <code>ssh-keygen -t ed25519</code>; copy the public key; then in <code>/etc/ssh/sshd_config</code> (or a drop-in in <code>/etc/ssh/sshd_config.d/</code>): <code>PasswordAuthentication no</code>, <code>KbdInteractiveAuthentication no</code>, <code>PermitRootLogin no</code> (or <code>prohibit-password</code> if you must SSH as root, as on Proxmox), <code>PubkeyAuthentication yes</code>. Reload sshd. Test from a second terminal <em>before</em> closing the first.</li>
+<li><strong>Protect the private key</strong> with a passphrase; use <code>ssh-agent</code> or a hardware key (YubiKey with <code>ed25519-sk</code>/FIDO2 keys are supported natively by OpenSSH 8.2+ and are the gold standard).</li>
+<li><strong>Never expose SSH to the internet.</strong> Reach it via the VPN. If you absolutely must, use key-only auth, a non-standard port (which only reduces log noise, not risk), and fail2ban/CrowdSec. <strong>Tailscale SSH</strong> or an SSH certificate authority (step-ca, Smallstep) removes key sprawl for larger labs.</li>
+<li><code>AllowUsers youruser</code> or <code>AllowGroups ssh-users</code> to whitelist accounts. <code>MaxAuthTries 3</code>. <code>ClientAliveInterval 300</code>.</li>
+<li><strong>SSH login notifications</strong>: a tiny PAM hook or <code>sshrc</code> script posting to ntfy on every successful login is one of the highest-value detections available and takes five minutes.</li>
+</ul>
+<h3 id="users-and-sudo">Users and sudo<a class="headerlink" href="#users-and-sudo" title="Permanent link">#</a></h3>
+<p>One personal account per human, in the <code>sudo</code> group; root login disabled; <code>sudo</code> with a password (or with <code>NOPASSWD</code> only for specific automation commands). Docker group membership is root-equivalent — anyone in <code>docker</code> can mount the host filesystem into a container. Know that, and either accept it for your own account or use rootless Docker/Podman.</p>
+<h3 id="unattended-updates">Unattended updates<a class="headerlink" href="#unattended-updates" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>apt<span class="w"> </span>install<span class="w"> </span>unattended-upgrades<span class="w"> </span>apt-listchanges
+dpkg-reconfigure<span class="w"> </span>-plow<span class="w"> </span>unattended-upgrades<span class="w">   </span><span class="c1"># enable</span>
+<span class="c1"># /etc/apt/apt.conf.d/50unattended-upgrades: security origin enabled by default on Debian/Ubuntu</span>
+<span class="c1"># Consider: Unattended-Upgrade::Automatic-Reboot &quot;true&quot;; with Automatic-Reboot-Time &quot;04:00&quot;;</span>
+<span class="c1"># and Unattended-Upgrade::Mail or a script to ntfy for the report</span>
+</code></pre></div>
+<p>Security updates for the host OS, automatically, nightly. This is non-negotiable for anything reachable from beyond the LAN and strongly advised for everything else. Reboots for kernel updates can be automated (with <code>needrestart</code> or the reboot option) or done on a weekly schedule; <strong>livepatch</strong>/<strong>kpatch</strong> avoid them on Ubuntu Pro (free for personal use on up to five machines) and RHEL-family.</p>
+<h3 id="minimal-attack-surface">Minimal attack surface<a class="headerlink" href="#minimal-attack-surface" title="Permanent link">#</a></h3>
+<p>Install only what you use; <code>ss -tulpn</code> to see what is listening and ask why for each entry. Disable or remove Avahi, CUPS, rpcbind, and anything else that came with a "server" tasksel and that you do not need. A Docker host should listen on 22 (LAN/VPN only), 80/443 (the proxy), and nothing else on the LAN interface.</p>
+<h3 id="filesystem-and-kernel">Filesystem and kernel<a class="headerlink" href="#filesystem-and-kernel" title="Permanent link">#</a></h3>
+<p>Full-disk encryption (LUKS) on the OS drive protects against physical theft — worth it on a laptop, debatable on a server in your house that must reboot unattended (requires a TPM2 auto-unlock setup — <code>systemd-cryptenroll</code> — or network unlock via <strong>Tang/Clevis</strong> or <strong>dropbear-initramfs</strong> for SSH-unlock at boot). ZFS native encryption on data datasets with a key loaded at boot from a file on the encrypted root is a common compromise. <strong>AppArmor</strong> (Debian/Ubuntu) is on by default and Docker uses it; leave it. <strong>SELinux</strong> (Fedora/RHEL) likewise; do not set it to permissive to fix a problem — fix the label. Kernel hardening via <code>sysctl</code> (disable IP forwarding where not needed, <code>kernel.kptr_restrict=2</code>, <code>net.ipv4.conf.all.rp_filter=1</code>) is low-effort; <strong>Lynis</strong> audits a host and tells you what to tighten.</p>
+<h2 id="firewalls">Firewalls<a class="headerlink" href="#firewalls" title="Permanent link">#</a></h2>
+<h3 id="network-firewall">Network firewall<a class="headerlink" href="#network-firewall" title="Permanent link">#</a></h3>
+<p>The router/firewall (<a href="../03-networking/">Chapter 3</a>) is the primary control: default-deny inbound from the internet, default-deny between VLANs with explicit allows, egress rules for IoT. Review the rule set twice a year and delete rules whose purpose you cannot remember.</p>
+<h3 id="host-firewall">Host firewall<a class="headerlink" href="#host-firewall" title="Permanent link">#</a></h3>
+<p>A host firewall on each server is defence in depth: if a VLAN rule is wrong or a device on the server VLAN is compromised, the host still refuses connections to ports that should not be reachable. <code>ufw</code> (Ubuntu/Debian), <code>firewalld</code> (Fedora/RHEL), or <code>nftables</code> directly.</p>
+<div class="highlight"><pre><span></span><code>ufw<span class="w"> </span>default<span class="w"> </span>deny<span class="w"> </span>incoming
+ufw<span class="w"> </span>default<span class="w"> </span>allow<span class="w"> </span>outgoing
+ufw<span class="w"> </span>allow<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.0.10.0/24<span class="w"> </span>to<span class="w"> </span>any<span class="w"> </span>port<span class="w"> </span><span class="m">22</span><span class="w"> </span>proto<span class="w"> </span>tcp<span class="w">     </span><span class="c1"># SSH from trusted VLAN only</span>
+ufw<span class="w"> </span>allow<span class="w"> </span>from<span class="w"> </span><span class="m">100</span>.64.0.0/10<span class="w"> </span>to<span class="w"> </span>any<span class="w"> </span>port<span class="w"> </span><span class="m">22</span><span class="w"> </span>proto<span class="w"> </span>tcp<span class="w">    </span><span class="c1"># ...and from the tailnet</span>
+ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">80</span>,443/tcp<span class="w">                                     </span><span class="c1"># the reverse proxy</span>
+ufw<span class="w"> </span><span class="nb">enable</span>
+</code></pre></div>
+<p><strong>And then the Docker problem</strong> (<a href="../05-containers/">Chapter 5</a>): Docker's published ports bypass <code>ufw</code>. On a LAN-only host behind a router with no forwards this is a nuisance; on a VPS it is a critical exposure. The fixes: publish container ports on <code>127.0.0.1</code> only (or not at all — use the proxy network), <em>or</em> install <code>ufw-docker</code> which adds the right rules to the <code>DOCKER-USER</code> chain, <em>or</em> add <code>DOCKER-USER</code> rules by hand:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Drop anything to Docker containers that did not come from the LAN or the tailnet</span>
+iptables<span class="w"> </span>-I<span class="w"> </span>DOCKER-USER<span class="w"> </span>-i<span class="w"> </span>eth0<span class="w"> </span>!<span class="w"> </span>-s<span class="w"> </span><span class="m">10</span>.0.0.0/8<span class="w"> </span>-m<span class="w"> </span>conntrack<span class="w"> </span>--ctstate<span class="w"> </span>NEW<span class="w"> </span>-j<span class="w"> </span>DROP
+iptables<span class="w"> </span>-I<span class="w"> </span>DOCKER-USER<span class="w"> </span>-i<span class="w"> </span>eth0<span class="w"> </span>-s<span class="w"> </span><span class="m">100</span>.64.0.0/10<span class="w"> </span>-j<span class="w"> </span>RETURN
+</code></pre></div>
+<p>Verify from another machine with <code>nmap -p- &lt;host&gt;</code>: only the ports you intend should answer. Do this after every new stack.</p>
+<h2 id="the-edge-exposed-services">The edge: exposed services<a class="headerlink" href="#the-edge-exposed-services" title="Permanent link">#</a></h2>
+<p>If you forward 443 to a reverse proxy, that proxy and everything behind it are on the internet. The layered defences, from outermost in:</p>
+<ol>
+<li><strong>Geo-blocking</strong> at the firewall or proxy for countries you will never log in from. Crude, effective against the bulk of scanner traffic. OPNsense (GeoIP aliases), Traefik/Caddy/Nginx plugins, CrowdSec's geo scenarios, Cloudflare's WAF rules if fronted by Cloudflare.</li>
+<li><strong>CrowdSec or fail2ban</strong> (below) watching the proxy's access logs and banning IPs that probe, brute-force, or hit known exploit paths.</li>
+<li><strong>Rate limiting</strong> at the proxy on login endpoints.</li>
+<li><strong>Authentication before the app</strong> — forward-auth to the IdP with MFA for anything that is not deliberately public (<a href="../10-identity-sso/">Chapter 10</a>). The app's own login page is the <em>second</em> line, not the first.</li>
+<li><strong>A separate proxy entrypoint or instance for public hosts</strong> so that forwarding 443 exposes only the hostnames you intend, not all forty internal ones.</li>
+<li><strong>Security headers, TLS 1.2+, HSTS</strong>, a catch-all default host returning 404 (<a href="../07-reverse-proxy-tls/">Chapter 7</a>).</li>
+<li><strong>A Web Application Firewall</strong> — <strong>ModSecurity with the OWASP Core Rule Set</strong> (via BunkerWeb, or the SWAG mod, or Nginx directly) or <strong>Coraza</strong> (Caddy plugin, Traefik plugin) — blocks known attack patterns (SQL injection, path traversal) generically. Adds false positives and CPU; worthwhile for a public site, optional for a proxy that only fronts authenticated services.</li>
+<li><strong>The app itself</strong> kept updated, with its own MFA on, admin accounts renamed from defaults, and registration disabled.</li>
+</ol>
+<p><strong>Or</strong>: do not forward 443 at all. Cloudflare Tunnel with Access, or Pangolin with its built-in auth (<a href="../08-remote-access-vpn/">Chapter 8</a>), moves the edge to a relay and gives you an identity wall before traffic even reaches your network. For most households that need to expose one or two things to non-technical friends, this is the better model.</p>
+<h2 id="crowdsec-and-fail2ban">CrowdSec and fail2ban<a class="headerlink" href="#crowdsec-and-fail2ban" title="Permanent link">#</a></h2>
+<h3 id="fail2ban">fail2ban<a class="headerlink" href="#fail2ban" title="Permanent link">#</a></h3>
+<p>The classic: watches log files, matches regexes ("Failed password for"), and after N matches in T seconds adds a firewall rule banning the source IP for a duration. Jails exist for sshd, Nginx, Postfix, Dovecot, Vaultwarden, Nextcloud, and hundreds more; writing a filter for a new log format is a regex. Simple, effective against brute force, no external dependencies. Limitations: purely reactive and local (it learns nothing from other people's attackers), and Docker's log locations and iptables chains need configuration (<code>chain = DOCKER-USER</code>, log paths bind-mounted in).</p>
+<h3 id="crowdsec">CrowdSec<a class="headerlink" href="#crowdsec" title="Permanent link">#</a></h3>
+<p>A modern successor: a local <strong>agent</strong> parses logs (via "collections" — pre-built parsers and scenarios for sshd, Nginx, Traefik, Caddy, HAProxy, Vaultwarden, Nextcloud, Jellyfin, Home Assistant, OPNsense, and many more) and detects behaviours (brute force, scanning, HTTP probing for <code>/wp-admin</code> and <code>.env</code>, credential stuffing, CVE exploitation attempts); <strong>bouncers</strong> enforce decisions at the firewall (iptables/nftables, OPNsense plugin), the proxy (Traefik plugin, Caddy module, Nginx module, Cloudflare WAF), or the application. Crucially, the agent optionally <strong>shares</strong> signals with the CrowdSec community and receives a <strong>community blocklist</strong> of IPs currently attacking other CrowdSec users — so you preemptively block the botnet that has not yet reached you. A local API, a web console (hosted, optional), <code>cscli</code> for management, Prometheus metrics. Free for the community edition; the company sells premium blocklists and enterprise features.</p>
+<p><strong>Recommendation:</strong> CrowdSec for anything exposed to the internet — the community blocklist is a real advantage. The Traefik/Caddy bouncer plugins are the cleanest integration: the proxy asks CrowdSec's local API "is this IP banned?" on each request and returns 403 before the request reaches any app. fail2ban remains fine for SSH on a host that is not exposed, or when you want zero external dependencies.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># crowdsec/compose.yaml (agent reading Traefik logs; bouncer is a Traefik plugin)</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">crowdsec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">crowdsecurity/crowdsec:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">crowdsec</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">COLLECTIONS</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;crowdsecurity/traefik</span><span class="nv"> </span><span class="s">crowdsecurity/http-cve</span><span class="nv"> </span><span class="s">crowdsecurity/base-http-scenarios</span><span class="nv"> </span><span class="s">crowdsecurity/sshd&quot;</span>
+<span class="w">      </span><span class="nt">GID</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1000&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./config:/etc/crowdsec</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/var/lib/crowdsec/data</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/stacks/traefik/logs:/var/log/traefik:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/log/auth.log:/var/log/auth.log:ro</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">proxy</span><span class="p p-Indicator">]</span>
+<span class="c1"># then: docker exec crowdsec cscli bouncers add traefik-bouncer   -&gt; key for the Traefik plugin</span>
+<span class="c1"># and:  docker exec crowdsec cscli decisions list                 -&gt; who is banned right now</span>
+</code></pre></div>
+<p>Honeypot-style additions: <strong>endlessh</strong> (a tarpit that holds SSH scanners in a slow banner for hours on port 22 while your real SSH is elsewhere) and <strong>CrowdSec's own "honeypot" scenarios</strong>. Fun, low value, harmless.</p>
+<h2 id="container-hardening">Container hardening<a class="headerlink" href="#container-hardening" title="Permanent link">#</a></h2>
+<p>Containers are not a security boundary by default; they can be made a reasonable one.</p>
+<ul>
+<li><strong>Don't run as root inside the container.</strong> <code>user: "1000:1000"</code> where the image allows it; <code>PUID/PGID</code> for LinuxServer images; images that drop privileges themselves. A root process in a container that escapes is root on the host.</li>
+<li><strong><code>security_opt: [no-new-privileges:true]</code></strong> on every service. Prevents setuid escalation inside the container. Almost never breaks anything.</li>
+<li><strong>Drop capabilities.</strong> <code>cap_drop: [ALL]</code> then <code>cap_add</code> only what is needed (most web apps need none; <code>NET_BIND_SERVICE</code> if binding &lt;1024 as non-root; <code>NET_ADMIN</code> for VPN containers). Start with <code>cap_drop: [ALL]</code> and add back until it works.</li>
+<li><strong>Read-only root filesystem</strong> where the app tolerates it: <code>read_only: true</code> plus <code>tmpfs: [/tmp, /run]</code>. Many Go/Rust single-binary apps work this way; most PHP/Python apps do not without effort.</li>
+<li><strong>Never mount the Docker socket into an internet-facing container.</strong> The socket is root on the host. For tools that need it (Traefik, Portainer, Watchtower/Diun, Dozzle, Uptime Kuma's Docker monitor, Homepage's Docker widget), use a <strong>socket proxy</strong> (<code>tecnativa/docker-socket-proxy</code> or <code>wollomatic/socket-proxy</code>) that exposes only the read-only API endpoints each tool needs. Or run those tools with <code>--group-add</code> and a read-only socket mount, accepting the reduced protection.</li>
+<li><strong><code>privileged: true</code> is a last resort.</strong> Home Assistant, Frigate with certain hardware, and a few others ask for it. Prefer specific <code>devices:</code> and <code>cap_add:</code> entries; if you must, isolate that container (own network, no socket, minimal mounts).</li>
+<li><strong>Resource limits</strong> (<code>mem_limit</code>, <code>cpus</code>, <code>pids_limit</code>) so a compromised or buggy container cannot starve the host.</li>
+<li><strong>Isolated networks.</strong> A database should be on a network that only its application can reach; nothing else. The <code>proxy</code> network carries only web-facing containers.</li>
+<li><strong>Egress control.</strong> Containers can reach the internet by default. For things that should not need to (databases, internal tools), <code>internal: true</code> on their network, or firewall rules in <code>DOCKER-USER</code>. Cuts off data exfiltration and C2 callbacks from a compromised image.</li>
+<li><strong>Image hygiene.</strong> Official/project images; pinned tags; <code>docker scout</code> / <strong>Trivy</strong> / <strong>Grype</strong> to scan images for known CVEs (Trivy in a cron job with ntfy output is a fine weekly habit); Renovate for controlled updates (<a href="../27-automation-iac/">Chapter 27</a>).</li>
+<li><strong>Rootless Docker or Podman</strong> for the strongest default posture, at the cost of some friction (<a href="../05-containers/">Chapter 5</a>).</li>
+<li><strong>gVisor (<code>runsc</code>)</strong> as an alternative runtime adds a user-space kernel between container and host — real isolation for an untrusted workload (a public-facing app, a code-execution sandbox) with a performance cost. Niche at home; good to know exists.</li>
+</ul>
+<h2 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Permanent link">#</a></h2>
+<p>Passwords, API tokens, database credentials, and encryption keys end up in <code>.env</code> files, Compose files, and shell history. Handling them well:</p>
+<ul>
+<li><strong><code>.env</code> files, <code>chmod 600</code>, gitignored.</strong> The baseline. Compose reads them; they never enter the repository.</li>
+<li><strong>Docker secrets</strong> (<code>secrets:</code> in Compose, files mounted at <code>/run/secrets/name</code>) for images that support <code>*_FILE</code> environment variables (Postgres, MariaDB, Authelia, Vaultwarden, Nextcloud, Immich, Gitea, and many more do). Keeps secrets out of <code>docker inspect</code> output and the process environment.</li>
+<li><strong>Encrypted in Git</strong> with <strong>SOPS</strong> (+ <strong>age</strong> or a GPG key): the file is committed encrypted, decrypted on deploy. This is how you get a fully reproducible, Git-backed lab that includes its secrets. Works with Compose via a small wrapper or via Komodo/Ansible integrations.</li>
+<li><strong>A secrets manager</strong> for larger labs: <strong>Infisical</strong>, <strong>OpenBao</strong> (the open-source fork of HashiCorp Vault after its licence change), <strong>Bitwarden Secrets Manager</strong>, or Vaultwarden used as a poor man's store via the CLI. Overkill for Tier 1; sensible for Tier 3 or anyone doing serious IaC. See <a href="../21-passwords-secrets/">Chapter 21</a>.</li>
+<li><strong>Rotate what leaks.</strong> If a token appears in a log, a screenshot, or a public repo, it is compromised — regenerate it, do not just delete the post.</li>
+<li><strong>Scoped tokens.</strong> The Cloudflare token for DNS-01 needs <em>only</em> DNS edit on <em>one</em> zone. The B2 key for backups needs <em>write, not delete</em>. The Docker socket proxy exposes <em>read-only container listing</em>. Least privilege everywhere it is free.</li>
+<li><strong>Shell history</strong>: <code>export HISTIGNORE="*PASSWORD*:*TOKEN*:*SECRET*"</code> or prefix sensitive commands with a space (with <code>HISTCONTROL=ignorespace</code>).</li>
+</ul>
+<h2 id="detection-and-response">Detection and response<a class="headerlink" href="#detection-and-response" title="Permanent link">#</a></h2>
+<p>Prevention fails eventually. Knowing quickly is the difference between an incident and a disaster.</p>
+<ul>
+<li><strong>Login notifications</strong> (SSH, IdP admin, Proxmox, NAS UI) to your phone. Cheap and high-signal.</li>
+<li><strong>CrowdSec decisions</strong> and fail2ban bans posted to ntfy — you see attack volume and the occasional surprise.</li>
+<li><strong>File integrity monitoring</strong>: <strong>AIDE</strong> or <strong>Wazuh</strong>'s syscheck watch for unexpected changes to system binaries and configs. <strong>Wazuh</strong> (the open-source SIEM/XDR — agents on each host, a central manager, OpenSearch dashboards; heavy at ~4–8 GB RAM for the server) is the "I want to learn enterprise security tooling" option and genuinely useful for a Tier 3 lab. <strong>Security Onion</strong> and <strong>Suricata/Zeek</strong> on a SPAN port for network IDS are the network-side equivalents; Suricata/Zenarmor run natively on OPNsense.</li>
+<li><strong>Netflow/traffic visibility</strong>: OPNsense's insight, <strong>ntopng</strong>, or <strong>Zenarmor</strong> show which device talks to which country — an IoT device suddenly chatting with a new host is how botnets get noticed.</li>
+<li><strong>Vulnerability scanning</strong>: Trivy/Grype on images; <strong>OpenVAS/Greenbone</strong> against hosts for the ambitious; <code>nmap</code> from outside your network monthly to confirm nothing new is exposed (<code>nmap -Pn -p- your.public.ip</code> from a VPS or a phone on cellular).</li>
+<li><strong>Canary tokens</strong> (canarytokens.org, or self-hosted <strong>Thinkst OpenCanary</strong>): a fake <code>passwords.xlsx</code> on your SMB share that alerts when opened; a fake AWS key in a file. If anyone touches them, you know someone is inside.</li>
+<li><strong>Have a plan.</strong> Written down: how to cut the internet (pull the WAN cable), how to shut down the lab, where the offline backups are, how to rotate every credential, who to tell. The time to write it is now, not during.</li>
+</ul>
+<h2 id="security-checklist">Security checklist<a class="headerlink" href="#security-checklist" title="Permanent link">#</a></h2>
+<p>Prioritised. Do the first block before anything else.</p>
+<p><strong>Foundation</strong>
+- [ ] No ports forwarded unless a specific service must be public; own access via mesh VPN.
+- [ ] IoT/guest/cameras on VLANs that cannot reach servers or personal devices.
+- [ ] Unattended security updates on every host; container update notifications reviewed weekly.
+- [ ] Unique passwords in a manager; MFA/passkeys on every admin interface and every app that supports it; IdP forward-auth on the rest.
+- [ ] Backups: off-site, encrypted, with an immutable or offline copy; restore tested.</p>
+<p><strong>Hosts</strong>
+- [ ] SSH: keys only, root disabled, LAN/VPN only; login notifications to ntfy.
+- [ ] Host firewall default-deny; Docker's <code>DOCKER-USER</code> chain handled; <code>nmap</code> verification from another machine.
+- [ ] Nothing listening that you cannot explain (<code>ss -tulpn</code>).
+- [ ] Lynis run once; obvious findings fixed.</p>
+<p><strong>Containers</strong>
+- [ ] Non-root users, <code>no-new-privileges</code>, dropped capabilities, resource limits.
+- [ ] No Docker socket in web-facing containers; socket proxy for tools that need it.
+- [ ] Databases on isolated networks with no published ports; <code>internal: true</code> where egress is unneeded.
+- [ ] Images from official/project sources, pinned; weekly Trivy scan.</p>
+<p><strong>Edge (if anything is exposed)</strong>
+- [ ] Reverse proxy with TLS, HSTS, security headers, default 404 host; separate entrypoint for public hosts.
+- [ ] CrowdSec (or fail2ban) with bouncer at the proxy; rate limits on logins; geo-block if appropriate.
+- [ ] Forward-auth/MFA in front of anything not deliberately public.
+- [ ] Or: Cloudflare Tunnel + Access / Pangolin instead of forwarding at all.</p>
+<p><strong>Secrets and detection</strong>
+- [ ] <code>.env</code> files <code>600</code> and gitignored, or SOPS-encrypted in Git; scoped tokens.
+- [ ] CrowdSec/fail2ban events and admin logins visible on your phone.
+- [ ] Monthly external <code>nmap</code>; an incident plan written down.</p>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../12-monitoring/">← 12. Monitoring, Logging, and Alerting</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/13-security.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#threat-model-who-is-actually-attacking-you">Threat model: who is actually attacking you</a></li>
+<li><a href="#the-order-of-operations">The order of operations</a></li>
+<li><a href="#host-hardening">Host hardening</a><ul>
+<li><a href="#ssh">SSH</a></li>
+<li><a href="#users-and-sudo">Users and sudo</a></li>
+<li><a href="#unattended-updates">Unattended updates</a></li>
+<li><a href="#minimal-attack-surface">Minimal attack surface</a></li>
+<li><a href="#filesystem-and-kernel">Filesystem and kernel</a></li>
+</ul>
+</li>
+<li><a href="#firewalls">Firewalls</a><ul>
+<li><a href="#network-firewall">Network firewall</a></li>
+<li><a href="#host-firewall">Host firewall</a></li>
+</ul>
+</li>
+<li><a href="#the-edge-exposed-services">The edge: exposed services</a></li>
+<li><a href="#crowdsec-and-fail2ban">CrowdSec and fail2ban</a><ul>
+<li><a href="#fail2ban">fail2ban</a></li>
+<li><a href="#crowdsec">CrowdSec</a></li>
+</ul>
+</li>
+<li><a href="#container-hardening">Container hardening</a></li>
+<li><a href="#secrets">Secrets</a></li>
+<li><a href="#detection-and-response">Detection and response</a></li>
+<li><a href="#security-checklist">Security checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
