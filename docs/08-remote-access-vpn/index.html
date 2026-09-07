@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Access and VPNs — The Self-Hosting & Home Lab Guide</title>
+<meta name="description" content="A comprehensive, opinionated, in-depth guide to self-hosting services on a home lab: hardware, networking, storage, containers, reverse proxies, VPNs, backups, monitoring, security, and hundreds of service reviews.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pygments.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230f766e'/%3E%3Crect x='20' y='24' width='60' height='14' rx='3' fill='%23fff'/%3E%3Crect x='20' y='43' width='60' height='14' rx='3' fill='%23fff' opacity='.8'/%3E%3Crect x='20' y='62' width='60' height='14' rx='3' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="../">The Self-Hosting & Home Lab Guide</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the guide…  ( / )" autocomplete="off" aria-label="Search">
+    <div id="searchResults" class="search-results" hidden></div>
+  </div>
+  <div class="topbar-actions">
+    <a class="icon-link" href="../../SELF-HOSTING-GUIDE.md" title="Single-file Markdown version" data-md-link>MD</a>
+    <a class="icon-link" href="https://github.com/gorg667/self-host-guide" title="GitHub repository" target="_blank" rel="noopener">GitHub</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <div class="sidebar-inner">
+      <a class="sidebar-home" href="../">Overview</a>
+      <div class="part"><div class="part-title">Part I — Foundations</div><ul><li><a href="../00-introduction/"><span class="num">00</span> Introduction: What Self-Hosting Is and Why It Matters</a></li><li><a href="../01-planning/"><span class="num">01</span> Planning Your Home Lab</a></li><li><a href="../02-hardware/"><span class="num">02</span> Hardware: Choosing What to Run It On</a></li><li><a href="../03-networking/"><span class="num">03</span> Networking Fundamentals for the Home Lab</a></li><li><a href="../04-os-and-hypervisors/"><span class="num">04</span> Operating Systems and Hypervisors</a></li><li><a href="../05-containers/"><span class="num">05</span> Containers: Docker, Compose, Podman, and Kubernetes</a></li><li><a href="../06-storage/"><span class="num">06</span> Storage: Filesystems, Redundancy, and Sharing</a></li></ul></div><div class="part"><div class="part-title">Part II — Core infrastructure</div><ul><li><a href="../07-reverse-proxy-tls/"><span class="num">07</span> Reverse Proxies and TLS Certificates</a></li><li class="active"><a href="../08-remote-access-vpn/"><span class="num">08</span> Remote Access and VPNs</a></li></ul></div>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+    <div class="meta">Chapter 08 · ~3,877 words · 17 min read</div>
+    <article class="prose">
+      <h1 id="remote-access-and-vpns">Remote Access and VPNs<a class="headerlink" href="#remote-access-and-vpns" title="Permanent link">#</a></h1>
+<p>You will want to reach your home lab from outside the house: your photos from a hotel, your password vault from work, your media on a train. There are two fundamentally different ways to do this. <strong>Expose</strong> the service to the internet — forward a port, put it behind the reverse proxy, let anyone connect and rely on authentication. Or <strong>tunnel</strong> into your network — a VPN that makes your phone or laptop a member of your LAN, after which everything works as if you were home and nothing is exposed at all. This chapter argues for the second, explains the technologies (WireGuard, Tailscale and Headscale, NetBird, ZeroTier, OpenVPN, IPsec), covers the tunnel-through-a-relay options (Cloudflare Tunnel, Pangolin, a VPS with WireGuard) for CGNAT and public services, and gives a decision framework.</p>
+<h2 id="the-two-models">The two models<a class="headerlink" href="#the-two-models" title="Permanent link">#</a></h2>
+<pre class="mermaid">flowchart TB
+    subgraph expose[&quot;Model 1: Expose&quot;]
+        I1((Internet)) --&gt;|&quot;443 forwarded&quot;| RP[Reverse proxy + auth] --&gt; S1[Services]
+    end
+    subgraph tunnel[&quot;Model 2: Tunnel&quot;]
+        Phone[Your phone] --&gt;|&quot;encrypted tunnel&quot;| VPN[VPN endpoint] --&gt; LAN[Entire LAN&lt;br/&gt;as if at home]
+    end</pre>
+<p><strong>Exposing</strong> is right when the audience is people you cannot ask to install a VPN client: a public blog, a Jellyfin server for extended family, a Nextcloud share link for a colleague, a game server for friends. It costs you an attack surface that must be patched, monitored, and defended forever.</p>
+<p><strong>Tunnelling</strong> is right for <em>you and your household</em> — the people who own devices you can configure. It costs an app on each device and ten minutes of setup, and exposes nothing. Since 2020 or so, mesh VPNs (Tailscale first, then others) have made it so easy that the calculus has shifted decisively: <strong>the default should be a mesh VPN, with public exposure reserved for the few services that genuinely need it.</strong></p>
+<p>Most labs end up with both — a mesh VPN for personal access to everything, plus one or two services exposed via the reverse proxy for other people. That is a healthy pattern.</p>
+<h2 id="wireguard-the-protocol-underneath">WireGuard: the protocol underneath<a class="headerlink" href="#wireguard-the-protocol-underneath" title="Permanent link">#</a></h2>
+<p>WireGuard is a VPN protocol and kernel module (in Linux since 5.6, with userspace implementations everywhere else) designed around simplicity: about 4,000 lines of code versus OpenVPN's 100,000+, a single modern cipher suite (ChaCha20-Poly1305, Curve25519, BLAKE2s), UDP only, and a configuration model based purely on public keys. Each peer has a key pair; you tell each side the other's public key and which IP ranges to route through the tunnel. Handshakes take one round trip; roaming between networks is seamless; throughput is near line rate on modest hardware; a Raspberry Pi 4 pushes 300–500 Mbps. It is the foundation of every mesh VPN below, and the right protocol for anything new.</p>
+<h3 id="plain-wireguard-self-hosted-hub-and-spoke">Plain WireGuard (self-hosted, hub-and-spoke)<a class="headerlink" href="#plain-wireguard-self-hosted-hub-and-spoke" title="Permanent link">#</a></h3>
+<p>The classic setup: a WireGuard server on your router (OPNsense, OpenWrt, MikroTik, UniFi all have it built in) or on a Linux box, a UDP port forwarded to it (51820 by convention; any port works), and a config per client device. Clients connect to your public IP (via a dynamic DNS name), get an address in a tunnel subnet (<code>10.8.0.0/24</code>), and route your LAN (<code>10.0.0.0/16</code>) — or all traffic (<code>0.0.0.0/0</code>, for a privacy VPN when on hotel Wi-Fi) — through the tunnel.</p>
+<p><strong>Requires:</strong> a public IP (dynamic is fine with DDNS) and one forwarded UDP port. Does not work behind CGNAT without a relay.</p>
+<p><strong>Strengths:</strong> no third party at all, no coordination server, no accounts. Runs on hardware you already have. Trivially auditable. The forwarded UDP port is close to invisible — WireGuard does not respond to unauthenticated packets, so a port scan sees nothing.</p>
+<p><strong>Weaknesses:</strong> manual key and config management per device (tooling below helps). Hub-and-spoke: all traffic between two remote clients goes via the hub. No NAT traversal — the server needs a reachable port. Changing the server IP or key means touching every client.</p>
+<p><strong>Tooling:</strong> <strong>wg-easy</strong> (a Docker container with a web UI to create clients and show QR codes; the easiest self-hosted WireGuard), <strong>WGDashboard</strong>, <strong>Firezone</strong> (a more complete product with SSO, now pivoted toward a zero-trust model), the built-in UIs on OPNsense/OpenWrt/UniFi/MikroTik, and <strong>PiVPN</strong> (a script for Raspberry Pi that sets up WireGuard or OpenVPN).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">wg-easy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/wg-easy/wg-easy:15</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wg-easy</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">INIT_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">INIT_HOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vpn.example.com</span><span class="w">          </span><span class="c1"># your DDNS name</span>
+<span class="w">      </span><span class="nt">INIT_PORT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;51820&quot;</span>
+<span class="w">      </span><span class="nt">INIT_DNS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0.20.5</span><span class="w">                 </span><span class="c1"># your Pi-hole/AdGuard</span>
+<span class="w">      </span><span class="nt">INIT_IPV4_CIDR</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.8.0.0/24</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/etc/wireguard</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/lib/modules:/lib/modules:ro</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;51820:51820/udp&quot;</span><span class="w">                 </span><span class="c1"># forward this on the router</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;127.0.0.1:51821:51821/tcp&quot;</span><span class="w">       </span><span class="c1"># web UI, LAN/proxy only</span>
+<span class="w">    </span><span class="nt">cap_add</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">NET_ADMIN</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">SYS_MODULE</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">sysctls</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">net.ipv4.ip_forward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">net.ipv4.conf.all.src_valid_mark</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</code></pre></div>
+<h2 id="mesh-vpns">Mesh VPNs<a class="headerlink" href="#mesh-vpns" title="Permanent link">#</a></h2>
+<p>A mesh VPN adds a <strong>coordination (control) server</strong> to WireGuard. Every device authenticates to the control server, which distributes public keys and endpoint information; devices then connect <strong>directly to each other</strong> (peer to peer) wherever NAT traversal permits, falling back to <strong>relay servers</strong> (DERP in Tailscale's terminology, TURN in NetBird's) when it does not. The control server never sees your traffic — only keys and metadata. Results: no port forwarding, works behind CGNAT and hotel Wi-Fi and cellular, every device can reach every other device, and adding a device is "install the app and log in."</p>
+<h3 id="tailscale">Tailscale<a class="headerlink" href="#tailscale" title="Permanent link">#</a></h3>
+<p>The product that defined the category. A Tailscale client on each device (Linux, Windows, macOS, iOS, Android, Synology, QNAP, pfSense/OPNsense, Unraid, Home Assistant, Docker, even Apple TV), a hosted control plane at Tailscale Inc., login via an existing identity provider (Google, Microsoft, GitHub, Apple, or any OIDC). Free tier: 100 devices and 3 users, which covers most households. Features that matter for self-hosters:</p>
+<ul>
+<li><strong>MagicDNS</strong>: every device gets a name (<code>nas.tailnet-name.ts.net</code>) and Tailscale-provided DNS for them.</li>
+<li><strong>Subnet routers</strong>: one device advertises your LAN (<code>10.0.0.0/16</code>) so that devices <em>without</em> Tailscale (your TV, printer, IoT) are reachable through it. Your phone can reach <code>10.0.20.5</code> from anywhere.</li>
+<li><strong>Exit nodes</strong>: route all internet traffic through a device at home (or a VPS) — a privacy VPN for hotel Wi-Fi.</li>
+<li><strong>ACLs</strong>: a JSON policy defining which users/devices/tags may reach which others. Give your partner's phone access to Immich and Jellyfin, not the Proxmox UI.</li>
+<li><strong>Tailscale SSH</strong>: SSH between devices authenticated by Tailscale identity, no keys to manage.</li>
+<li><strong>Funnel</strong>: expose a service on a device to the public internet through Tailscale's relays (with TLS) — a quick way to make one thing public without touching your router.</li>
+<li><strong>Tailscale Serve</strong> and <strong>HTTPS certificates</strong> for <code>*.ts.net</code> names.</li>
+<li><strong>Split DNS</strong>: tell Tailscale that <code>example.com</code> should resolve via your Pi-hole at <code>10.0.20.5</code> — so your split-horizon DNS (<a href="../07-reverse-proxy-tls/">Chapter 7</a>) works remotely and <code>photos.example.com</code> resolves to your internal proxy from anywhere.</li>
+<li><strong>Mullvad exit nodes</strong> (paid add-on), <strong>Taildrop</strong> (file transfer between your devices), <strong>Tailscale on Docker</strong> (a sidecar container that puts a single service on the tailnet).</li>
+</ul>
+<p><strong>Watch out for:</strong> the control plane is a third-party SaaS. Tailscale cannot read your traffic (it never has the private keys and traffic goes peer-to-peer or through DERP encrypted end-to-end), but it knows your device list, IPs, and connection metadata, and if Tailscale's control plane is down, <em>new</em> connections cannot be established (existing ones keep working via cached keys). Pricing and free-tier limits could change (they have been stable and were made more generous in 2023). If a hard dependency on a company is unacceptable, see Headscale.</p>
+<h3 id="headscale">Headscale<a class="headerlink" href="#headscale" title="Permanent link">#</a></h3>
+<p>An open-source reimplementation of Tailscale's <em>control server</em>, run on your own machine. The official Tailscale clients connect to it instead of Tailscale Inc. You get most of the Tailscale experience — MagicDNS, subnet routers, exit nodes, ACLs, split DNS — with no third party, no device limits, no account required. It needs a <strong>publicly reachable host</strong> for the control server (a small VPS is ideal; it can be at home if you have a public IP and forward a port), because clients must reach it to coordinate. Relaying uses Tailscale's public DERP servers by default (you can run your own embedded DERP in Headscale).</p>
+<p><strong>Watch out for:</strong> it is a community project tracking a proprietary protocol; occasional client updates break things until Headscale catches up (rarer now — Tailscale has been cooperative). No web UI officially (community UIs exist: headscale-ui, headplane, headscale-admin). Login is via pre-auth keys or your own OIDC provider (<a href="../10-identity-sso/">Chapter 10</a>). Missing a few Tailscale features (Funnel, some newer ACL features). Operating a control server is a small but real responsibility.</p>
+<p><strong>Pick Headscale if:</strong> you want Tailscale's polish with full sovereignty and are willing to run one more service on a VPS.</p>
+<h3 id="netbird">NetBird<a class="headerlink" href="#netbird" title="Permanent link">#</a></h3>
+<p>An open-source mesh VPN (management server, signal server, relay, and clients all open, AGPL/BSD) with a hosted option and a straightforward self-hosting path (a Docker Compose stack). WireGuard underneath, peer-to-peer with relay fallback, a full web UI, SSO via any OIDC provider (Zitadel bundled by default in the self-hosted quick start, or bring your own — Authentik, Keycloak, Pocket ID), ACLs with groups and posture checks, DNS management, subnet routing, exit nodes, and a clean client for every platform including Docker. It is the closest <strong>fully open, self-hostable, UI-driven</strong> equivalent to Tailscale, and has been growing steadily.</p>
+<p><strong>Watch out for:</strong> self-hosting involves several components (management, signal, relay/TURN, dashboard, an IdP) and needs a public host with a handful of ports open; the quick-start script handles it but you are running more moving parts than Headscale. Younger than Tailscale; occasional rough edges on iOS/macOS.</p>
+<p><strong>Pick NetBird if:</strong> you want a self-hosted mesh with a real web UI and SSO integration out of the box, or you want an open-source hosted option.</p>
+<h3 id="zerotier">ZeroTier<a class="headerlink" href="#zerotier" title="Permanent link">#</a></h3>
+<p>The elder statesman of mesh networking (2015). Different architecture: it builds a virtual <strong>layer 2</strong> Ethernet network rather than a layer 3 IP mesh, with its own protocol (not WireGuard), which makes it uniquely good at things like broadcast/multicast across the mesh (Chromecast discovery, some games, mDNS). Hosted controller with a free tier (10 devices as of the 2023 pricing change, down from 25/50), a self-hostable controller (via the open-source <code>ztncui</code> or ZeroNSD tooling), a very mature client on every platform including many routers (MikroTik has it built in). Licence is a BSL (Business Source Licence) — source-available with a non-compete clause, converting to Apache after four years.</p>
+<p><strong>Watch out for:</strong> the smaller free tier makes it less attractive than Tailscale for households; performance and NAT traversal are good but generally a step behind WireGuard-based options; the self-hosted controller is less turnkey than Headscale/NetBird.</p>
+<p><strong>Pick ZeroTier if:</strong> you need layer 2 (bridging two sites into one broadcast domain, or an application that requires it), or you have MikroTik gear and want it native.</p>
+<h3 id="others">Others<a class="headerlink" href="#others" title="Permanent link">#</a></h3>
+<p><strong>Netmaker</strong> (WireGuard mesh with a UI, pivoted toward enterprise; the community edition is fine but has moved features to paid tiers), <strong>Innernet</strong> (a minimal WireGuard coordinator in Rust, CLI-only), <strong>Nebula</strong> (Slack's overlay network; certificate-based, no central controller at runtime, excellent for people who want to understand every part; used for the Defined Networking product), <strong>Tinc</strong> (an old and still-working mesh), <strong>Husarnet</strong>, <strong>Twingate</strong> and <strong>Cloudflare WARP/Zero Trust</strong> (hosted zero-trust access products with free tiers; corporate-flavoured), <strong>Firezone</strong> (WireGuard-based, open-source, now zero-trust-oriented with a hosted control plane and self-hosted gateways).</p>
+<h3 id="mesh-vpn-comparison">Mesh VPN comparison<a class="headerlink" href="#mesh-vpn-comparison" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Tailscale</th>
+<th>Headscale</th>
+<th>NetBird</th>
+<th>ZeroTier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Control plane</td>
+<td>Hosted (Tailscale Inc.)</td>
+<td>Self-hosted</td>
+<td>Hosted or self-hosted</td>
+<td>Hosted or self-hosted</td>
+</tr>
+<tr>
+<td>Protocol</td>
+<td>WireGuard</td>
+<td>WireGuard (Tailscale clients)</td>
+<td>WireGuard</td>
+<td>Custom (L2)</td>
+</tr>
+<tr>
+<td>Open source</td>
+<td>Clients: yes (BSD); server: no</td>
+<td>Yes (BSD)</td>
+<td>Yes (AGPL/BSD)</td>
+<td>BSL (source-available)</td>
+</tr>
+<tr>
+<td>Free tier</td>
+<td>100 devices / 3 users</td>
+<td>Unlimited</td>
+<td>Hosted: 5 users/100 peers as of 2025; self-hosted unlimited</td>
+<td>10 devices</td>
+</tr>
+<tr>
+<td>Web UI</td>
+<td>Yes (excellent)</td>
+<td>Community projects</td>
+<td>Yes</td>
+<td>Yes (hosted)</td>
+</tr>
+<tr>
+<td>SSO/IdP</td>
+<td>Google/MS/GitHub/Apple/OIDC</td>
+<td>OIDC (your own)</td>
+<td>OIDC (bundled Zitadel or your own)</td>
+<td>Own accounts</td>
+</tr>
+<tr>
+<td>Subnet router</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes (managed routes)</td>
+</tr>
+<tr>
+<td>Exit node</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes (default route)</td>
+</tr>
+<tr>
+<td>Split DNS</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Via ZeroNSD</td>
+</tr>
+<tr>
+<td>Public exposure</td>
+<td>Funnel</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Setup effort</td>
+<td>Minutes</td>
+<td>An hour (needs public host)</td>
+<td>An hour (needs public host)</td>
+<td>Minutes (hosted)</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Most people</td>
+<td>Tailscale without the company</td>
+<td>Fully open with UI</td>
+<td>Layer 2 needs</td>
+</tr>
+</tbody>
+</table>
+<h2 id="tunnels-and-relays-for-cgnat-and-public-services">Tunnels and relays: for CGNAT and public services<a class="headerlink" href="#tunnels-and-relays-for-cgnat-and-public-services" title="Permanent link">#</a></h2>
+<p>When you <em>cannot</em> forward ports (CGNAT), or <em>will not</em> (no inbound exposure at home), but need a service reachable by the public or by people without a VPN client, the answer is an <strong>outbound tunnel</strong> from your lab to a publicly reachable relay that fronts the traffic.</p>
+<h3 id="cloudflare-tunnel">Cloudflare Tunnel<a class="headerlink" href="#cloudflare-tunnel" title="Permanent link">#</a></h3>
+<p><code>cloudflared</code> runs at home, makes an outbound connection to Cloudflare's edge, and Cloudflare proxies <code>photos.example.com</code> to Immich through it. No open ports, free, includes Cloudflare's WAF, DDoS protection, and — via <strong>Cloudflare Access</strong> (Zero Trust, free for up to 50 users) — an identity-aware login page in front of any hostname, with SSO via Google/GitHub/OIDC and one-time email codes. Setup is a Docker container and a few clicks in the Zero Trust dashboard.</p>
+<p><strong>The trade-offs, stated plainly:</strong> Cloudflare terminates TLS at their edge and sees the plaintext of everything that passes through — for a password manager or private photos, that is a meaningful trust decision. Their terms of service (Section 2.8 historically; restructured in 2023 but the spirit remains) restrict serving non-HTML content like video streams and large files through the free CDN, and people have had accounts flagged for streaming Plex/Jellyfin through a tunnel. Upload size is limited to 100 MB per request on free/pro plans (which breaks Immich/Nextcloud uploads of large videos unless the client chunks them). WebSockets work. It is superb for a blog, a wiki, a dashboard, a small web app, or any HTML-centric service; it is the wrong tool for media and file sync.</p>
+<h3 id="pangolin">Pangolin<a class="headerlink" href="#pangolin" title="Permanent link">#</a></h3>
+<p>Introduced in <a href="../07-reverse-proxy-tls/">Chapter 7</a>: an open-source, self-hosted tunnel + reverse proxy + auth layer that you run on a <strong>cheap VPS</strong>. Components: <strong>Pangolin</strong> (the management server and UI), <strong>Gerbil</strong> (a WireGuard server), <strong>Traefik</strong> (the proxy, with automatic certificates), and <strong>Newt</strong> (a tiny client on your home machine that dials out to Gerbil). Define "sites" (your home lab) and "resources" (<code>photos.example.com</code> → <code>10.0.20.5:2283</code>); optionally require authentication (Pangolin's own users, passkeys, PIN codes, one-time email links, or OIDC to your IdP) before the request is forwarded. Raw TCP/UDP resources are supported too (game servers, SSH). Effectively self-hosted Cloudflare Tunnel + Access, with <strong>you</strong> terminating TLS on <strong>your</strong> VPS, no content restrictions, and no 100 MB limit.</p>
+<p><strong>Watch out for:</strong> you pay for and maintain a VPS (USD 4–6/month); the VPS's bandwidth cap (typically 1–20 TB/month) and its network speed become your service's ceiling; latency adds one hop. Pangolin is young (late 2024) and moves fast; it has a paid tier for some features (the core is open). But it has been adopted very quickly by exactly the self-hosting audience, and its trajectory is strong.</p>
+<h3 id="roll-your-own-vps-wireguard-reverse-proxy">Roll your own: VPS + WireGuard + reverse proxy<a class="headerlink" href="#roll-your-own-vps-wireguard-reverse-proxy" title="Permanent link">#</a></h3>
+<p>The manual version of Pangolin, which many people ran for years: a VPS with WireGuard, a WireGuard tunnel from home, and on the VPS either (a) a reverse proxy (Caddy/Traefik/Nginx) whose backends are the tunnel IPs of your home services, or (b) plain port forwarding via <code>iptables</code>/<code>nftables</code> DNAT rules from the VPS's public IP through the tunnel to your home. Option (a) terminates TLS on the VPS and gives you a normal proxy; option (b) passes TCP straight through so TLS terminates at home and the VPS sees only ciphertext — better privacy, but no per-hostname routing unless you use SNI-based routing (HAProxy/Traefik TCP routers/Caddy layer4/<code>sniproxy</code>). <strong>Rathole</strong>, <strong>frp</strong>, <strong>bore</strong>, and <strong>chisel</strong> are lightweight tunnelling daemons that do this pattern with less configuration than raw WireGuard + iptables. Full control, minimal cost, and you learn a great deal.</p>
+<h3 id="others_1">Others<a class="headerlink" href="#others_1" title="Permanent link">#</a></h3>
+<p><strong>ngrok</strong>, <strong>localtunnel</strong>, <strong>Tailscale Funnel</strong> (quick, hosted, fine for demos and one-offs), <strong>Zrok</strong> (open-source ngrok alternative on OpenZiti), <strong>Boringproxy</strong>, <strong>SirTunnel</strong>, <strong>Tunnelmole</strong>, <strong>Holesail</strong>.</p>
+<h2 id="openvpn-and-ipsec">OpenVPN and IPsec<a class="headerlink" href="#openvpn-and-ipsec" title="Permanent link">#</a></h2>
+<p><strong>OpenVPN</strong> was the standard for fifteen years and is still everywhere: every router OS, every commercial VPN app, every corporate remote-access box. TLS-based, TCP or UDP, certificate or username/password authentication, extensive but arcane configuration. It is slower than WireGuard (userspace, larger overhead), slower to connect, and harder to configure, with no real compensating advantage for a home lab in 2026 — except that it works over TCP 443 and can therefore punch through hostile networks (some corporate or hotel firewalls block all UDP, which stops WireGuard). Keep a fallback OpenVPN-over-TCP-443 profile if you travel to such places; otherwise use WireGuard.</p>
+<p><strong>IPsec/IKEv2</strong> is the protocol built into every OS without an app (Windows, macOS, iOS, Android via strongSwan). Fast (kernel-mode) and robust, and OPNsense/pfSense/MikroTik/UniFi all serve it. Configuration is notoriously fiddly (certificates, EAP methods, NAT-T, phase 1/phase 2). Worth it only if "no client app" is a hard requirement; most people find WireGuard's app trivially acceptable.</p>
+<h2 id="choosing-a-decision-framework">Choosing: a decision framework<a class="headerlink" href="#choosing-a-decision-framework" title="Permanent link">#</a></h2>
+<ol>
+<li>
+<p><strong>Do you only need access for yourself and your household?</strong> → A mesh VPN. Tailscale if a hosted control plane is acceptable; Headscale or NetBird if not. Add a subnet router so non-VPN devices at home are reachable. Configure split DNS so your internal hostnames work. Done — nothing exposed.</p>
+</li>
+<li>
+<p><strong>Do you have a public IP and want zero third parties, even for coordination?</strong> → Plain WireGuard on your router or via wg-easy, one UDP port forwarded, DDNS. Add a mesh later if you want peer-to-peer between remote devices.</p>
+</li>
+<li>
+<p><strong>Do you need to expose a few HTTP services to the public or to people who will not install anything?</strong>
+   - Public IP, comfortable managing exposure → forward 443 to your reverse proxy with forward-auth, CrowdSec, and everything in <a href="../13-security/">Chapter 13</a>.
+   - CGNAT, or you refuse inbound exposure → Pangolin on a VPS (full control), or Cloudflare Tunnel + Access (zero cost, accept their terms and TLS termination).</p>
+</li>
+<li>
+<p><strong>Do you need to expose non-HTTP services</strong> (game servers, SSH, Minecraft, a mail server)? → Public IP: forward the specific port with the strongest auth the service supports. CGNAT: Pangolin raw TCP/UDP resources, a VPS with WireGuard + DNAT, or Playit.gg for game servers (<a href="../24-gaming/">Chapter 24</a>).</p>
+</li>
+<li>
+<p><strong>Layer 2 required, or MikroTik native?</strong> → ZeroTier.</p>
+</li>
+<li>
+<p><strong>Travelling through networks that block UDP?</strong> → keep an OpenVPN-TCP-443 or a WireGuard-over-<strong>udp2raw</strong>/<strong>wstunnel</strong> profile as a fallback. Tailscale's DERP relays operate over HTTPS and often get through where raw WireGuard does not.</p>
+</li>
+</ol>
+<p>Most households: <strong>Tailscale (or Headscale) for everything personal, plus one or two services behind the reverse proxy for guests.</strong> If behind CGNAT: <strong>Tailscale + Pangolin</strong>.</p>
+<h2 id="deployment-patterns">Deployment patterns<a class="headerlink" href="#deployment-patterns" title="Permanent link">#</a></h2>
+<h3 id="the-subnet-router">The subnet router<a class="headerlink" href="#the-subnet-router" title="Permanent link">#</a></h3>
+<p>Install Tailscale/NetBird on one always-on Linux machine at home (the Docker host, a Raspberry Pi, the router if supported), enable IP forwarding, and advertise your LAN:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Tailscale</span>
+sudo<span class="w"> </span>tailscale<span class="w"> </span>up<span class="w"> </span>--advertise-routes<span class="o">=</span><span class="m">10</span>.0.0.0/16<span class="w"> </span>--advertise-exit-node<span class="w"> </span>--accept-dns<span class="o">=</span><span class="nb">false</span>
+<span class="c1"># then approve the routes in the admin console (or auto-approve via ACL)</span>
+</code></pre></div>
+<p>Now every device on the tailnet reaches every LAN device. Combine with <strong>split DNS</strong> in the admin console (<code>example.com</code> → <code>10.0.20.5</code>) so <code>photos.example.com</code> resolves to your proxy from anywhere. The subnet router is a single point of failure; run two for redundancy (Tailscale supports HA subnet routers).</p>
+<h3 id="the-service-sidecar">The service sidecar<a class="headerlink" href="#the-service-sidecar" title="Permanent link">#</a></h3>
+<p>For a single service you want on the mesh without exposing the whole LAN — or to give someone access to <em>only</em> Jellyfin — run Tailscale as a sidecar container sharing the service's network namespace (<code>network_mode: service:tailscale</code>). The service appears as its own device on the tailnet with its own ACL entry. Pattern also works for NetBird.</p>
+<h3 id="always-on-vpn-on-phones">Always-on VPN on phones<a class="headerlink" href="#always-on-vpn-on-phones" title="Permanent link">#</a></h3>
+<p>iOS and Android Tailscale/WireGuard clients support "on-demand" or always-on modes: connect automatically whenever off home Wi-Fi. With a split DNS configuration and internal hostnames, your phone's Immich app, Home Assistant app, and Bitwarden client work identically at home and away and never touch a public endpoint. This is the end state most self-hosters are aiming for.</p>
+<h3 id="the-remote-backup-peer">The remote backup peer<a class="headerlink" href="#the-remote-backup-peer" title="Permanent link">#</a></h3>
+<p>A mesh VPN makes a second machine at a friend's or parent's house a first-class network member: a Raspberry Pi or old mini PC with a big drive, on your tailnet, receiving nightly Restic/Borg/ZFS-replication backups (<a href="../11-backups/">Chapter 11</a>). Off-site backup with no cloud fees and no port forwarding at either end.</p>
+<h2 id="security-notes">Security notes<a class="headerlink" href="#security-notes" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>A VPN endpoint is exposed infrastructure too.</strong> WireGuard is silent to unauthenticated packets and has had an excellent security record; still, keep the host patched. Mesh clients update themselves or via your package manager — let them.</li>
+<li><strong>Don't route everything through the mesh blindly.</strong> Use ACLs. Your partner's phone does not need to reach the Proxmox console; a friend's Jellyfin access should reach Jellyfin only.</li>
+<li><strong>Exit nodes</strong> route all a device's internet traffic through your home — the ISP at home sees it, and your home IP is what websites see. That is the point on hotel Wi-Fi, and something to remember otherwise.</li>
+<li><strong>Key rotation</strong>: mesh VPNs rotate node keys automatically and expire devices (Tailscale defaults to 180 days) so a lost laptop cannot connect forever. Plain WireGuard keys never expire — remove peers for devices you no longer own.</li>
+<li><strong>Split DNS and DNS leaks</strong>: with <code>--accept-dns</code> (Tailscale) your device uses the tailnet's DNS config; verify that off-network queries go where you expect (<code>resolvectl status</code>, <code>nslookup</code>).</li>
+<li><strong>Tunnels (Cloudflare/Pangolin) still expose the application.</strong> The relay hides your IP and can add an auth wall; the app behind it remains a target once past that wall. Treat exposed services as exposed regardless of how the packets arrive.</li>
+</ul>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">#</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> A mesh VPN (Tailscale/Headscale/NetBird) or plain WireGuard deployed; every household device enrolled.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A subnet router advertising the LAN; split DNS pointing your domain at the internal resolver; internal hostnames tested from a phone on cellular.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> ACLs restricting each user/device to what they need.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Phones set to always-on/on-demand VPN off home Wi-Fi.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> CGNAT status known; if CGNAT and public services are needed, Pangolin or Cloudflare Tunnel in place.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Public exposure limited to the specific services that need it, each behind the reverse proxy with authentication and rate limiting; everything else reachable only via VPN.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> A fallback profile (OpenVPN TCP 443, or reliance on DERP/HTTPS relays) for hostile networks.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Device expiry/key rotation enabled; stale peers removed; the VPN/tunnel host kept patched.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Off-site backup peer (if any) reachable via the mesh, not via port forwarding.</li>
+</ul>
+    </article>
+    <nav class="prevnext"><a class="prev" href="../07-reverse-proxy-tls/">← 07. Reverse Proxies and TLS Certificates</a><span></span></nav>
+    <footer class="footer">
+      <span>Built 2026-09-07. </span>
+      <a href="https://github.com/gorg667/self-host-guide/blob/main/guide/08-remote-access-vpn.md" target="_blank" rel="noopener">Edit this page</a> ·
+      <a href="https://github.com/gorg667/self-host-guide" target="_blank" rel="noopener">Source on GitHub</a> ·
+      Content licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    </footer>
+  </main>
+
+  <aside class="toc-aside" aria-label="On this page">
+    <div class="toc-inner">
+      <div class="toc-title">On this page</div>
+      <div class="toc">
+<ul>
+<li><a href="#the-two-models">The two models</a></li>
+<li><a href="#wireguard-the-protocol-underneath">WireGuard: the protocol underneath</a><ul>
+<li><a href="#plain-wireguard-self-hosted-hub-and-spoke">Plain WireGuard (self-hosted, hub-and-spoke)</a></li>
+</ul>
+</li>
+<li><a href="#mesh-vpns">Mesh VPNs</a><ul>
+<li><a href="#tailscale">Tailscale</a></li>
+<li><a href="#headscale">Headscale</a></li>
+<li><a href="#netbird">NetBird</a></li>
+<li><a href="#zerotier">ZeroTier</a></li>
+<li><a href="#others">Others</a></li>
+<li><a href="#mesh-vpn-comparison">Mesh VPN comparison</a></li>
+</ul>
+</li>
+<li><a href="#tunnels-and-relays-for-cgnat-and-public-services">Tunnels and relays: for CGNAT and public services</a><ul>
+<li><a href="#cloudflare-tunnel">Cloudflare Tunnel</a></li>
+<li><a href="#pangolin">Pangolin</a></li>
+<li><a href="#roll-your-own-vps-wireguard-reverse-proxy">Roll your own: VPS + WireGuard + reverse proxy</a></li>
+<li><a href="#others_1">Others</a></li>
+</ul>
+</li>
+<li><a href="#openvpn-and-ipsec">OpenVPN and IPsec</a></li>
+<li><a href="#choosing-a-decision-framework">Choosing: a decision framework</a></li>
+<li><a href="#deployment-patterns">Deployment patterns</a><ul>
+<li><a href="#the-subnet-router">The subnet router</a></li>
+<li><a href="#the-service-sidecar">The service sidecar</a></li>
+<li><a href="#always-on-vpn-on-phones">Always-on VPN on phones</a></li>
+<li><a href="#the-remote-backup-peer">The remote backup peer</a></li>
+</ul>
+</li>
+<li><a href="#security-notes">Security notes</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</div>
+
+    </div>
+  </aside>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top" hidden>↑</button>
+<script>window.__ROOT__ = "../";</script>
+<script src="../app.js" defer></script>
+<script type="module">
+  if (document.querySelector('pre.mermaid')) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(({default: mermaid}) => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+      mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
